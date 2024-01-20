@@ -208,7 +208,7 @@ static bool create_window(XVisualInfo *vi)
     return true;
 }
 
-static void create_modern_context(GLXFBConfig fbc)
+static void create_modern_glx_context(GLXFBConfig fbc)
 {
     int attribs[] = {
         GLX_CONTEXT_MAJOR_VERSION_ARB,  3,
@@ -227,17 +227,17 @@ static void create_modern_context(GLXFBConfig fbc)
     );
 }
 
-static void create_legacy_context(XVisualInfo *vi)
+static void create_legacy_glx_context(XVisualInfo *vi)
 {
     priv.glx.context = glXCreateContext(priv.dpy, vi, NULL, True);
 }
 
-static bool create_context(GLXFBConfig fbc, XVisualInfo *vi)
+static bool create_glx_context(GLXFBConfig fbc, XVisualInfo *vi)
 {
     if (priv.glx.extensions & _ARB_create_context) {
-        create_modern_context(fbc);
+        create_modern_glx_context(fbc);
     } else {
-        create_legacy_context(vi);
+        create_legacy_glx_context(vi);
     }
 
     XFree(vi);
@@ -297,7 +297,7 @@ static bool core_x11_initialize(struct libqu_core_params const *params)
         return false;
     }
 
-    if (!create_context(fbc, vi)) {
+    if (!create_glx_context(fbc, vi)) {
         return false;
     }
 
