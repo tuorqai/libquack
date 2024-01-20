@@ -24,7 +24,8 @@ add_library(libquack
     src/graphics_gl3.c
     src/graphics_null.c
     src/log.c
-    src/platform_posix.c)
+    src/platform_posix.c
+    src/util.c)
 
 add_library(libquack::libquack ALIAS libquack)
 
@@ -53,6 +54,12 @@ if(MSVC)
     target_compile_options(libquack PRIVATE /W4)
 else()
     target_compile_options(libquack PRIVATE -Wall -Wextra)
+endif()
+
+find_library(MATH_LIBRARY m)
+
+if(MATH_LIBRARY)
+    target_link_libraries(libquack PRIVATE ${MATH_LIBRARY})
 endif()
 
 if(QU_USE_OPENGL)
