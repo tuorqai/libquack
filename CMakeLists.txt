@@ -13,7 +13,8 @@ include(GNUInstallDirs)
 #-------------------------------------------------------------------------------
 
 add_library(libquack
-    src/base.c)
+    src/base.c
+    src/core.c)
 
 add_library(libquack::libquack ALIAS libquack)
 
