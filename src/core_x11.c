@@ -18,43 +18,53 @@
 // 3. This notice may not be removed or altered from any source distribution.
 //------------------------------------------------------------------------------
 
-#ifndef LIBQU_CORE_H_INC
-#define LIBQU_CORE_H_INC
-
-//------------------------------------------------------------------------------
-
-#include "libqu/libqu.h"
-
-//------------------------------------------------------------------------------
-
-struct libqu_core_params
-{
-    int unused;
-};
-
-struct libqu_core_impl
-{
-    bool (*check_if_available)(void);
-    bool (*initialize)(struct libqu_core_params const *params);
-    void (*terminate)(void);
-};
-
-//------------------------------------------------------------------------------
-
-extern struct libqu_core_impl const libqu_core_null_impl;
-
 #ifdef QU_USE_X11
-extern struct libqu_core_impl const libqu_core_x11_impl;
-#endif
 
 //------------------------------------------------------------------------------
 
-void libqu_core_initialize(struct libqu_core_params const *params);
-void libqu_core_terminate(void);
-bool libqu_core_process(void);
-void libqu_core_swap(void);
+#include <string.h>
+#include <X11/Xlib.h>
+#include "core.h"
 
 //------------------------------------------------------------------------------
 
-#endif // LIBQU_CORE_H_INC
+static struct
+{
+    Display *dpy;
+} priv;
+
+//------------------------------------------------------------------------------
+
+static bool core_x11_check_if_available(void)
+{
+    priv.dpy = XOpenDisplay(NULL);
+
+    return priv.dpy != NULL;
+}
+
+static bool core_x11_initialize(struct libqu_core_params const *params)
+{
+    return true;
+}
+
+static void core_x11_terminate(void)
+{
+    if (priv.dpy) {
+        XCloseDisplay(priv.dpy);
+    }
+
+    memset(&priv, 0, sizeof(priv));
+}
+
+//------------------------------------------------------------------------------
+
+struct libqu_core_impl const libqu_core_x11_impl = {
+    core_x11_check_if_available,
+    core_x11_initialize,
+    core_x11_terminate,
+};
+
+//------------------------------------------------------------------------------
+
+#endif // QU_USE_X11
 
