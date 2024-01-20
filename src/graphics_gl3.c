@@ -109,6 +109,10 @@ static void graphics_gl3_terminate(void)
     LIBQU_LOGI("Terminated.\n");
 }
 
+static void graphics_gl3_upload_vertices(struct libqu_vertex *vertices, size_t count)
+{
+}
+
 static void graphics_gl3_clear(qu_color color)
 {
     GLfloat c[4];
@@ -118,13 +122,19 @@ static void graphics_gl3_clear(qu_color color)
     _GL(glClear(GL_COLOR_BUFFER_BIT));
 }
 
+static void graphics_gl3_draw(enum libqu_draw_mode mode, size_t vertex, size_t count)
+{
+}
+
 //------------------------------------------------------------------------------
 
 struct libqu_graphics_impl const libqu_graphics_gl3_impl = {
     graphics_gl3_check_if_available,
     graphics_gl3_initialize,
     graphics_gl3_terminate,
+    graphics_gl3_upload_vertices,
     graphics_gl3_clear,
+    graphics_gl3_draw,
 };
 
 //------------------------------------------------------------------------------

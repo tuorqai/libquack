@@ -71,6 +71,12 @@ extern "C" {
 
 typedef uint32_t qu_color;
 
+typedef struct qu_vec2f
+{
+    float x;
+    float y;
+} qu_vec2f;
+
 //------------------------------------------------------------------------------
 
 QU_API void QU_CALL qu_initialize(void);
@@ -79,6 +85,10 @@ QU_API bool QU_CALL qu_process(void);
 QU_API void QU_CALL qu_present(void);
 
 QU_API void QU_CALL qu_clear(qu_color color);
+QU_API void QU_CALL qu_draw_point(float x, float y, qu_color color);
+QU_API void QU_CALL qu_draw_line(float ax, float ay, float bx, float by, qu_color color);
+QU_API void QU_CALL qu_draw_triangle(float ax, float ay, float bx, float by, float cx, float cy, qu_color outline, qu_color fill);
+QU_API void QU_CALL qu_draw_rectangle(float x, float y, float w, float h, qu_color outline, qu_color fill);
 
 //------------------------------------------------------------------------------
 

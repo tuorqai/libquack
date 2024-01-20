@@ -40,7 +40,15 @@ static void graphics_null_terminate(void)
     LIBQU_LOGI("Terminated.\n");
 }
 
+static void graphics_null_upload_vertices(struct libqu_vertex *vertices, size_t count)
+{
+}
+
 static void graphics_null_clear(qu_color color)
+{
+}
+
+static void graphics_null_draw(enum libqu_draw_mode mode, size_t vertex, size_t count)
 {
 }
 
@@ -50,6 +58,8 @@ struct libqu_graphics_impl const libqu_graphics_null_impl = {
     graphics_null_check_if_available,
     graphics_null_initialize,
     graphics_null_terminate,
+    graphics_null_upload_vertices,
     graphics_null_clear,
+    graphics_null_draw,
 };
 
