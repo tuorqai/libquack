@@ -36,6 +36,7 @@ struct libqu_graphics_params
 
 void libqu_graphics_initialize(struct libqu_graphics_params const *params);
 void libqu_graphics_terminate(void);
+void libqu_graphics_flush(void);
 
 //------------------------------------------------------------------------------
 

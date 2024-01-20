@@ -23,6 +23,10 @@
 
 //------------------------------------------------------------------------------
 
+#include <stdbool.h>
+
+//------------------------------------------------------------------------------
+
 #ifdef QU_SHARED
     #ifdef _WIN32
         #ifdef QU_BUILD
@@ -56,6 +60,8 @@ extern "C" {
 
 QU_API void QU_CALL qu_initialize(void);
 QU_API void QU_CALL qu_terminate(void);
+QU_API bool QU_CALL qu_process(void);
+QU_API void QU_CALL qu_present(void);
 
 //------------------------------------------------------------------------------
 

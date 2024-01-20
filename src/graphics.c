@@ -30,3 +30,7 @@ void libqu_graphics_terminate(void)
 {
 }
 
+void libqu_graphics_flush(void)
+{
+}
+

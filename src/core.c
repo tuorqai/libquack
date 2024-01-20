@@ -30,3 +30,12 @@ void libqu_core_terminate(void)
 {
 }
 
+bool libqu_core_process(void)
+{
+    return false;
+}
+
+void libqu_core_swap(void)
+{
+}
+

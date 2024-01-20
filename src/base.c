@@ -55,3 +55,14 @@ void qu_terminate(void)
     libqu_core_terminate();
 }
 
+bool qu_process(void)
+{
+    return libqu_core_process();
+}
+
+void qu_present(void)
+{
+    libqu_graphics_flush();
+    libqu_core_swap();
+}
+

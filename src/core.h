@@ -36,6 +36,8 @@ struct libqu_core_params
 
 void libqu_core_initialize(struct libqu_core_params const *params);
 void libqu_core_terminate(void);
+bool libqu_core_process(void);
+void libqu_core_swap(void);
 
 //------------------------------------------------------------------------------
 
