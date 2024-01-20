@@ -18,16 +18,51 @@
 // 3. This notice may not be removed or altered from any source distribution.
 //------------------------------------------------------------------------------
 
+#include <stdlib.h>
 #include "graphics.h"
+
+//------------------------------------------------------------------------------
+
+static struct libqu_graphics_impl const *impl_list[] = {
+    &libqu_graphics_null_impl,
+};
+
+//------------------------------------------------------------------------------
+
+static struct
+{
+    struct libqu_graphics_impl const *impl;
+} priv;
+
+//------------------------------------------------------------------------------
+
+static struct libqu_graphics_impl const *choose_impl(void)
+{
+    int count = sizeof(impl_list) / sizeof(impl_list[0]);
+
+    for (int i = 0; i < count; i++) {
+        if (impl_list[i]->check_if_available()) {
+            return impl_list[i];
+        }
+    }
+
+    abort();
+}
 
 //------------------------------------------------------------------------------
 
 void libqu_graphics_initialize(struct libqu_graphics_params const *params)
 {
+    priv.impl = choose_impl();
+
+    if (!priv.impl->initialize(params)) {
+        abort();
+    }
 }
 
 void libqu_graphics_terminate(void)
 {
+    priv.impl->terminate();
 }
 
 void libqu_graphics_flush(void)

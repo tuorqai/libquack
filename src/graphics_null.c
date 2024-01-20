@@ -18,38 +18,29 @@
 // 3. This notice may not be removed or altered from any source distribution.
 //------------------------------------------------------------------------------
 
-#ifndef LIBQU_GRAPHICS_H_INC
-#define LIBQU_GRAPHICS_H_INC
+#include "graphics.h"
 
 //------------------------------------------------------------------------------
 
-#include "libqu/libqu.h"
-
-//------------------------------------------------------------------------------
-
-struct libqu_graphics_params
+static bool graphics_null_check_if_available(void)
 {
-    int unused;
-};
+    return true;
+}
 
-struct libqu_graphics_impl
+static bool graphics_null_initialize(struct libqu_graphics_params const *params)
 {
-    bool (*check_if_available)(void);
-    bool (*initialize)(struct libqu_graphics_params const *params);
-    void (*terminate)(void);
+    return true;
+}
+
+static void graphics_null_terminate(void)
+{
+}
+
+//------------------------------------------------------------------------------
+
+struct libqu_graphics_impl const libqu_graphics_null_impl = {
+    graphics_null_check_if_available,
+    graphics_null_initialize,
+    graphics_null_terminate,
 };
-
-//------------------------------------------------------------------------------
-
-extern struct libqu_graphics_impl const libqu_graphics_null_impl;
-
-//------------------------------------------------------------------------------
-
-void libqu_graphics_initialize(struct libqu_graphics_params const *params);
-void libqu_graphics_terminate(void);
-void libqu_graphics_flush(void);
-
-//------------------------------------------------------------------------------
-
-#endif // LIBQU_GRAPHICS_H_INC
 
