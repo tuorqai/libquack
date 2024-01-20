@@ -18,42 +18,41 @@
 // 3. This notice may not be removed or altered from any source distribution.
 //------------------------------------------------------------------------------
 
-#ifndef LIBQU_GRAPHICS_H_INC
-#define LIBQU_GRAPHICS_H_INC
-
-//------------------------------------------------------------------------------
-
-#include "libqu/libqu.h"
-
-//------------------------------------------------------------------------------
-
-struct libqu_graphics_params
-{
-    int unused;
-};
-
-struct libqu_graphics_impl
-{
-    bool (*check_if_available)(void);
-    bool (*initialize)(struct libqu_graphics_params const *params);
-    void (*terminate)(void);
-};
-
-//------------------------------------------------------------------------------
-
-extern struct libqu_graphics_impl const libqu_graphics_null_impl;
-
 #ifdef QU_USE_OPENGL
-extern struct libqu_graphics_impl const libqu_graphics_gl3_impl;
-#endif
 
 //------------------------------------------------------------------------------
 
-void libqu_graphics_initialize(struct libqu_graphics_params const *params);
-void libqu_graphics_terminate(void);
-void libqu_graphics_flush(void);
+#include "graphics.h"
+#include "log.h"
 
 //------------------------------------------------------------------------------
 
-#endif // LIBQU_GRAPHICS_H_INC
+static bool graphics_gl3_check_if_available(void)
+{
+    return true;
+}
+
+static bool graphics_gl3_initialize(struct libqu_graphics_params const *params)
+{
+    LIBQU_LOGI("Initialized.\n");
+
+    return true;
+}
+
+static void graphics_gl3_terminate(void)
+{
+    LIBQU_LOGI("Terminated.\n");
+}
+
+//------------------------------------------------------------------------------
+
+struct libqu_graphics_impl const libqu_graphics_gl3_impl = {
+    graphics_gl3_check_if_available,
+    graphics_gl3_initialize,
+    graphics_gl3_terminate,
+};
+
+//------------------------------------------------------------------------------
+
+#endif // QU_USE_OPENGL
 

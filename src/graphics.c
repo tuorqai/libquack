@@ -25,6 +25,10 @@
 //------------------------------------------------------------------------------
 
 static struct libqu_graphics_impl const *impl_list[] = {
+#ifdef QU_USE_OPENGL
+    &libqu_graphics_gl3_impl,
+#endif
+
     &libqu_graphics_null_impl,
 };
 
