@@ -19,6 +19,7 @@
 //------------------------------------------------------------------------------
 
 #include "graphics.h"
+#include "log.h"
 
 //------------------------------------------------------------------------------
 
@@ -29,11 +30,14 @@ static bool graphics_null_check_if_available(void)
 
 static bool graphics_null_initialize(struct libqu_graphics_params const *params)
 {
+    LIBQU_LOGI("Initialized.\n");
+
     return true;
 }
 
 static void graphics_null_terminate(void)
 {
+    LIBQU_LOGI("Terminated.\n");
 }
 
 //------------------------------------------------------------------------------
