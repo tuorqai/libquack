@@ -18,36 +18,26 @@
 // 3. This notice may not be removed or altered from any source distribution.
 //------------------------------------------------------------------------------
 
-#include "core.h"
+#ifndef LIBQU_CORE_H_INC
+#define LIBQU_CORE_H_INC
 
 //------------------------------------------------------------------------------
 
-static struct
-{
-    int refcount;
-
-    struct {
-        struct libqu_core_params core;
-    } params;
-} priv;
+#include "libqu/libqu.h"
 
 //------------------------------------------------------------------------------
 
-void qu_initialize(void)
+struct libqu_core_params
 {
-    if (++priv.refcount != 1) {
-        return;
-    }
+    int unused;
+};
 
-    libqu_core_initialize(&priv.params.core);
-}
+//------------------------------------------------------------------------------
 
-void qu_terminate(void)
-{
-    if (--priv.refcount != 0) {
-        return;
-    }
+void libqu_core_initialize(struct libqu_core_params const *params);
+void libqu_core_terminate(void);
 
-    libqu_core_terminate();
-}
+//------------------------------------------------------------------------------
+
+#endif // LIBQU_CORE_H_INC
 

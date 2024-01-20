@@ -22,32 +22,11 @@
 
 //------------------------------------------------------------------------------
 
-static struct
+void libqu_core_initialize(struct libqu_core_params const *params)
 {
-    int refcount;
-
-    struct {
-        struct libqu_core_params core;
-    } params;
-} priv;
-
-//------------------------------------------------------------------------------
-
-void qu_initialize(void)
-{
-    if (++priv.refcount != 1) {
-        return;
-    }
-
-    libqu_core_initialize(&priv.params.core);
 }
 
-void qu_terminate(void)
+void libqu_core_terminate(void)
 {
-    if (--priv.refcount != 0) {
-        return;
-    }
-
-    libqu_core_terminate();
 }
 
