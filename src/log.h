@@ -18,65 +18,47 @@
 // 3. This notice may not be removed or altered from any source distribution.
 //------------------------------------------------------------------------------
 
-#include <stdlib.h>
-#include "core.h"
-#include "log.h"
+#ifndef LIBQU_LOG_H_INC
+#define LIBQU_LOG_H_INC
 
 //------------------------------------------------------------------------------
 
-static struct libqu_core_impl const *impl_list[] = {
-    &libqu_core_null_impl,
+enum libqu_log_level
+{
+    LIBQU_LOG_LEVEL_DEBUG,
+    LIBQU_LOG_LEVEL_INFO,
+    LIBQU_LOG_LEVEL_WARNING,
+    LIBQU_LOG_LEVEL_ERROR,
 };
 
 //------------------------------------------------------------------------------
 
-static struct
-{
-    struct libqu_core_impl const *impl;
-} priv;
+void libqu_log_puts(enum libqu_log_level level, char const *tag, char const *str);
+void libqu_log_printf(enum libqu_log_level level, char const *tag, char const *fmt, ...);
 
 //------------------------------------------------------------------------------
 
-static struct libqu_core_impl const *choose_impl(void)
-{
-    int count = sizeof(impl_list) / sizeof(impl_list[0]);
+#ifndef LIBQU_TAG
+#define LIBQU_TAG "?"__FILE__
+#endif
 
-    for (int i = 0; i < count; i++) {
-        if (impl_list[i]->check_if_available()) {
-            return impl_list[i];
-        }
-    }
+#ifdef NDEBUG
+#define LIBQU_LOGD(...)
+#else
+#define LIBQU_LOGD(...) \
+    libqu_log_printf(LIBQU_LOG_LEVEL_DEBUG, LIBQU_TAG, __VA_ARGS__)
+#endif
 
-    abort();
-}
+#define LIBQU_LOGI(...) \
+    libqu_log_printf(LIBQU_LOG_LEVEL_INFO, LIBQU_TAG, __VA_ARGS__)
+
+#define LIBQU_LOGW(...) \
+    libqu_log_printf(LIBQU_LOG_LEVEL_WARNING, LIBQU_TAG, __VA_ARGS__)
+
+#define LIBQU_LOGE(...) \
+    libqu_log_printf(LIBQU_LOG_LEVEL_ERROR, LIBQU_TAG, __VA_ARGS__)
 
 //------------------------------------------------------------------------------
 
-void libqu_core_initialize(struct libqu_core_params const *params)
-{
-    priv.impl = choose_impl();
-
-    if (!priv.impl->initialize(params)) {
-        LIBQU_LOGE("Failed to initialize libqu::core implementation.\n");
-        abort();
-    }
-
-    LIBQU_LOGI("Initialized.\n");
-}
-
-void libqu_core_terminate(void)
-{
-    priv.impl->terminate();
-
-    LIBQU_LOGI("Terminated.\n");
-}
-
-bool libqu_core_process(void)
-{
-    return false;
-}
-
-void libqu_core_swap(void)
-{
-}
+#endif // LIBQU_LOG_H_INC
 
