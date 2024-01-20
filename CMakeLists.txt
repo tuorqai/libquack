@@ -6,6 +6,7 @@ project(libquack)
 
 option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 option(QU_BUILD_EXAMPLES "Build examples" ON)
+option(QU_USE_X11 "Use X11" OFF)
 
 #-------------------------------------------------------------------------------
 
@@ -17,6 +18,7 @@ add_library(libquack
     src/base.c
     src/core.c
     src/core_null.c
+    src/core_x11.c
     src/graphics.c
     src/graphics_null.c
     src/log.c)
@@ -46,6 +48,13 @@ if(MSVC)
     target_compile_options(libquack PRIVATE /W4)
 else()
     target_compile_options(libquack PRIVATE -Wall -Wextra)
+endif()
+
+if(QU_USE_X11)
+    find_package(X11 REQUIRED)
+    target_compile_definitions(libquack PRIVATE QU_USE_X11)
+    target_include_directories(libquack PRIVATE ${X11_INCLUDE_DIR})
+    target_link_libraries(libquack PRIVATE ${X11_LIBRARIES})
 endif()
 
 #-------------------------------------------------------------------------------

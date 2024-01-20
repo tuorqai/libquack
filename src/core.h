@@ -37,11 +37,17 @@ struct libqu_core_impl
     bool (*check_if_available)(void);
     bool (*initialize)(struct libqu_core_params const *params);
     void (*terminate)(void);
+    bool (*process)(void);
+    void (*swap)(void);
 };
 
 //------------------------------------------------------------------------------
 
 extern struct libqu_core_impl const libqu_core_null_impl;
+
+#ifdef QU_USE_X11
+extern struct libqu_core_impl const libqu_core_x11_impl;
+#endif
 
 //------------------------------------------------------------------------------
 

@@ -25,6 +25,10 @@
 //------------------------------------------------------------------------------
 
 static struct libqu_core_impl const *impl_list[] = {
+#ifdef QU_USE_X11
+    &libqu_core_x11_impl,
+#endif
+
     &libqu_core_null_impl,
 };
 
@@ -73,10 +77,11 @@ void libqu_core_terminate(void)
 
 bool libqu_core_process(void)
 {
-    return false;
+    return priv.impl->process();
 }
 
 void libqu_core_swap(void)
 {
+    priv.impl->swap();
 }
 
