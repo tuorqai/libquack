@@ -31,7 +31,42 @@
 static struct
 {
     Display *dpy;
+    int screen;
+    Window root;
+    long event_mask;
+    Window window;
 } priv;
+
+//------------------------------------------------------------------------------
+
+static bool create_window(void)
+{
+    priv.event_mask = ExposureMask;
+
+    unsigned long attrmask = CWEventMask;
+
+    XSetWindowAttributes attr = {
+        .event_mask = priv.event_mask,
+    };
+
+    priv.window = XCreateWindow(
+        priv.dpy,       // display
+        priv.root,      // parent
+        0, 0,           // position
+        640, 480,       // size
+        0,              // border width
+        CopyFromParent, // depth
+        InputOutput,    // class
+        CopyFromParent, // visual
+        attrmask, &attr
+    );
+
+    if (!priv.window) {
+        return false;
+    }
+
+    XMapWindow(priv.dpy, priv.window);
+}
 
 //------------------------------------------------------------------------------
 
@@ -44,12 +79,24 @@ static bool core_x11_check_if_available(void)
 
 static bool core_x11_initialize(struct libqu_core_params const *params)
 {
+    if (!priv.dpy) {
+        return false;
+    }
+
+    priv.screen = DefaultScreen(priv.dpy);
+    priv.root = DefaultRootWindow(priv.dpy);
+
+    if (!create_window()) {
+        return false;
+    }
+
     return true;
 }
 
 static void core_x11_terminate(void)
 {
     if (priv.dpy) {
+        XDestroyWindow(priv.dpy, priv.window);
         XCloseDisplay(priv.dpy);
     }
 
