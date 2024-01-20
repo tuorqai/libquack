@@ -21,7 +21,8 @@ add_library(libquack
     src/core_x11.c
     src/graphics.c
     src/graphics_null.c
-    src/log.c)
+    src/log.c
+    src/platform_posix.c)
 
 add_library(libquack::libquack ALIAS libquack)
 
