@@ -59,10 +59,25 @@ extern "C" {
 
 //------------------------------------------------------------------------------
 
+#define QU_COLOR(r, g, b, a)        ((r) << 24 | (g) << 16 | (b) << 8 | (a))
+
+#define QU_EXTRACT_RED(color)       (((color) >> 24) & 255)
+#define QU_EXTRACT_GREEN(color)     (((color) >> 16) & 255)
+#define QU_EXTRACT_BLUE(color)      (((color) >> 8) & 255)
+#define QU_EXTRACT_ALPHA(color)     ((color) & 255)
+
+//------------------------------------------------------------------------------
+
+typedef uint32_t qu_color;
+
+//------------------------------------------------------------------------------
+
 QU_API void QU_CALL qu_initialize(void);
 QU_API void QU_CALL qu_terminate(void);
 QU_API bool QU_CALL qu_process(void);
 QU_API void QU_CALL qu_present(void);
+
+QU_API void QU_CALL qu_clear(qu_color color);
 
 //------------------------------------------------------------------------------
 

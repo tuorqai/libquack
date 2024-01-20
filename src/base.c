@@ -72,3 +72,8 @@ void qu_present(void)
     libqu_core_swap();
 }
 
+void qu_clear(qu_color color)
+{
+    libqu_graphics_clear(color);
+}
+

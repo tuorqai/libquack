@@ -79,3 +79,8 @@ void libqu_graphics_flush(void)
 {
 }
 
+void libqu_graphics_clear(qu_color color)
+{
+    priv.impl->clear(color);
+}
+

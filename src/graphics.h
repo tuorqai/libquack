@@ -37,6 +37,7 @@ struct libqu_graphics_impl
     bool (*check_if_available)(void);
     bool (*initialize)(struct libqu_graphics_params const *params);
     void (*terminate)(void);
+    void (*clear)(qu_color color);
 };
 
 //------------------------------------------------------------------------------
@@ -52,6 +53,7 @@ extern struct libqu_graphics_impl const libqu_graphics_gl3_impl;
 void libqu_graphics_initialize(struct libqu_graphics_params const *params);
 void libqu_graphics_terminate(void);
 void libqu_graphics_flush(void);
+void libqu_graphics_clear(qu_color color);
 
 //------------------------------------------------------------------------------
 
