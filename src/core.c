@@ -18,16 +18,51 @@
 // 3. This notice may not be removed or altered from any source distribution.
 //------------------------------------------------------------------------------
 
+#include <stdlib.h>
 #include "core.h"
+
+//------------------------------------------------------------------------------
+
+static struct libqu_core_impl const *impl_list[] = {
+    &libqu_core_null_impl,
+};
+
+//------------------------------------------------------------------------------
+
+static struct
+{
+    struct libqu_core_impl const *impl;
+} priv;
+
+//------------------------------------------------------------------------------
+
+static struct libqu_core_impl const *choose_impl(void)
+{
+    int count = sizeof(impl_list) / sizeof(impl_list[0]);
+
+    for (int i = 0; i < count; i++) {
+        if (impl_list[i]->check_if_available()) {
+            return impl_list[i];
+        }
+    }
+
+    abort();
+}
 
 //------------------------------------------------------------------------------
 
 void libqu_core_initialize(struct libqu_core_params const *params)
 {
+    priv.impl = choose_impl();
+
+    if (!priv.impl->initialize(params)) {
+        abort();
+    }
 }
 
 void libqu_core_terminate(void)
 {
+    priv.impl->terminate();
 }
 
 bool libqu_core_process(void)

@@ -18,39 +18,29 @@
 // 3. This notice may not be removed or altered from any source distribution.
 //------------------------------------------------------------------------------
 
-#ifndef LIBQU_CORE_H_INC
-#define LIBQU_CORE_H_INC
+#include "core.h"
 
 //------------------------------------------------------------------------------
 
-#include "libqu/libqu.h"
-
-//------------------------------------------------------------------------------
-
-struct libqu_core_params
+static bool core_null_check_if_available(void)
 {
-    int unused;
-};
+    return true;
+}
 
-struct libqu_core_impl
+static bool core_null_initialize(struct libqu_core_params const *params)
 {
-    bool (*check_if_available)(void);
-    bool (*initialize)(struct libqu_core_params const *params);
-    void (*terminate)(void);
+    return true;
+}
+
+static void core_null_terminate(void)
+{
+}
+
+//------------------------------------------------------------------------------
+
+struct libqu_core_impl const libqu_core_null_impl = {
+    core_null_check_if_available,
+    core_null_initialize,
+    core_null_terminate,
 };
-
-//------------------------------------------------------------------------------
-
-extern struct libqu_core_impl const libqu_core_null_impl;
-
-//------------------------------------------------------------------------------
-
-void libqu_core_initialize(struct libqu_core_params const *params);
-void libqu_core_terminate(void);
-bool libqu_core_process(void);
-void libqu_core_swap(void);
-
-//------------------------------------------------------------------------------
-
-#endif // LIBQU_CORE_H_INC
 
