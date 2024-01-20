@@ -18,59 +18,57 @@
 // 3. This notice may not be removed or altered from any source distribution.
 //------------------------------------------------------------------------------
 
-#ifndef LIBQU_H_INC
-#define LIBQU_H_INC
+#ifndef LIBQU_PLATFORM_H_INC
+#define LIBQU_PLATFORM_H_INC
 
 //------------------------------------------------------------------------------
 
-#include <stdbool.h>
-#include <stdint.h>
+#include "libqu/libqu.h"
 
 //------------------------------------------------------------------------------
 
-#ifdef QU_SHARED
-    #ifdef _WIN32
-        #ifdef QU_BUILD
-            #define QU_API __declspec(dllexport)
-        #else
-            #define QU_API __declspec(dllimport)
-        #endif
-        #define QU_CALL __cdecl
-    #else
-        #ifdef __GNUC__
-            #define QU_API __attribute__((visibility("default")))
-        #endif
-    #endif
-#endif
+typedef struct pl_thread pl_thread;
+typedef struct pl_mutex pl_mutex;
 
-#ifndef QU_API
-    #define QU_API
-#endif
-
-#ifndef QU_CALL
-    #define QU_CALL
-#endif
+typedef struct pl_date_time
+{
+    int year;
+    int month;
+    int day;
+    int weekday;
+    int hours;
+    int minutes;
+    int seconds;
+    int milliseconds;
+} pl_date_time;
 
 //------------------------------------------------------------------------------
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
+void *pl_malloc(size_t size);
+void *pl_calloc(size_t count, size_t size);
+void *pl_realloc(void *data, size_t size);
+void pl_free(void *data);
+
+uint32_t pl_get_ticks_mediump(void);
+uint64_t pl_get_ticks_highp(void);
+
+pl_thread *pl_create_thread(char const *name, void *(*func)(void *), void *arg);
+void pl_detach_thread(pl_thread *thread);
+void *pl_wait_thread(pl_thread *thread);
+
+pl_mutex *pl_create_mutex(void);
+void pl_destroy_mutex(pl_mutex *mutex);
+void pl_lock_mutex(pl_mutex *mutex);
+void pl_unlock_mutex(pl_mutex *mutex);
+
+void pl_sleep(uint32_t milliseconds);
+
+void *pl_open_dll(char const *path);
+void pl_close_dll(void *dll);
+void *pl_get_dll_proc(void *dll, char const *name);
+void pl_get_date_time(pl_date_time *date_time);
 
 //------------------------------------------------------------------------------
 
-QU_API void QU_CALL qu_initialize(void);
-QU_API void QU_CALL qu_terminate(void);
-QU_API bool QU_CALL qu_process(void);
-QU_API void QU_CALL qu_present(void);
-
-//------------------------------------------------------------------------------
-
-#if defined(__cplusplus)
-} // extern "C"
-#endif
-
-//------------------------------------------------------------------------------
-
-#endif // LIBQU_H_INC
+#endif // LIBQU_PLATFORM_H_INC
 
