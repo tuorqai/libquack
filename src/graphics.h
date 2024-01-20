@@ -18,40 +18,26 @@
 // 3. This notice may not be removed or altered from any source distribution.
 //------------------------------------------------------------------------------
 
-#include "core.h"
-#include "graphics.h"
+#ifndef LIBQU_GRAPHICS_H_INC
+#define LIBQU_GRAPHICS_H_INC
 
 //------------------------------------------------------------------------------
 
-static struct
-{
-    int refcount;
-
-    struct {
-        struct libqu_core_params core;
-        struct libqu_graphics_params graphics;
-    } params;
-} priv;
+#include "libqu/libqu.h"
 
 //------------------------------------------------------------------------------
 
-void qu_initialize(void)
+struct libqu_graphics_params
 {
-    if (++priv.refcount != 1) {
-        return;
-    }
+    int unused;
+};
 
-    libqu_core_initialize(&priv.params.core);
-    libqu_graphics_initialize(&priv.params.graphics);
-}
+//------------------------------------------------------------------------------
 
-void qu_terminate(void)
-{
-    if (--priv.refcount != 0) {
-        return;
-    }
+void libqu_graphics_initialize(struct libqu_graphics_params const *params);
+void libqu_graphics_terminate(void);
 
-    libqu_graphics_terminate();
-    libqu_core_terminate();
-}
+//------------------------------------------------------------------------------
+
+#endif // LIBQU_GRAPHICS_H_INC
 

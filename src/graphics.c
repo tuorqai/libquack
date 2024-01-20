@@ -18,40 +18,15 @@
 // 3. This notice may not be removed or altered from any source distribution.
 //------------------------------------------------------------------------------
 
-#include "core.h"
 #include "graphics.h"
 
 //------------------------------------------------------------------------------
 
-static struct
+void libqu_graphics_initialize(struct libqu_graphics_params const *params)
 {
-    int refcount;
-
-    struct {
-        struct libqu_core_params core;
-        struct libqu_graphics_params graphics;
-    } params;
-} priv;
-
-//------------------------------------------------------------------------------
-
-void qu_initialize(void)
-{
-    if (++priv.refcount != 1) {
-        return;
-    }
-
-    libqu_core_initialize(&priv.params.core);
-    libqu_graphics_initialize(&priv.params.graphics);
 }
 
-void qu_terminate(void)
+void libqu_graphics_terminate(void)
 {
-    if (--priv.refcount != 0) {
-        return;
-    }
-
-    libqu_graphics_terminate();
-    libqu_core_terminate();
 }
 
