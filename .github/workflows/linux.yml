@@ -1,0 +1,37 @@
+name: Linux
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        config:
+        - { name: static, flags: -DBUILD_SHARED_LIBS=0 }
+        - { name: shared, flags: -DBUILD_SHARED_LIBS=1 }
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install ninja-build
+
+    - name: Configure
+      run: cmake -B build -G "Ninja Multi-Config" ${{ matrix.config.flags }}
+
+    - name: Build (Debug)
+      run: cmake --build build --config Debug
+
+    - name: Build (Release)
+      run: cmake --build build --config Release
+
