@@ -18,7 +18,8 @@ add_library(libquack
     src/core.c
     src/core_null.c
     src/graphics.c
-    src/graphics_null.c)
+    src/graphics_null.c
+    src/log.c)
 
 add_library(libquack::libquack ALIAS libquack)
 
