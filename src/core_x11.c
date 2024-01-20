@@ -204,6 +204,8 @@ static bool create_window(XVisualInfo *vi)
     XSetWMProtocols(priv.dpy, priv.window, protocols, 1);
 
     XMapWindow(priv.dpy, priv.window);
+
+    return true;
 }
 
 static void create_modern_context(GLXFBConfig fbc)
