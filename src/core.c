@@ -20,6 +20,7 @@
 
 #include <stdlib.h>
 #include "core.h"
+#include "log.h"
 
 //------------------------------------------------------------------------------
 
@@ -60,13 +61,18 @@ void libqu_core_initialize(struct libqu_core_params const *params)
     priv.impl = choose_impl();
 
     if (!priv.impl->initialize(params)) {
+        LIBQU_LOGE("Failed to initialize libqu::core implementation.\n");
         abort();
     }
+
+    LIBQU_LOGI("Initialized.\n");
 }
 
 void libqu_core_terminate(void)
 {
     priv.impl->terminate();
+
+    LIBQU_LOGI("Terminated.\n");
 }
 
 bool libqu_core_process(void)

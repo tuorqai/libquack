@@ -20,6 +20,7 @@
 
 #include "core.h"
 #include "graphics.h"
+#include "log.h"
 
 //------------------------------------------------------------------------------
 
@@ -38,11 +39,14 @@ static struct
 void qu_initialize(void)
 {
     if (++priv.refcount != 1) {
+        LIBQU_LOGW("Already initialized.\n");
         return;
     }
 
     libqu_core_initialize(&priv.params.core);
     libqu_graphics_initialize(&priv.params.graphics);
+
+    LIBQU_LOGI("Initialized.\n");
 }
 
 void qu_terminate(void)
@@ -53,6 +57,8 @@ void qu_terminate(void)
 
     libqu_graphics_terminate();
     libqu_core_terminate();
+
+    LIBQU_LOGI("Terminated.\n");
 }
 
 bool qu_process(void)

@@ -19,6 +19,7 @@
 //------------------------------------------------------------------------------
 
 #include "core.h"
+#include "log.h"
 
 //------------------------------------------------------------------------------
 
@@ -29,11 +30,14 @@ static bool core_null_check_if_available(void)
 
 static bool core_null_initialize(struct libqu_core_params const *params)
 {
+    LIBQU_LOGI("Initialized.\n");
+
     return true;
 }
 
 static void core_null_terminate(void)
 {
+    LIBQU_LOGI("Terminated.\n");
 }
 
 static bool core_null_process(void)

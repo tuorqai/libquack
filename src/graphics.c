@@ -20,6 +20,7 @@
 
 #include <stdlib.h>
 #include "graphics.h"
+#include "log.h"
 
 //------------------------------------------------------------------------------
 
@@ -56,13 +57,18 @@ void libqu_graphics_initialize(struct libqu_graphics_params const *params)
     priv.impl = choose_impl();
 
     if (!priv.impl->initialize(params)) {
+        LIBQU_LOGE("Failed to initialize libqu::graphics implementation.\n");
         abort();
     }
+
+    LIBQU_LOGI("Initialized.\n");
 }
 
 void libqu_graphics_terminate(void)
 {
     priv.impl->terminate();
+
+    LIBQU_LOGI("Terminated.\n");
 }
 
 void libqu_graphics_flush(void)
