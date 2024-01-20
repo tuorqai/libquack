@@ -37,6 +37,8 @@ struct libqu_core_impl
     bool (*check_if_available)(void);
     bool (*initialize)(struct libqu_core_params const *params);
     void (*terminate)(void);
+    bool (*process)(void);
+    void (*swap)(void);
 };
 
 //------------------------------------------------------------------------------

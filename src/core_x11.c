@@ -28,6 +28,13 @@
 
 //------------------------------------------------------------------------------
 
+enum
+{
+    _WM_PROTOCOLS,
+    _WM_DELETE_WINDOW,
+    TOTAL_ATOMS,
+};
+
 static struct
 {
     Display *dpy;
@@ -35,9 +42,20 @@ static struct
     Window root;
     long event_mask;
     Window window;
+    Atom atoms[TOTAL_ATOMS];
 } priv;
 
 //------------------------------------------------------------------------------
+
+static void store_atoms(void)
+{
+    char *names[TOTAL_ATOMS] = {
+        "WM_PROTOCOLS",
+        "WM_DELETE_WINDOW",
+    };
+
+    XInternAtoms(priv.dpy, names, TOTAL_ATOMS, False, priv.atoms);
+}
 
 static bool create_window(void)
 {
@@ -65,7 +83,22 @@ static bool create_window(void)
         return false;
     }
 
+    Atom protocols[] = { priv.atoms[_WM_DELETE_WINDOW] };
+    XSetWMProtocols(priv.dpy, priv.window, protocols, 1);
+
     XMapWindow(priv.dpy, priv.window);
+}
+
+static bool handle_event(XEvent *ev)
+{
+    switch (ev->type) {
+    default:
+        return false;
+    case Expose:
+        break;
+    }
+
+    return true;
 }
 
 //------------------------------------------------------------------------------
@@ -86,6 +119,8 @@ static bool core_x11_initialize(struct libqu_core_params const *params)
     priv.screen = DefaultScreen(priv.dpy);
     priv.root = DefaultRootWindow(priv.dpy);
 
+    store_atoms();
+
     if (!create_window()) {
         return false;
     }
@@ -103,12 +138,35 @@ static void core_x11_terminate(void)
     memset(&priv, 0, sizeof(priv));
 }
 
+static bool core_x11_process(void)
+{
+    XEvent event;
+
+    while (XCheckTypedWindowEvent(priv.dpy, priv.window, ClientMessage, &event)) {
+        if (event.xclient.data.l[0] == (long) priv.atoms[_WM_DELETE_WINDOW]) {
+            return false;
+        }
+    }
+
+    while (XCheckWindowEvent(priv.dpy, priv.window, priv.event_mask, &event)) {
+        handle_event(&event);
+    }
+
+    return true;
+}
+
+static void core_x11_swap(void)
+{
+}
+
 //------------------------------------------------------------------------------
 
 struct libqu_core_impl const libqu_core_x11_impl = {
     core_x11_check_if_available,
     core_x11_initialize,
     core_x11_terminate,
+    core_x11_process,
+    core_x11_swap,
 };
 
 //------------------------------------------------------------------------------

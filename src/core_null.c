@@ -36,11 +36,22 @@ static void core_null_terminate(void)
 {
 }
 
+static bool core_null_process(void)
+{
+    return false;
+}
+
+static void core_null_swap(void)
+{
+}
+
 //------------------------------------------------------------------------------
 
 struct libqu_core_impl const libqu_core_null_impl = {
     core_null_check_if_available,
     core_null_initialize,
     core_null_terminate,
+    core_null_process,
+    core_null_swap,
 };
 
