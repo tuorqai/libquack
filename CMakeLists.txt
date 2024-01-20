@@ -5,6 +5,7 @@ project(libquack)
 #-------------------------------------------------------------------------------
 
 option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
+option(QU_BUILD_EXAMPLES "Build examples" ON)
 
 #-------------------------------------------------------------------------------
 
@@ -44,5 +45,11 @@ if(MSVC)
     target_compile_options(libquack PRIVATE /W4)
 else()
     target_compile_options(libquack PRIVATE -Wall -Wextra)
+endif()
+
+#-------------------------------------------------------------------------------
+
+if(QU_BUILD_EXAMPLES)
+    add_subdirectory(examples)
 endif()
 
