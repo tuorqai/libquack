@@ -24,10 +24,10 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install ninja-build
+        sudo apt-get install ninja-build libgl-dev xorg-dev
 
     - name: Configure
-      run: cmake -B build -G "Ninja Multi-Config" ${{ matrix.config.flags }}
+      run: cmake -B build -G "Ninja Multi-Config" -DQU_USE_OPENGL=1 -DQU_USE_X11=1 ${{ matrix.config.flags }}
 
     - name: Build (Debug)
       run: cmake --build build --config Debug
