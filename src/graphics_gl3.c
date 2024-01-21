@@ -25,6 +25,7 @@
 #include <GL/gl.h>
 #include <GL/glext.h>
 #include <stb_ds.h>
+#include "algebra.h"
 #include "core.h"
 #include "graphics.h"
 #include "log.h"
@@ -336,7 +337,7 @@ static bool load_programs(void)
             priv.ext.glGetUniformLocation(priv.programs[i].id, "u_projection");
 
         priv.programs[i].uniloc[UNIFORM_MODELVIEW] =
-            priv.ext.glGetUniformLocation(priv.programs[i].id, "u_modelview");
+            priv.ext.glGetUniformLocation(priv.programs[i].id, "u_modelView");
     }
 
     return true;
@@ -389,6 +390,24 @@ static bool graphics_gl3_initialize(struct libqu_graphics_params const *params)
     _GL(priv.ext.glEnableVertexAttribArray(0));
     _GL(priv.ext.glEnableVertexAttribArray(1));
     _GL(priv.ext.glEnableVertexAttribArray(2));
+
+    _GL(glViewport(0, 0, 640, 480));
+
+    mat4_t projection;
+    mat4_ortho(&projection, 0.f, 640.f, 480.f, 0.f);
+
+    mat4_t modelview;
+    mat4_identity(&modelview);
+
+    _GL(priv.ext.glUniformMatrix4fv(
+        priv.programs[0].uniloc[UNIFORM_PROJECTION],
+        1, GL_FALSE, projection.m
+    ));
+
+    _GL(priv.ext.glUniformMatrix4fv(
+        priv.programs[0].uniloc[UNIFORM_MODELVIEW],
+        1, GL_FALSE, modelview.m
+    ));
 
     LIBQU_LOGI("Initialized.\n");
 
