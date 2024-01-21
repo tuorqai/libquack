@@ -54,7 +54,8 @@ if(MSVC)
     target_compile_definitions(libquack PRIVATE _CRT_SECURE_NO_WARNINGS)
     target_compile_options(libquack PRIVATE /W4)
 else()
-    target_compile_options(libquack PRIVATE -Wall -Wextra)
+    target_compile_options(libquack PRIVATE -Wall -Wextra
+        -Wno-type-limits -Wno-unused-parameter)
 endif()
 
 find_library(MATH_LIBRARY m)
