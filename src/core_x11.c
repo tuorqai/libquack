@@ -62,6 +62,7 @@ static struct
         PFNGLXCREATECONTEXTATTRIBSARBPROC glXCreateContextAttribsARB;
         PFNGLXSWAPINTERVALEXTPROC glXSwapIntervalEXT;
 
+        int version;
         GLXContext context;
         GLXDrawable surface;
     } glx;
@@ -208,18 +209,20 @@ static bool create_window(XVisualInfo *vi)
     return true;
 }
 
-static void create_modern_glx_context(GLXFBConfig fbc)
+static void create_modern_glx_context(GLXFBConfig fbc, int version)
 {
     int attribs[] = {
-        GLX_CONTEXT_MAJOR_VERSION_ARB,  3,
-        GLX_CONTEXT_MINOR_VERSION_ARB,  3,
+        GLX_CONTEXT_MAJOR_VERSION_ARB,  (version / 100),
+        GLX_CONTEXT_MINOR_VERSION_ARB,  (version % 100) / 10,
         None,                           None,
         None,
     };
 
     if (priv.glx.extensions & _ARB_create_context_profile) {
-        attribs[4] = GLX_CONTEXT_PROFILE_MASK_ARB;
-        attribs[5] = GLX_CONTEXT_CORE_PROFILE_BIT_ARB;
+        if (version >= 300) {
+            attribs[4] = GLX_CONTEXT_PROFILE_MASK_ARB;
+            attribs[5] = GLX_CONTEXT_CORE_PROFILE_BIT_ARB;
+        }
     }
 
     priv.glx.context = priv.glx.glXCreateContextAttribsARB(
@@ -227,23 +230,35 @@ static void create_modern_glx_context(GLXFBConfig fbc)
     );
 }
 
-static void create_legacy_glx_context(XVisualInfo *vi)
-{
-    priv.glx.context = glXCreateContext(priv.dpy, vi, NULL, True);
-}
-
 static bool create_glx_context(GLXFBConfig fbc, XVisualInfo *vi)
 {
     if (priv.glx.extensions & _ARB_create_context) {
-        create_modern_glx_context(fbc);
-    } else {
-        create_legacy_glx_context(vi);
+        int versions[] = {
+            460, 450, 440, 430, 420, 410, 400,
+            330, 320, 310, 300,
+            210,
+        };
+
+        for (size_t i = 0; i < sizeof(versions) / sizeof(versions[0]); i++) {
+            create_modern_glx_context(fbc, versions[i]);
+
+            if (priv.glx.context) {
+                priv.glx.version = versions[i];
+                break;
+            }
+        }
     }
 
     XFree(vi);
 
     if (!priv.glx.context) {
-        return false;
+        priv.glx.context = glXCreateContext(priv.dpy, vi, NULL, True);
+
+        if (!priv.glx.context) {
+            return false;
+        }
+
+        priv.glx.version = 120;
     }
 
     priv.glx.surface = glXCreateWindow(priv.dpy, fbc, priv.window, NULL);
@@ -339,6 +354,11 @@ static void core_x11_swap(void)
     glXSwapBuffers(priv.dpy, priv.glx.surface);
 }
 
+static int core_glx_get_version(void)
+{
+    return priv.glx.version;
+}
+
 static void *core_glx_get_proc_address(char const *name)
 {
     return glXGetProcAddress((GLubyte const *) name);
@@ -352,6 +372,7 @@ struct libqu_core_impl const libqu_core_x11_impl = {
     core_x11_terminate,
     core_x11_process,
     core_x11_swap,
+    core_glx_get_version,
     core_glx_get_proc_address,
 };
 

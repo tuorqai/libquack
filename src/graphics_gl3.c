@@ -363,7 +363,7 @@ static void push_vertex(size_t index, struct libqu_vertex const *vertex)
 
 static bool graphics_gl3_check_if_available(void)
 {
-    return true;
+    return libqu_gl_get_version() >= 330;
 }
 
 static bool graphics_gl3_initialize(struct libqu_graphics_params const *params)

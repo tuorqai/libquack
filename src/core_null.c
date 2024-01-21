@@ -49,6 +49,11 @@ static void core_null_swap(void)
 {
 }
 
+static int core_null_gl_get_version(void)
+{
+    return -1;
+}
+
 static void *core_null_gl_get_proc_address(char const *name)
 {
     return NULL;
@@ -62,6 +67,7 @@ struct libqu_core_impl const libqu_core_null_impl = {
     core_null_terminate,
     core_null_process,
     core_null_swap,
+    core_null_gl_get_version,
     core_null_gl_get_proc_address,
 };
 
