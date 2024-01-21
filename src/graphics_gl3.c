@@ -391,10 +391,10 @@ static bool graphics_gl3_initialize(struct libqu_graphics_params const *params)
     _GL(priv.ext.glEnableVertexAttribArray(1));
     _GL(priv.ext.glEnableVertexAttribArray(2));
 
-    _GL(glViewport(0, 0, 640, 480));
+    _GL(glViewport(0, 0, params->window_size.x, params->window_size.y));
 
     mat4_t projection;
-    mat4_ortho(&projection, 0.f, 640.f, 480.f, 0.f);
+    mat4_ortho(&projection, 0.f, params->window_size.x, params->window_size.y, 0.f);
 
     mat4_t modelview;
     mat4_identity(&modelview);

@@ -36,12 +36,26 @@ static struct
 
 //------------------------------------------------------------------------------
 
+static void sanitize_graphics_params(void)
+{
+    struct libqu_graphics_params *p = &priv.params.graphics;
+
+    if (p->window_size.x == 0 || p->window_size.y == 0) {
+        p->window_size.x = 640;
+        p->window_size.y = 480;
+    }
+}
+
+//------------------------------------------------------------------------------
+
 void qu_initialize(void)
 {
     if (++priv.refcount != 1) {
         LIBQU_LOGW("Already initialized.\n");
         return;
     }
+
+    sanitize_graphics_params();
 
     libqu_core_initialize(&priv.params.core);
     libqu_graphics_initialize(&priv.params.graphics);

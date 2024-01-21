@@ -47,7 +47,7 @@ struct libqu_vertex
 
 struct libqu_graphics_params
 {
-    int unused;
+    qu_vec2i window_size;
 };
 
 struct libqu_graphics_impl

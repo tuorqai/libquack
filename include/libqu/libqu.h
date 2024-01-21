@@ -71,6 +71,12 @@ extern "C" {
 
 typedef uint32_t qu_color;
 
+typedef struct qu_vec2i
+{
+    int x;
+    int y;
+} qu_vec2i;
+
 typedef struct qu_vec2f
 {
     float x;
