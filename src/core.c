@@ -84,3 +84,8 @@ void libqu_core_swap(void)
     priv.impl->swap();
 }
 
+void *libqu_gl_get_proc_address(char const *name)
+{
+    return priv.impl->gl_get_proc_address(name);
+}
+

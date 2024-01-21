@@ -339,6 +339,11 @@ static void core_x11_swap(void)
     glXSwapBuffers(priv.dpy, priv.glx.surface);
 }
 
+static void *core_glx_get_proc_address(char const *name)
+{
+    return glXGetProcAddress((GLubyte const *) name);
+}
+
 //------------------------------------------------------------------------------
 
 struct libqu_core_impl const libqu_core_x11_impl = {
@@ -347,6 +352,7 @@ struct libqu_core_impl const libqu_core_x11_impl = {
     core_x11_terminate,
     core_x11_process,
     core_x11_swap,
+    core_glx_get_proc_address,
 };
 
 //------------------------------------------------------------------------------

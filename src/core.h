@@ -39,6 +39,7 @@ struct libqu_core_impl
     void (*terminate)(void);
     bool (*process)(void);
     void (*swap)(void);
+    void *(*gl_get_proc_address)(char const *name);
 };
 
 //------------------------------------------------------------------------------
@@ -55,6 +56,8 @@ void libqu_core_initialize(struct libqu_core_params const *params);
 void libqu_core_terminate(void);
 bool libqu_core_process(void);
 void libqu_core_swap(void);
+
+void *libqu_gl_get_proc_address(char const *name);
 
 //------------------------------------------------------------------------------
 
