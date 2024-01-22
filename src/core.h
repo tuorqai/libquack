@@ -71,6 +71,8 @@ qu_vec2i libqu_core_get_window_size(void);
 void libqu_core_set_window_title(char const *title);
 void libqu_core_set_window_size(qu_vec2i size);
 
+qu_key_state const *libqu_core_get_keyboard_state(void);
+
 int libqu_gl_get_version(void);
 void *libqu_gl_get_proc_address(char const *name);
 

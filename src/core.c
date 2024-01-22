@@ -39,6 +39,8 @@ static struct
 
     char const *window_title;
     qu_vec2i window_size;
+
+    qu_key_state keyboard[QU_TOTAL_KEYS];
 } priv;
 
 //------------------------------------------------------------------------------
@@ -109,6 +111,11 @@ void libqu_core_set_window_size(qu_vec2i size)
     if (priv.impl->set_window_size(size)) {
         priv.window_size = size;
     }
+}
+
+qu_key_state const *libqu_core_get_keyboard_state(void)
+{
+    return priv.keyboard;
 }
 
 int libqu_gl_get_version(void)

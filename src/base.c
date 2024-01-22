@@ -143,6 +143,31 @@ void qu_set_window_size(int w, int h)
     }
 }
 
+qu_key_state const *qu_get_keyboard_state(void)
+{
+    return libqu_core_get_keyboard_state();
+}
+
+qu_key_state qu_get_key_state(qu_key key)
+{
+    return libqu_core_get_keyboard_state()[key];
+}
+
+bool qu_is_key_idle(qu_key key)
+{
+    return libqu_core_get_keyboard_state()[key] == QU_KEY_STATE_IDLE;
+}
+
+bool qu_is_key_pressed(qu_key key)
+{
+    return libqu_core_get_keyboard_state()[key] == QU_KEY_STATE_PRESSED;
+}
+
+bool qu_is_key_released(qu_key key)
+{
+    return libqu_core_get_keyboard_state()[key] == QU_KEY_STATE_RELEASED;
+}
+
 void qu_clear(qu_color color)
 {
     libqu_graphics_clear(color);
