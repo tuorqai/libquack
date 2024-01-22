@@ -36,6 +36,8 @@ enum
 {
     _WM_PROTOCOLS,
     _WM_DELETE_WINDOW,
+    _UTF8_STRING,
+    __NET_WM_NAME,
     TOTAL_ATOMS,
 };
 
@@ -57,6 +59,9 @@ static struct
     Window window;
     Atom atoms[TOTAL_ATOMS];
 
+    char class_str[256];
+    char title_str[256];
+
     struct {
         unsigned int extensions;
         PFNGLXCREATECONTEXTATTRIBSARBPROC glXCreateContextAttribsARB;
@@ -75,6 +80,8 @@ static void store_atoms(void)
     char *names[TOTAL_ATOMS] = {
         "WM_PROTOCOLS",
         "WM_DELETE_WINDOW",
+        "UTF8_STRING",
+        "_NET_WM_NAME",
     };
 
     XInternAtoms(priv.dpy, names, TOTAL_ATOMS, False, priv.atoms);
@@ -183,6 +190,35 @@ static qu_vec2i calc_center_of_window(qu_vec2i size)
     return pos;
 }
 
+static void store_class(char const *str)
+{
+    strncpy(priv.class_str, str, sizeof(priv.class_str) - 1);
+
+    XClassHint *hint = XAllocClassHint();
+
+    if (!hint) {
+        return;
+    }
+
+    hint->res_class = priv.class_str;
+    XSetClassHint(priv.dpy, priv.window, hint);
+
+    XFree(hint);
+}
+
+static void store_title(char const *str)
+{
+    strncpy(priv.title_str, str, sizeof(priv.title_str) - 1);
+
+    XStoreName(priv.dpy, priv.window, priv.title_str);
+
+    XChangeProperty(priv.dpy, priv.window,
+        priv.atoms[__NET_WM_NAME],
+        priv.atoms[_UTF8_STRING],
+        8, PropModeReplace,
+        (unsigned char *) priv.title_str, strlen(priv.title_str));
+}
+
 static bool create_window(struct libqu_core_params const *params, XVisualInfo *vi)
 {
     priv.event_mask = ExposureMask;
@@ -231,6 +267,9 @@ static bool create_window(struct libqu_core_params const *params, XVisualInfo *v
 
     XSetWMNormalHints(priv.dpy, priv.window, &hints);
     XMapWindow(priv.dpy, priv.window);
+
+    store_class("libquack"); // Latin-1
+    store_title(params->window_title);
 
     return true;
 }
@@ -382,6 +421,8 @@ static void core_x11_swap(void)
 
 static bool core_x11_set_window_title(char const *title)
 {
+    store_title(title);
+
     return true;
 }
 
