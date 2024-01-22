@@ -12,6 +12,9 @@ int main(int argc, char *argv[])
         points[i].y = rand() % 512;
     }
 
+    qu_set_window_title("[libquack] primitives.c");
+    qu_set_window_size(512, 512);
+
     qu_initialize();
 
     while (qu_process()) {
