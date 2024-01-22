@@ -37,6 +37,7 @@ enum
     _WM_PROTOCOLS,
     _WM_DELETE_WINDOW,
     _UTF8_STRING,
+    __NET_SUPPORTED,
     __NET_WM_NAME,
     TOTAL_ATOMS,
 };
@@ -54,10 +55,11 @@ static struct
     Display *dpy;
     int screen;
     Window root;
+    unsigned int extras;
+    Atom atoms[TOTAL_ATOMS];
     long event_mask;
     Colormap colormap;
     Window window;
-    Atom atoms[TOTAL_ATOMS];
 
     char class_str[256];
     char title_str[256];
@@ -75,16 +77,41 @@ static struct
 
 //------------------------------------------------------------------------------
 
+static void check_extras(void)
+{
+    Atom type;
+    int format;
+    unsigned long items;
+    unsigned long bytes_after;
+    Atom *atoms;
+
+    XGetWindowProperty(priv.dpy, priv.root,
+        priv.atoms[__NET_SUPPORTED],
+        0, 0xFFFFFFFF, False, AnyPropertyType,
+        &type, &format, &items, &bytes_after,
+        (unsigned char **) &atoms);
+
+    priv.extras = 0;
+
+    for (unsigned long i = 0; i < items; i++) {
+        if (atoms[i] == priv.atoms[__NET_WM_NAME]) {
+            priv.extras |= (1 << __NET_WM_NAME);
+        }
+    }
+}
+
 static void store_atoms(void)
 {
     char *names[TOTAL_ATOMS] = {
         "WM_PROTOCOLS",
         "WM_DELETE_WINDOW",
         "UTF8_STRING",
+        "_NET_SUPPORTED",
         "_NET_WM_NAME",
     };
 
     XInternAtoms(priv.dpy, names, TOTAL_ATOMS, False, priv.atoms);
+    check_extras();
 }
 
 static void parse_single_glx_extension(char const *ext)
@@ -212,11 +239,14 @@ static void store_title(char const *str)
 
     XStoreName(priv.dpy, priv.window, priv.title_str);
 
-    XChangeProperty(priv.dpy, priv.window,
-        priv.atoms[__NET_WM_NAME],
-        priv.atoms[_UTF8_STRING],
-        8, PropModeReplace,
-        (unsigned char *) priv.title_str, strlen(priv.title_str));
+    if (priv.extras & (1 << __NET_WM_NAME)) {
+        XChangeProperty(priv.dpy, priv.window,
+            priv.atoms[__NET_WM_NAME],
+            priv.atoms[_UTF8_STRING],
+            8, PropModeReplace,
+            (unsigned char *) priv.title_str,
+            strlen(priv.title_str));
+    }
 }
 
 static bool create_window(struct libqu_core_params const *params, XVisualInfo *vi)
