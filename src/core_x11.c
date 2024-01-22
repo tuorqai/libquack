@@ -26,6 +26,7 @@
 #include <GL/glx.h>
 #include <GL/glxext.h>
 #include <X11/Xlib.h>
+#include <X11/XKBlib.h>
 #include "core.h"
 #include "log.h"
 #include "platform.h"
@@ -76,6 +77,121 @@ static struct
 } priv;
 
 //------------------------------------------------------------------------------
+
+static qu_key key_conv(KeySym sym)
+{
+    switch (sym)
+    {
+    case XK_0:              return QU_KEY_0;
+    case XK_1:              return QU_KEY_1;
+    case XK_2:              return QU_KEY_2;
+    case XK_3:              return QU_KEY_3;
+    case XK_4:              return QU_KEY_4;
+    case XK_5:              return QU_KEY_5;
+    case XK_6:              return QU_KEY_6;
+    case XK_7:              return QU_KEY_7;
+    case XK_8:              return QU_KEY_8;
+    case XK_9:              return QU_KEY_9;
+    case XK_a:              return QU_KEY_A;
+    case XK_b:              return QU_KEY_B;
+    case XK_c:              return QU_KEY_C;
+    case XK_d:              return QU_KEY_D;
+    case XK_e:              return QU_KEY_E;
+    case XK_f:              return QU_KEY_F;
+    case XK_g:              return QU_KEY_G;
+    case XK_h:              return QU_KEY_H;
+    case XK_i:              return QU_KEY_I;
+    case XK_j:              return QU_KEY_J;
+    case XK_k:              return QU_KEY_K;
+    case XK_l:              return QU_KEY_L;
+    case XK_m:              return QU_KEY_M;
+    case XK_n:              return QU_KEY_N;
+    case XK_o:              return QU_KEY_O;
+    case XK_p:              return QU_KEY_P;
+    case XK_q:              return QU_KEY_Q;
+    case XK_r:              return QU_KEY_R;
+    case XK_s:              return QU_KEY_S;
+    case XK_t:              return QU_KEY_T;
+    case XK_u:              return QU_KEY_U;
+    case XK_v:              return QU_KEY_V;
+    case XK_w:              return QU_KEY_W;
+    case XK_x:              return QU_KEY_X;
+    case XK_y:              return QU_KEY_Y;
+    case XK_z:              return QU_KEY_Z;
+    case XK_grave:          return QU_KEY_GRAVE;
+    case XK_apostrophe:     return QU_KEY_APOSTROPHE;
+    case XK_minus:          return QU_KEY_MINUS;
+    case XK_equal:          return QU_KEY_EQUAL;
+    case XK_bracketleft:    return QU_KEY_LBRACKET;
+    case XK_bracketright:   return QU_KEY_RBRACKET;
+    case XK_comma:          return QU_KEY_COMMA;
+    case XK_period:         return QU_KEY_PERIOD;
+    case XK_semicolon:      return QU_KEY_SEMICOLON;
+    case XK_slash:          return QU_KEY_SLASH;
+    case XK_backslash:      return QU_KEY_BACKSLASH;
+    case XK_space:          return QU_KEY_SPACE;
+    case XK_Escape:         return QU_KEY_ESCAPE;
+    case XK_BackSpace:      return QU_KEY_BACKSPACE;
+    case XK_Tab:            return QU_KEY_TAB;
+    case XK_Return:         return QU_KEY_ENTER;
+    case XK_F1:             return QU_KEY_F1;
+    case XK_F2:             return QU_KEY_F2;
+    case XK_F3:             return QU_KEY_F3;
+    case XK_F4:             return QU_KEY_F4;
+    case XK_F5:             return QU_KEY_F5;
+    case XK_F6:             return QU_KEY_F6;
+    case XK_F7:             return QU_KEY_F7;
+    case XK_F8:             return QU_KEY_F8;
+    case XK_F9:             return QU_KEY_F9;
+    case XK_F10:            return QU_KEY_F10;
+    case XK_F11:            return QU_KEY_F11;
+    case XK_F12:            return QU_KEY_F12;
+    case XK_Up:             return QU_KEY_UP;
+    case XK_Down:           return QU_KEY_DOWN;
+    case XK_Left:           return QU_KEY_LEFT;
+    case XK_Right:          return QU_KEY_RIGHT;
+    case XK_Shift_L:        return QU_KEY_LSHIFT;
+    case XK_Shift_R:        return QU_KEY_RSHIFT;
+    case XK_Control_L:      return QU_KEY_LCTRL;
+    case XK_Control_R:      return QU_KEY_RCTRL;
+    case XK_Alt_L:          return QU_KEY_LALT;
+    case XK_Alt_R:          return QU_KEY_RALT;
+    case XK_Super_L:        return QU_KEY_LSUPER;
+    case XK_Super_R:        return QU_KEY_RSUPER;
+    case XK_Menu:           return QU_KEY_MENU;
+    case XK_Page_Up:        return QU_KEY_PGUP;
+    case XK_Page_Down:      return QU_KEY_PGDN;
+    case XK_Home:           return QU_KEY_HOME;
+    case XK_End:            return QU_KEY_END;
+    case XK_Insert:         return QU_KEY_INSERT;
+    case XK_Delete:         return QU_KEY_DELETE;
+    case XK_Print:          return QU_KEY_PRINTSCREEN;
+    case XK_Pause:          return QU_KEY_PAUSE;
+    case XK_Caps_Lock:      return QU_KEY_CAPSLOCK;
+    case XK_Scroll_Lock:    return QU_KEY_SCROLLLOCK;
+    case XK_Num_Lock:       return QU_KEY_NUMLOCK;
+    case XK_KP_0:           return QU_KEY_KP_0;
+    case XK_KP_1:           return QU_KEY_KP_1;
+    case XK_KP_2:           return QU_KEY_KP_2;
+    case XK_KP_3:           return QU_KEY_KP_3;
+    case XK_KP_4:           return QU_KEY_KP_4;
+    case XK_KP_5:           return QU_KEY_KP_5;
+    case XK_KP_6:           return QU_KEY_KP_6;
+    case XK_KP_7:           return QU_KEY_KP_7;
+    case XK_KP_8:           return QU_KEY_KP_8;
+    case XK_KP_9:           return QU_KEY_KP_9;
+    case XK_KP_Multiply:    return QU_KEY_KP_MUL;
+    case XK_KP_Add:         return QU_KEY_KP_ADD;
+    case XK_KP_Subtract:    return QU_KEY_KP_SUB;
+    case XK_KP_Decimal:     return QU_KEY_KP_POINT;
+    case XK_KP_Divide:      return QU_KEY_KP_DIV;
+    case XK_KP_Enter:       return QU_KEY_KP_ENTER;
+    default:
+        break;
+    }
+
+    return QU_KEY_INVALID;
+}
 
 static void check_extras(void)
 {
@@ -251,7 +367,7 @@ static void store_title(char const *str)
 
 static bool create_window(struct libqu_core_params const *params, XVisualInfo *vi)
 {
-    priv.event_mask = ExposureMask;
+    priv.event_mask = ExposureMask | KeyPressMask | KeyReleaseMask;
     priv.colormap = XCreateColormap(priv.dpy, priv.root, vi->visual, AllocNone);
 
     unsigned long attrmask = CWEventMask | CWColormap;
@@ -362,12 +478,39 @@ static bool create_glx_context(GLXFBConfig fbc, XVisualInfo *vi)
     return true;
 }
 
+static void handle_key_event(XEvent *ev)
+{
+    enum libqu_event_type type;
+
+    if (ev->type == KeyPress) {
+        type = LIBQU_EVENT_KEY_PRESSED;
+    } else {
+        type = LIBQU_EVENT_KEY_RELEASED;
+    }
+
+    KeySym sym = XLookupKeysym(&ev->xkey, ShiftMapIndex);
+    qu_key key = key_conv(sym);
+
+    struct libqu_event conv = {
+        .type = type,
+        .data = {
+            .key = key,
+        },
+    };
+
+    libqu_core_enqueue_event(&conv);
+}
+
 static bool handle_event(XEvent *ev)
 {
     switch (ev->type) {
     default:
         return false;
     case Expose:
+        break;
+    case KeyPress:
+    case KeyRelease:
+        handle_key_event(ev);
         break;
     }
 
@@ -391,6 +534,8 @@ static bool core_x11_initialize(struct libqu_core_params const *params)
 
     priv.screen = DefaultScreen(priv.dpy);
     priv.root = DefaultRootWindow(priv.dpy);
+
+    XkbSetDetectableAutoRepeat(priv.dpy, True, NULL);
 
     store_atoms();
     parse_glx_extensions();

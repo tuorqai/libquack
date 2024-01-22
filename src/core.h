@@ -31,6 +31,12 @@
 
 //------------------------------------------------------------------------------
 
+enum libqu_event_type
+{
+    LIBQU_EVENT_KEY_PRESSED,
+    LIBQU_EVENT_KEY_RELEASED,
+};
+
 struct libqu_core_params
 {
     char window_title[LIBQU_WINDOW_TITLE_LENGTH];
@@ -48,6 +54,15 @@ struct libqu_core_impl
     bool (*set_window_size)(qu_vec2i size);
     int (*gl_get_version)(void);
     void *(*gl_get_proc_address)(char const *name);
+};
+
+struct libqu_event
+{
+    enum libqu_event_type type;
+
+    union {
+        qu_key key;
+    } data;
 };
 
 //------------------------------------------------------------------------------
@@ -72,6 +87,8 @@ void libqu_core_set_window_title(char const *title);
 void libqu_core_set_window_size(qu_vec2i size);
 
 qu_key_state const *libqu_core_get_keyboard_state(void);
+
+void libqu_core_enqueue_event(struct libqu_event *event);
 
 int libqu_gl_get_version(void);
 void *libqu_gl_get_proc_address(char const *name);
