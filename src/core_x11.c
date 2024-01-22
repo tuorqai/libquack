@@ -214,6 +214,8 @@ static void check_extras(void)
             priv.extras |= (1 << __NET_WM_NAME);
         }
     }
+
+    XFree(atoms);
 }
 
 static void store_atoms(void)
