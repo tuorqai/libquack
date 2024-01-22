@@ -36,6 +36,9 @@ static struct libqu_core_impl const *impl_list[] = {
 static struct
 {
     struct libqu_core_impl const *impl;
+
+    char const *window_title;
+    qu_vec2i window_size;
 } priv;
 
 //------------------------------------------------------------------------------
@@ -82,6 +85,30 @@ bool libqu_core_process(void)
 void libqu_core_swap(void)
 {
     priv.impl->swap();
+}
+
+char const *libqu_core_get_window_title(void)
+{
+    return priv.window_title;
+}
+
+qu_vec2i libqu_core_get_window_size(void)
+{
+    return priv.window_size;
+}
+
+void libqu_core_set_window_title(char const *title)
+{
+    if (priv.impl->set_window_title(title)) {
+        priv.window_title = title;
+    }
+}
+
+void libqu_core_set_window_size(qu_vec2i size)
+{
+    if (priv.impl->set_window_size(size)) {
+        priv.window_size = size;
+    }
 }
 
 int libqu_gl_get_version(void)

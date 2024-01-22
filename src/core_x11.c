@@ -354,6 +354,16 @@ static void core_x11_swap(void)
     glXSwapBuffers(priv.dpy, priv.glx.surface);
 }
 
+static bool core_x11_set_window_title(char const *title)
+{
+    return true;
+}
+
+static bool core_x11_set_window_size(qu_vec2i size)
+{
+    return true;
+}
+
 static int core_glx_get_version(void)
 {
     return priv.glx.version;
@@ -372,6 +382,8 @@ struct libqu_core_impl const libqu_core_x11_impl = {
     core_x11_terminate,
     core_x11_process,
     core_x11_swap,
+    core_x11_set_window_title,
+    core_x11_set_window_size,
     core_glx_get_version,
     core_glx_get_proc_address,
 };

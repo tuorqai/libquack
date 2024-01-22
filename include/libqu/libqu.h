@@ -90,6 +90,12 @@ QU_API void QU_CALL qu_terminate(void);
 QU_API bool QU_CALL qu_process(void);
 QU_API void QU_CALL qu_present(void);
 
+QU_API char const * QU_CALL qu_get_window_title(void);
+QU_API qu_vec2i QU_CALL qu_get_window_size(void);
+
+QU_API void QU_CALL qu_set_window_title(char const *title);
+QU_API void QU_CALL qu_set_window_size(int w, int h);
+
 QU_API void QU_CALL qu_clear(qu_color color);
 QU_API void QU_CALL qu_draw_point(float x, float y, qu_color color);
 QU_API void QU_CALL qu_draw_line(float ax, float ay, float bx, float by, qu_color color);

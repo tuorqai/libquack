@@ -27,9 +27,14 @@
 
 //------------------------------------------------------------------------------
 
+#define LIBQU_WINDOW_TITLE_LENGTH 256
+
+//------------------------------------------------------------------------------
+
 struct libqu_core_params
 {
-    int unused;
+    char window_title[LIBQU_WINDOW_TITLE_LENGTH];
+    qu_vec2i window_size;
 };
 
 struct libqu_core_impl
@@ -39,6 +44,8 @@ struct libqu_core_impl
     void (*terminate)(void);
     bool (*process)(void);
     void (*swap)(void);
+    bool (*set_window_title)(char const *title);
+    bool (*set_window_size)(qu_vec2i size);
     int (*gl_get_version)(void);
     void *(*gl_get_proc_address)(char const *name);
 };
@@ -57,6 +64,12 @@ void libqu_core_initialize(struct libqu_core_params const *params);
 void libqu_core_terminate(void);
 bool libqu_core_process(void);
 void libqu_core_swap(void);
+
+char const *libqu_core_get_window_title(void);
+qu_vec2i libqu_core_get_window_size(void);
+
+void libqu_core_set_window_title(char const *title);
+void libqu_core_set_window_size(qu_vec2i size);
 
 int libqu_gl_get_version(void);
 void *libqu_gl_get_proc_address(char const *name);

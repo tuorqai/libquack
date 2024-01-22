@@ -18,6 +18,7 @@
 // 3. This notice may not be removed or altered from any source distribution.
 //------------------------------------------------------------------------------
 
+#include <string.h>
 #include "core.h"
 #include "graphics.h"
 #include "log.h"
@@ -36,13 +37,27 @@ static struct
 
 //------------------------------------------------------------------------------
 
+static void sanitize_core_params(void)
+{
+    struct libqu_core_params *p = &priv.params.core;
+
+    if (p->window_title[0] == '\0') {
+        strncpy(p->window_title, "libquack application", LIBQU_WINDOW_TITLE_LENGTH - 1);
+    }
+
+    if (p->window_size.x == 0 || p->window_size.y == 0) {
+        p->window_size.x = 1280;
+        p->window_size.y = 720;
+    }
+}
+
 static void sanitize_graphics_params(void)
 {
     struct libqu_graphics_params *p = &priv.params.graphics;
 
     if (p->window_size.x == 0 || p->window_size.y == 0) {
-        p->window_size.x = 640;
-        p->window_size.y = 480;
+        p->window_size.x = priv.params.core.window_size.x;
+        p->window_size.y = priv.params.core.window_size.y;
     }
 }
 
@@ -55,6 +70,7 @@ void qu_initialize(void)
         return;
     }
 
+    sanitize_core_params();
     sanitize_graphics_params();
 
     libqu_core_initialize(&priv.params.core);
@@ -84,6 +100,47 @@ void qu_present(void)
 {
     libqu_graphics_flush();
     libqu_core_swap();
+}
+
+char const *qu_get_window_title(void)
+{
+    if (priv.refcount > 0) {
+        return libqu_core_get_window_title();
+    } else {
+        if (priv.params.core.window_title[0] == '\0') {
+            return priv.params.core.window_title;
+        } else {
+            return NULL;
+        }
+    }
+}
+
+qu_vec2i qu_get_window_size(void)
+{
+    if (priv.refcount > 0) {
+        return libqu_core_get_window_size();
+    } else {
+        return priv.params.core.window_size;
+    }
+}
+
+void qu_set_window_title(char const *title)
+{
+    strncpy(priv.params.core.window_title, title, LIBQU_WINDOW_TITLE_LENGTH - 1);
+
+    if (priv.refcount > 0) {
+        libqu_core_set_window_title(priv.params.core.window_title);
+    }
+}
+
+void qu_set_window_size(int w, int h)
+{
+    priv.params.core.window_size.x = w;
+    priv.params.core.window_size.y = h;
+
+    if (priv.refcount > 0) {
+        libqu_core_set_window_size(priv.params.core.window_size);
+    }
 }
 
 void qu_clear(qu_color color)
