@@ -41,6 +41,7 @@ static struct
     char const *window_title;
     qu_vec2i window_size;
 
+    bool active;
     qu_key_state keyboard[QU_TOTAL_KEYS];
 
     struct libqu_event *events;
@@ -59,6 +60,22 @@ static struct libqu_core_impl const *choose_impl(void)
     }
 
     abort();
+}
+
+static void handle_activate_event(void)
+{
+    priv.active = true;
+}
+
+static void handle_deactivate_event(void)
+{
+    priv.active = false;
+
+    for (int i = 0; i < QU_TOTAL_KEYS; i++) {
+        if (priv.keyboard[i] == QU_KEY_STATE_PRESSED) {
+            priv.keyboard[i] = QU_KEY_STATE_RELEASED;
+        }
+    }
 }
 
 static void handle_key_press_event(qu_key key)
@@ -112,15 +129,17 @@ bool libqu_core_process(void)
         struct libqu_event *event = &priv.events[i];
 
         switch (event->type) {
+        case LIBQU_EVENT_ACTIVATE:
+            handle_activate_event();
+            break;
+        case LIBQU_EVENT_DEACTIVATE:
+            handle_deactivate_event();
+            break;
         case LIBQU_EVENT_KEY_PRESSED:
-            if (priv.keyboard[event->data.key] == QU_KEY_STATE_IDLE) {
-                priv.keyboard[event->data.key] = QU_KEY_STATE_PRESSED;
-            }
+            handle_key_press_event(event->data.key);
             break;
         case LIBQU_EVENT_KEY_RELEASED:
-            if (priv.keyboard[event->data.key] == QU_KEY_STATE_PRESSED) {
-                priv.keyboard[event->data.key] = QU_KEY_STATE_RELEASED;
-            }
+            handle_key_release_event(event->data.key);
             break;
         default:
             break;
@@ -135,6 +154,11 @@ bool libqu_core_process(void)
 void libqu_core_swap(void)
 {
     priv.impl->swap();
+}
+
+bool libqu_core_is_window_active(void)
+{
+    return priv.active;
 }
 
 char const *libqu_core_get_window_title(void)

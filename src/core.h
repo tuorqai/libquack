@@ -33,6 +33,8 @@
 
 enum libqu_event_type
 {
+    LIBQU_EVENT_ACTIVATE,
+    LIBQU_EVENT_DEACTIVATE,
     LIBQU_EVENT_KEY_PRESSED,
     LIBQU_EVENT_KEY_RELEASED,
 };
@@ -79,6 +81,8 @@ void libqu_core_initialize(struct libqu_core_params const *params);
 void libqu_core_terminate(void);
 bool libqu_core_process(void);
 void libqu_core_swap(void);
+
+bool libqu_core_is_window_active(void);
 
 char const *libqu_core_get_window_title(void);
 qu_vec2i libqu_core_get_window_size(void);

@@ -367,7 +367,10 @@ static void store_title(char const *str)
 
 static bool create_window(struct libqu_core_params const *params, XVisualInfo *vi)
 {
-    priv.event_mask = ExposureMask | KeyPressMask | KeyReleaseMask;
+    priv.event_mask = ExposureMask | KeyPressMask | KeyReleaseMask
+        | EnterWindowMask | LeaveWindowMask
+        | FocusChangeMask;
+
     priv.colormap = XCreateColormap(priv.dpy, priv.root, vi->visual, AllocNone);
 
     unsigned long attrmask = CWEventMask | CWColormap;
@@ -501,6 +504,17 @@ static void handle_key_event(XEvent *ev)
     libqu_core_enqueue_event(&conv);
 }
 
+static void handle_focus_event(XEvent *ev)
+{
+    struct libqu_event conv = {
+        .type = (ev->type == FocusIn)
+            ? LIBQU_EVENT_ACTIVATE
+            : LIBQU_EVENT_DEACTIVATE,
+    };
+
+    libqu_core_enqueue_event(&conv);
+}
+
 static bool handle_event(XEvent *ev)
 {
     switch (ev->type) {
@@ -511,6 +525,13 @@ static bool handle_event(XEvent *ev)
     case KeyPress:
     case KeyRelease:
         handle_key_event(ev);
+        break;
+    case EnterNotify:
+    case LeaveNotify:
+        break;
+    case FocusIn:
+    case FocusOut:
+        handle_focus_event(ev);
         break;
     }
 

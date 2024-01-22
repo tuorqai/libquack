@@ -143,6 +143,11 @@ void qu_set_window_size(int w, int h)
     }
 }
 
+bool qu_is_window_active(void)
+{
+    return libqu_core_is_window_active();
+}
+
 qu_key_state const *qu_get_keyboard_state(void)
 {
     return libqu_core_get_keyboard_state();

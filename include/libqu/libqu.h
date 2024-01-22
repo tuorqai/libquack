@@ -213,6 +213,8 @@ QU_API qu_vec2i QU_CALL qu_get_window_size(void);
 QU_API void QU_CALL qu_set_window_title(char const *title);
 QU_API void QU_CALL qu_set_window_size(int w, int h);
 
+QU_API bool QU_CALL qu_is_window_active(void);
+
 QU_API qu_key_state const * QU_CALL qu_get_keyboard_state(void);
 QU_API qu_key_state QU_CALL qu_get_key_state(qu_key key);
 QU_API bool QU_CALL qu_is_key_idle(qu_key key);
