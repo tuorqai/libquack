@@ -36,12 +36,26 @@ static struct
 
 //------------------------------------------------------------------------------
 
+static void sanitize_graphics_params(void)
+{
+    struct libqu_graphics_params *p = &priv.params.graphics;
+
+    if (p->window_size.x == 0 || p->window_size.y == 0) {
+        p->window_size.x = 640;
+        p->window_size.y = 480;
+    }
+}
+
+//------------------------------------------------------------------------------
+
 void qu_initialize(void)
 {
     if (++priv.refcount != 1) {
         LIBQU_LOGW("Already initialized.\n");
         return;
     }
+
+    sanitize_graphics_params();
 
     libqu_core_initialize(&priv.params.core);
     libqu_graphics_initialize(&priv.params.graphics);
@@ -70,5 +84,42 @@ void qu_present(void)
 {
     libqu_graphics_flush();
     libqu_core_swap();
+}
+
+void qu_clear(qu_color color)
+{
+    libqu_graphics_clear(color);
+}
+
+void qu_draw_point(float x, float y, qu_color color)
+{
+    qu_vec2f xy = { x, y };
+
+    libqu_graphics_draw_point(xy, color);
+}
+
+void qu_draw_line(float ax, float ay, float bx, float by, qu_color color)
+{
+    qu_vec2f a = { ax, ay };
+    qu_vec2f b = { bx, by };
+
+    libqu_graphics_draw_line(a, b, color);
+}
+
+void qu_draw_triangle(float ax, float ay, float bx, float by, float cx, float cy, qu_color outline, qu_color fill)
+{
+    qu_vec2f a = { ax, ay };
+    qu_vec2f b = { bx, by };
+    qu_vec2f c = { cx, cy };
+
+    libqu_graphics_draw_triangle(a, b, c, outline, fill);
+}
+
+void qu_draw_rectangle(float x, float y, float w, float h, qu_color outline, qu_color fill)
+{
+    qu_vec2f xy = { x, y };
+    qu_vec2f wh = { w, h };
+
+    libqu_graphics_draw_rectangle(xy, wh, outline, fill);
 }
 

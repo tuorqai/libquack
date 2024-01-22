@@ -27,9 +27,27 @@
 
 //------------------------------------------------------------------------------
 
+enum libqu_draw_mode
+{
+    LIBQU_DRAW_MODE_POINTS,
+    LIBQU_DRAW_MODE_LINES,
+    LIBQU_DRAW_MODE_LINE_LOOP,
+    LIBQU_DRAW_MODE_LINE_STRIP,
+    LIBQU_DRAW_MODE_TRIANGLES,
+    LIBQU_DRAW_MODE_TRIANGLE_STRIP,
+    LIBQU_DRAW_MODE_TRIANGLE_FAN,
+    LIBQU_TOTAL_DRAW_MODES,
+};
+
+struct libqu_vertex
+{
+    qu_vec2f pos;
+    qu_color color;
+};
+
 struct libqu_graphics_params
 {
-    int unused;
+    qu_vec2i window_size;
 };
 
 struct libqu_graphics_impl
@@ -37,17 +55,29 @@ struct libqu_graphics_impl
     bool (*check_if_available)(void);
     bool (*initialize)(struct libqu_graphics_params const *params);
     void (*terminate)(void);
+    void (*upload_vertices)(struct libqu_vertex *vertices, size_t count);
+    void (*clear)(qu_color color);
+    void (*draw)(enum libqu_draw_mode mode, size_t vertex, size_t count);
 };
 
 //------------------------------------------------------------------------------
 
 extern struct libqu_graphics_impl const libqu_graphics_null_impl;
 
+#ifdef QU_USE_OPENGL
+extern struct libqu_graphics_impl const libqu_graphics_gl3_impl;
+#endif
+
 //------------------------------------------------------------------------------
 
 void libqu_graphics_initialize(struct libqu_graphics_params const *params);
 void libqu_graphics_terminate(void);
 void libqu_graphics_flush(void);
+void libqu_graphics_clear(qu_color color);
+void libqu_graphics_draw_point(qu_vec2f pos, qu_color color);
+void libqu_graphics_draw_line(qu_vec2f a, qu_vec2f b, qu_color color);
+void libqu_graphics_draw_triangle(qu_vec2f a, qu_vec2f b, qu_vec2f c, qu_color outline, qu_color fill);
+void libqu_graphics_draw_rectangle(qu_vec2f pos, qu_vec2f size, qu_color outline, qu_color fill);
 
 //------------------------------------------------------------------------------
 

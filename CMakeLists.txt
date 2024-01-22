@@ -6,6 +6,7 @@ project(libquack)
 
 option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 option(QU_BUILD_EXAMPLES "Build examples" ON)
+option(QU_USE_OPENGL "Use OpenGL" OFF)
 option(QU_USE_X11 "Use X11" OFF)
 
 #-------------------------------------------------------------------------------
@@ -15,21 +16,26 @@ include(GNUInstallDirs)
 #-------------------------------------------------------------------------------
 
 add_library(libquack
+    src/algebra.c
     src/base.c
     src/core.c
     src/core_null.c
     src/core_x11.c
     src/graphics.c
+    src/graphics_gl3.c
     src/graphics_null.c
     src/log.c
-    src/platform_posix.c)
+    src/platform_posix.c
+    src/util.c)
 
 add_library(libquack::libquack ALIAS libquack)
 
 target_include_directories(libquack
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
-        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+    PRIVATE
+        ${CMAKE_SOURCE_DIR}/third-party)
 
 set_target_properties(libquack
     PROPERTIES
@@ -48,7 +54,21 @@ if(MSVC)
     target_compile_definitions(libquack PRIVATE _CRT_SECURE_NO_WARNINGS)
     target_compile_options(libquack PRIVATE /W4)
 else()
-    target_compile_options(libquack PRIVATE -Wall -Wextra)
+    target_compile_options(libquack PRIVATE -Wall -Wextra
+        -Wno-type-limits -Wno-unused-parameter)
+endif()
+
+find_library(MATH_LIBRARY m)
+
+if(MATH_LIBRARY)
+    target_link_libraries(libquack PRIVATE ${MATH_LIBRARY})
+endif()
+
+if(QU_USE_OPENGL)
+    find_package(OpenGL REQUIRED)
+    target_compile_definitions(libquack PRIVATE QU_USE_OPENGL)
+    target_include_directories(libquack PRIVATE ${OPENGL_INCLUDE_DIR})
+    target_link_libraries(libquack PRIVATE ${OPENGL_gl_LIBRARY})
 endif()
 
 if(QU_USE_X11)

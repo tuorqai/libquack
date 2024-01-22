@@ -18,48 +18,22 @@
 // 3. This notice may not be removed or altered from any source distribution.
 //------------------------------------------------------------------------------
 
-#include "graphics.h"
-#include "log.h"
+#include "platform.h"
 
 //------------------------------------------------------------------------------
 
-static bool graphics_null_check_if_available(void)
-{
-    return true;
-}
+#define STB_DS_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
 
-static bool graphics_null_initialize(struct libqu_graphics_params const *params)
-{
-    LIBQU_LOGI("Initialized.\n");
+#define STBDS_REALLOC(ctx, ptr, size)   pl_realloc(ptr, size)
+#define STBDS_FREE(ctx, ptr)            pl_free(ptr)
 
-    return true;
-}
+#define STBI_MALLOC(size)               pl_malloc(size)
+#define STBI_REALLOC(ptr, size)         pl_realloc(ptr, size)
+#define STBI_FREE(ptr)                  pl_free(ptr)
 
-static void graphics_null_terminate(void)
-{
-    LIBQU_LOGI("Terminated.\n");
-}
-
-static void graphics_null_upload_vertices(struct libqu_vertex *vertices, size_t count)
-{
-}
-
-static void graphics_null_clear(qu_color color)
-{
-}
-
-static void graphics_null_draw(enum libqu_draw_mode mode, size_t vertex, size_t count)
-{
-}
+#include <stb_ds.h>
+#include <stb_image.h>
 
 //------------------------------------------------------------------------------
-
-struct libqu_graphics_impl const libqu_graphics_null_impl = {
-    graphics_null_check_if_available,
-    graphics_null_initialize,
-    graphics_null_terminate,
-    graphics_null_upload_vertices,
-    graphics_null_clear,
-    graphics_null_draw,
-};
 

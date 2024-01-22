@@ -18,48 +18,34 @@
 // 3. This notice may not be removed or altered from any source distribution.
 //------------------------------------------------------------------------------
 
-#include "graphics.h"
-#include "log.h"
+#ifndef LIBQU_ALGEBRA_H_INC
+#define LIBQU_ALGEBRA_H_INC
 
 //------------------------------------------------------------------------------
 
-static bool graphics_null_check_if_available(void)
-{
-    return true;
-}
-
-static bool graphics_null_initialize(struct libqu_graphics_params const *params)
-{
-    LIBQU_LOGI("Initialized.\n");
-
-    return true;
-}
-
-static void graphics_null_terminate(void)
-{
-    LIBQU_LOGI("Terminated.\n");
-}
-
-static void graphics_null_upload_vertices(struct libqu_vertex *vertices, size_t count)
-{
-}
-
-static void graphics_null_clear(qu_color color)
-{
-}
-
-static void graphics_null_draw(enum libqu_draw_mode mode, size_t vertex, size_t count)
-{
-}
+#include <math.h>
+#include "libqu/libqu.h"
 
 //------------------------------------------------------------------------------
 
-struct libqu_graphics_impl const libqu_graphics_null_impl = {
-    graphics_null_check_if_available,
-    graphics_null_initialize,
-    graphics_null_terminate,
-    graphics_null_upload_vertices,
-    graphics_null_clear,
-    graphics_null_draw,
-};
+typedef struct mat4_s
+{
+    float m[16];
+} mat4_t;
+
+//------------------------------------------------------------------------------
+
+void mat4_identity(mat4_t *mat);
+void mat4_copy(mat4_t *dst, mat4_t const *src);
+void mat4_multiply(mat4_t *a, mat4_t const *b);
+void mat4_ortho(mat4_t *mat, float l, float r, float b, float t);
+void mat4_translate(mat4_t *mat, float x, float y, float z);
+void mat4_scale(mat4_t *mat, float x, float y, float z);
+void mat4_rotate(mat4_t *mat, float rad, float x, float y, float z);
+void mat4_inverse(mat4_t *dst, mat4_t const *src);
+qu_vec2f mat4_transform_point(mat4_t const *mat, qu_vec2f p);
+
+//------------------------------------------------------------------------------
+
+#endif // LIBQU_ALGEBRA_H_INC
 
