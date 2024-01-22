@@ -173,7 +173,17 @@ static GLXFBConfig choose_fbc(void)
     return fbc;
 }
 
-static bool create_window(XVisualInfo *vi)
+static qu_vec2i calc_center_of_window(qu_vec2i size)
+{
+    qu_vec2i pos = {
+        (DisplayWidth(priv.dpy, priv.screen) / 2) - (size.x / 2),
+        (DisplayHeight(priv.dpy, priv.screen) / 2) - (size.y / 2),
+    };
+
+    return pos;
+}
+
+static bool create_window(struct libqu_core_params const *params, XVisualInfo *vi)
 {
     priv.event_mask = ExposureMask;
     priv.colormap = XCreateColormap(priv.dpy, priv.root, vi->visual, AllocNone);
@@ -185,11 +195,14 @@ static bool create_window(XVisualInfo *vi)
         .colormap = priv.colormap,
     };
 
+    qu_vec2i pos = calc_center_of_window(params->window_size);
+    qu_vec2i size = params->window_size;
+
     priv.window = XCreateWindow(
         priv.dpy,       // display
         priv.root,      // parent
-        0, 0,           // position
-        640, 480,       // size
+        pos.x, pos.y,   // position
+        size.x, size.y, // size
         0,              // border width
         CopyFromParent, // depth
         InputOutput,    // class
@@ -204,6 +217,19 @@ static bool create_window(XVisualInfo *vi)
     Atom protocols[] = { priv.atoms[_WM_DELETE_WINDOW] };
     XSetWMProtocols(priv.dpy, priv.window, protocols, 1);
 
+    XSizeHints hints = {
+        .flags = PPosition | PSize | PMinSize | PMaxSize,
+        .x = pos.x,
+        .y = pos.y,
+        .width = size.x,
+        .height = size.y,
+        .min_width = size.x,
+        .max_width = size.x,
+        .min_height = size.y,
+        .max_height = size.y,
+    };
+
+    XSetWMNormalHints(priv.dpy, priv.window, &hints);
     XMapWindow(priv.dpy, priv.window);
 
     return true;
@@ -308,7 +334,7 @@ static bool core_x11_initialize(struct libqu_core_params const *params)
 
     XVisualInfo *vi = glXGetVisualFromFBConfig(priv.dpy, fbc);
 
-    if (!create_window(vi)) {
+    if (!create_window(params, vi)) {
         return false;
     }
 
@@ -361,6 +387,19 @@ static bool core_x11_set_window_title(char const *title)
 
 static bool core_x11_set_window_size(qu_vec2i size)
 {
+    XSizeHints hints = {
+        .flags = PMinSize | PMaxSize,
+        .min_width = size.x,
+        .max_width = size.x,
+        .min_height = size.y,
+        .max_height = size.y,
+    };
+
+    XSetWMNormalHints(priv.dpy, priv.window, &hints);
+
+    qu_vec2i pos = calc_center_of_window(size);
+    XMoveResizeWindow(priv.dpy, priv.window, pos.x, pos.y, size.x, size.y);
+
     return true;
 }
 
