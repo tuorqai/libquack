@@ -17,6 +17,8 @@ include(GNUInstallDirs)
 
 add_library(libquack
     src/algebra.c
+    src/audio.c
+    src/audio_null.c
     src/base.c
     src/core.c
     src/core_null.c
