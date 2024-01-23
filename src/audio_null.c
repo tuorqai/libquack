@@ -40,10 +40,50 @@ static void audio_null_terminate(void)
     LIBQU_LOGI("Terminated.\n");
 }
 
+static void audio_null_set_master_volume(float volume)
+{
+}
+
+static int audio_null_load_sound(struct libqu_sound *sound)
+{
+    return 0;
+}
+
+static void audio_null_delete_sound(struct libqu_sound *sound)
+{
+}
+
+static qu_handle audio_null_play_sound(struct libqu_sound *sound, int loop)
+{
+    return 0;
+}
+
+static int audio_null_pause_voice(qu_handle voice_id)
+{
+    return 0;
+}
+
+static int audio_null_unpause_voice(qu_handle voice_id)
+{
+    return 0;
+}
+
+static int audio_null_stop_voice(qu_handle voice_id)
+{
+    return 0;
+}
+
 //------------------------------------------------------------------------------
 
 struct libqu_audio_impl const libqu_audio_null_impl = {
     audio_null_check_if_available,
     audio_null_initialize,
     audio_null_terminate,
+    audio_null_set_master_volume,
+    audio_null_load_sound,
+    audio_null_delete_sound,
+    audio_null_play_sound,
+    audio_null_pause_voice,
+    audio_null_unpause_voice,
+    audio_null_stop_voice,
 };

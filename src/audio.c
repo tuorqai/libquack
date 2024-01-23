@@ -20,6 +20,7 @@
 
 #include "audio.h"
 #include "log.h"
+#include "platform.h"
 
 //------------------------------------------------------------------------------
 
@@ -70,40 +71,49 @@ void libqu_audio_terminate(void)
 
 void libqu_audio_set_master_volume(float volume)
 {
-
+    priv.impl->set_master_volume(volume);
 }
 
-struct libqu_sound *libqu_audio_load_sound_from_file(struct libqu_file *file)
+struct libqu_sound *libqu_audio_load_sound(struct libqu_wave *wave)
 {
-    return NULL;
-}
+    struct libqu_sound *sound = pl_calloc(1, sizeof(*sound));
 
-struct libqu_sound *libqu_audio_load_sound_from_wave(struct libqu_wave *wave)
-{
+    sound->wave = wave;
+
+    if (priv.impl->load_sound(sound) == 0) {
+        return sound;
+    }
+
+    libqu_wave_destroy(sound->wave);
+    pl_free(sound);
+
     return NULL;
 }
 
 void libqu_audio_delete_sound(struct libqu_sound *sound)
 {
+    priv.impl->delete_sound(sound);
 
+    libqu_wave_destroy(sound->wave);
+    pl_free(sound);
 }
 
 qu_handle libqu_audio_play_sound(struct libqu_sound *sound, int loop)
 {
-    return 0;
+    return priv.impl->play_sound(sound, loop);
 }
 
 void libqu_audio_pause_voice(qu_handle voice_id)
 {
-
+    priv.impl->pause_voice(voice_id);
 }
 
 void libqu_audio_unpause_voice(qu_handle voice_id)
 {
-
+    priv.impl->unpause_voice(voice_id);
 }
 
 void libqu_audio_stop_voice(qu_handle voice_id)
 {
-
+    priv.impl->stop_voice(voice_id);
 }

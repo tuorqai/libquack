@@ -332,10 +332,14 @@ qu_sound qu_load_sound_from_file(char const *path)
     struct libqu_file *file = libqu_fopen(path);
 
     if (file) {
-        struct libqu_sound *sound_p = libqu_audio_load_sound_from_file(file);
+        struct libqu_wave *wave_p = libqu_wave_load(file);
 
-        if (sound_p) {
-            sound.id = libqu_handle_create(LIBQU_HANDLE_SOUND, sound_p);
+        if (wave_p) {
+            struct libqu_sound *sound_p = libqu_audio_load_sound(wave_p);
+
+            if (sound_p) {
+                sound.id = libqu_handle_create(LIBQU_HANDLE_SOUND, sound_p);
+            }
         }
 
         libqu_fclose(file);
@@ -354,7 +358,7 @@ qu_sound qu_load_sound_from_wave(qu_wave wave)
     struct libqu_wave *wave_p = libqu_handle_get(LIBQU_HANDLE_WAVE, wave.id);
 
     if (wave_p) {
-        struct libqu_sound *sound_p = libqu_audio_load_sound_from_wave(wave_p);
+        struct libqu_sound *sound_p = libqu_audio_load_sound(wave_p);
 
         if (sound_p) {
             sound.id = libqu_handle_create(LIBQU_HANDLE_SOUND, sound_p);

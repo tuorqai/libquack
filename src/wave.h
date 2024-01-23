@@ -29,10 +29,10 @@
 
 struct libqu_wave
 {
+    int16_t *samples;
     int16_t channel_count;
     int64_t sample_count;
     int64_t sample_rate;
-    int16_t *samples;
 };
 
 //------------------------------------------------------------------------------
