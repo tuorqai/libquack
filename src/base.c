@@ -22,7 +22,9 @@
 #include "audio.h"
 #include "core.h"
 #include "graphics.h"
+#include "handle.h"
 #include "log.h"
+#include "wave.h"
 
 //------------------------------------------------------------------------------
 
@@ -225,6 +227,90 @@ void qu_draw_rectangle(float x, float y, float w, float h, qu_color outline, qu_
     qu_vec2f wh = { w, h };
 
     libqu_graphics_draw_rectangle(xy, wh, outline, fill);
+}
+
+qu_wave qu_create_wave(int16_t channels, int64_t samples, int64_t sample_rate)
+{
+    qu_wave wave = { 0 };
+    struct libqu_wave *data = libqu_wave_create(channels, samples, sample_rate);
+
+    if (data) {
+        wave.id = libqu_handle_create(LIBQU_HANDLE_WAVE, data);
+    }
+
+    return wave;
+}
+
+qu_wave qu_load_wave(char const *path)
+{
+    qu_wave wave = { 0 };
+    struct libqu_file *file = libqu_fopen(path);
+
+    if (file) {
+        struct libqu_wave *data = libqu_wave_load(file);
+
+        if (data) {
+            wave.id = libqu_handle_create(LIBQU_HANDLE_WAVE, data);
+        }
+
+        libqu_fclose(file);
+    }
+
+    return wave;
+}
+
+void qu_destroy_wave(qu_wave wave)
+{
+    struct libqu_wave *data = libqu_handle_get(LIBQU_HANDLE_WAVE, wave.id);
+
+    if (data) {
+        libqu_wave_destroy(data);
+        libqu_handle_destroy(LIBQU_HANDLE_WAVE, wave.id);
+    }
+}
+
+int16_t qu_get_wave_channel_count(qu_wave wave)
+{
+    struct libqu_wave *data = libqu_handle_get(LIBQU_HANDLE_WAVE, wave.id);
+
+    if (data) {
+        return data->channel_count;
+    }
+
+    return 0;
+}
+
+int64_t qu_get_wave_sample_count(qu_wave wave)
+{
+    struct libqu_wave *data = libqu_handle_get(LIBQU_HANDLE_WAVE, wave.id);
+
+    if (data) {
+        return data->sample_count;
+    }
+
+    return 0;
+}
+
+int64_t qu_get_wave_sample_rate(qu_wave wave)
+{
+    struct libqu_wave *data = libqu_handle_get(LIBQU_HANDLE_WAVE, wave.id);
+
+    if (data) {
+        return data->sample_rate;
+    }
+
+    return 0;
+}
+
+int16_t *qu_get_wave_samples(qu_wave wave)
+{
+    struct libqu_wave *data = libqu_handle_get(LIBQU_HANDLE_WAVE, wave.id);
+
+    if (data) {
+        return data->samples;
+    }
+
+    return 0;
 }
 
 void qu_set_master_volume(float volume)

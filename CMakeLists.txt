@@ -27,9 +27,11 @@ add_library(libquack
     src/graphics.c
     src/graphics_gl3.c
     src/graphics_null.c
+    src/handle.c
     src/log.c
     src/platform_posix.c
-    src/util.c)
+    src/util.c
+    src/wave.c)
 
 add_library(libquack::libquack ALIAS libquack)
 
@@ -44,7 +46,7 @@ set_target_properties(libquack
     PROPERTIES
         PREFIX ""
         C_STANDARD 99
-        C_EXTENSIONS OFF
+        C_EXTENSIONS ON
         C_VISIBILITY_PRESET hidden)
 
 target_compile_definitions(libquack PRIVATE QU_BUILD)

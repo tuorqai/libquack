@@ -201,6 +201,11 @@ typedef struct qu_vec2f
     float y;
 } qu_vec2f;
 
+typedef struct qu_wave
+{
+    qu_handle id;
+} qu_wave;
+
 typedef struct qu_sound
 {
     qu_handle id;
@@ -237,6 +242,14 @@ QU_API void QU_CALL qu_draw_point(float x, float y, qu_color color);
 QU_API void QU_CALL qu_draw_line(float ax, float ay, float bx, float by, qu_color color);
 QU_API void QU_CALL qu_draw_triangle(float ax, float ay, float bx, float by, float cx, float cy, qu_color outline, qu_color fill);
 QU_API void QU_CALL qu_draw_rectangle(float x, float y, float w, float h, qu_color outline, qu_color fill);
+
+QU_API qu_wave QU_CALL qu_create_wave(int16_t channels, int64_t samples, int64_t sample_rate);
+QU_API qu_wave QU_CALL qu_load_wave(char const *path);
+QU_API void QU_CALL qu_destroy_wave(qu_wave wave);
+QU_API int16_t QU_CALL qu_get_wave_channel_count(qu_wave wave);
+QU_API int64_t QU_CALL qu_get_wave_sample_count(qu_wave wave);
+QU_API int64_t QU_CALL qu_get_wave_sample_rate(qu_wave wave);
+QU_API int16_t * QU_CALL qu_get_wave_samples(qu_wave wave);
 
 QU_API void QU_CALL qu_set_master_volume(float volume);
 QU_API qu_sound QU_CALL qu_load_sound(char const *path);
