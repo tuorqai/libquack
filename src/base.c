@@ -210,3 +210,42 @@ void qu_draw_rectangle(float x, float y, float w, float h, qu_color outline, qu_
     libqu_graphics_draw_rectangle(xy, wh, outline, fill);
 }
 
+void qu_set_master_volume(float volume)
+{
+    
+}
+
+qu_sound qu_load_sound(char const *path)
+{
+
+}
+
+void qu_delete_sound(qu_sound sound)
+{
+
+}
+
+qu_voice qu_play_sound(qu_sound sound)
+{
+
+}
+
+qu_voice qu_loop_sound(qu_sound sound)
+{
+
+}
+
+void qu_pause_voice(qu_voice voice)
+{
+
+}
+
+void qu_unpause_voice(qu_voice voice)
+{
+
+}
+
+void qu_stop_voice(qu_voice voice)
+{
+
+}
