@@ -8,8 +8,11 @@ option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 option(QU_BUILD_EXAMPLES "Build examples" ON)
 option(QU_USE_OPENGL "Use OpenGL" OFF)
 option(QU_USE_X11 "Use X11" OFF)
+option(QU_USE_VORBIS "Use Vorbis" OFF)
 
 #-------------------------------------------------------------------------------
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 include(GNUInstallDirs)
 
@@ -83,9 +86,14 @@ if(QU_USE_X11)
     target_link_libraries(libquack PRIVATE ${X11_LIBRARIES})
 endif()
 
+if(QU_USE_VORBIS)
+    find_package(Vorbis REQUIRED)
+    target_compile_definitions(libquack PRIVATE QU_USE_VORBIS)
+    target_link_libraries(libquack PRIVATE Vorbis::vorbisfile)
+endif()
+
 #-------------------------------------------------------------------------------
 
 if(QU_BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif()
-
