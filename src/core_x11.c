@@ -218,7 +218,7 @@ static void check_extras(void)
     XFree(atoms);
 }
 
-static void store_atoms(void)
+static void setup_atoms_and_protocols(void)
 {
     char *names[TOTAL_ATOMS] = {
         "WM_PROTOCOLS",
@@ -425,11 +425,14 @@ static bool create_window(struct libqu_core_params const *params, XVisualInfo *v
     return true;
 }
 
-static void create_modern_glx_context(GLXFBConfig fbc, int version)
+static bool create_modern_glx_context(GLXFBConfig fbc, int version)
 {
+    int major = version / 100;
+    int minor = (version % 100) / 10;
+
     int attribs[] = {
-        GLX_CONTEXT_MAJOR_VERSION_ARB,  (version / 100),
-        GLX_CONTEXT_MINOR_VERSION_ARB,  (version % 100) / 10,
+        GLX_CONTEXT_MAJOR_VERSION_ARB,  major,
+        GLX_CONTEXT_MINOR_VERSION_ARB,  minor,
         None,                           None,
         None,
     };
@@ -444,6 +447,29 @@ static void create_modern_glx_context(GLXFBConfig fbc, int version)
     priv.glx.context = priv.glx.glXCreateContextAttribsARB(
         priv.dpy, fbc, NULL, True, attribs
     );
+
+    if (!priv.glx.context) {
+        return false;
+    }
+
+    priv.glx.version = version;
+    LIBQU_LOGI("Created OpenGL context %d.%d.\n", major, minor);
+
+    return true;
+}
+
+static bool create_legacy_glx_context(XVisualInfo *vi)
+{
+    priv.glx.context = glXCreateContext(priv.dpy, vi, NULL, True);
+
+    if (!priv.glx.context) {
+        return false;
+    }
+
+    priv.glx.version = 120;
+    LIBQU_LOGI("Created legacy OpenGL context.\n");
+
+    return true;
 }
 
 static bool create_glx_context(GLXFBConfig fbc, XVisualInfo *vi)
@@ -456,31 +482,25 @@ static bool create_glx_context(GLXFBConfig fbc, XVisualInfo *vi)
         };
 
         for (size_t i = 0; i < sizeof(versions) / sizeof(versions[0]); i++) {
-            create_modern_glx_context(fbc, versions[i]);
-
-            if (priv.glx.context) {
-                priv.glx.version = versions[i];
+            if (create_modern_glx_context(fbc, versions[i])) {
                 break;
             }
         }
+    } else {
+        create_legacy_glx_context(vi);
     }
 
     XFree(vi);
 
     if (!priv.glx.context) {
-        priv.glx.context = glXCreateContext(priv.dpy, vi, NULL, True);
-
-        if (!priv.glx.context) {
-            return false;
-        }
-
-        priv.glx.version = 120;
+        LIBQU_LOGE("Failed to create OpenGL context.\n");
+        return false;
     }
 
     priv.glx.surface = glXCreateWindow(priv.dpy, fbc, priv.window, NULL);
-    glXMakeContextCurrent(priv.dpy, priv.glx.surface, priv.glx.surface, priv.glx.context);
 
-    return true;
+    return glXMakeContextCurrent(priv.dpy, priv.glx.surface, priv.glx.surface,
+        priv.glx.context);
 }
 
 static void handle_key_event(XEvent *ev)
@@ -558,26 +578,33 @@ static bool core_x11_initialize(struct libqu_core_params const *params)
     priv.screen = DefaultScreen(priv.dpy);
     priv.root = DefaultRootWindow(priv.dpy);
 
-    XkbSetDetectableAutoRepeat(priv.dpy, True, NULL);
+    if (XkbSetDetectableAutoRepeat(priv.dpy, True, NULL)) {
+        LIBQU_LOGI("XkbSetDetectableAutoRepeat is available.\n");
+    }
 
-    store_atoms();
+    setup_atoms_and_protocols();
     parse_glx_extensions();
 
     GLXFBConfig fbc = choose_fbc();
 
     if (!fbc) {
+        LIBQU_LOGE("Failed to choose suitable GLXFBConfig.\n");
         return false;
     }
 
     XVisualInfo *vi = glXGetVisualFromFBConfig(priv.dpy, fbc);
 
     if (!create_window(params, vi)) {
+        LIBQU_LOGE("Failed to create X11 window.\n");
         return false;
     }
 
     if (!create_glx_context(fbc, vi)) {
+        LIBQU_LOGE("Failed to create or activate GLX context.\n");
         return false;
     }
+
+    LIBQU_LOGI("Initialized.\n");
 
     return true;
 }
@@ -585,14 +612,23 @@ static bool core_x11_initialize(struct libqu_core_params const *params)
 static void core_x11_terminate(void)
 {
     if (priv.dpy) {
+        glXMakeContextCurrent(priv.dpy, None, None, None);
+        
         glXDestroyWindow(priv.dpy, priv.glx.surface);
         glXDestroyContext(priv.dpy, priv.glx.context);
 
+        LIBQU_LOGI("OpenGL context is destroyed.\n");
+
         XDestroyWindow(priv.dpy, priv.window);
+        XFreeColormap(priv.dpy, priv.colormap);
         XCloseDisplay(priv.dpy);
+
+        LIBQU_LOGI("Window is destroyed, display is closed.\n");
     }
 
     memset(&priv, 0, sizeof(priv));
+
+    LIBQU_LOGI("Terminated.\n");
 }
 
 static bool core_x11_process(void)
@@ -601,12 +637,15 @@ static bool core_x11_process(void)
 
     while (XCheckTypedWindowEvent(priv.dpy, priv.window, ClientMessage, &event)) {
         if (event.xclient.data.l[0] == (long) priv.atoms[_WM_DELETE_WINDOW]) {
+            LIBQU_LOGI("Caught WM_DELETE_WINDOW.\n");
             return false;
         }
     }
 
     while (XCheckWindowEvent(priv.dpy, priv.window, priv.event_mask, &event)) {
-        handle_event(&event);
+        if (!handle_event(&event)) {
+            LIBQU_LOGW("Unhandled event: 0x%04x.\n", event.type);
+        }
     }
 
     return true;
@@ -669,4 +708,3 @@ struct libqu_core_impl const libqu_core_x11_impl = {
 //------------------------------------------------------------------------------
 
 #endif // QU_USE_X11
-
