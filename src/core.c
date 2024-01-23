@@ -18,6 +18,7 @@
 // 3. This notice may not be removed or altered from any source distribution.
 //------------------------------------------------------------------------------
 
+#include <stb_ds.h>
 #include "core.h"
 #include "log.h"
 
@@ -36,6 +37,14 @@ static struct libqu_core_impl const *impl_list[] = {
 static struct
 {
     struct libqu_core_impl const *impl;
+
+    char const *window_title;
+    qu_vec2i window_size;
+
+    bool active;
+    qu_key_state keyboard[QU_TOTAL_KEYS];
+
+    struct libqu_event *events;
 } priv;
 
 //------------------------------------------------------------------------------
@@ -51,6 +60,36 @@ static struct libqu_core_impl const *choose_impl(void)
     }
 
     abort();
+}
+
+static void handle_activate_event(void)
+{
+    priv.active = true;
+}
+
+static void handle_deactivate_event(void)
+{
+    priv.active = false;
+
+    for (int i = 0; i < QU_TOTAL_KEYS; i++) {
+        if (priv.keyboard[i] == QU_KEY_STATE_PRESSED) {
+            priv.keyboard[i] = QU_KEY_STATE_RELEASED;
+        }
+    }
+}
+
+static void handle_key_press_event(qu_key key)
+{
+    if (priv.keyboard[key] == QU_KEY_STATE_IDLE) {
+        priv.keyboard[key] = QU_KEY_STATE_PRESSED;
+    }
+}
+
+static void handle_key_release_event(qu_key key)
+{
+    if (priv.keyboard[key] == QU_KEY_STATE_PRESSED) {
+        priv.keyboard[key] = QU_KEY_STATE_RELEASED;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -76,12 +115,85 @@ void libqu_core_terminate(void)
 
 bool libqu_core_process(void)
 {
-    return priv.impl->process();
+    for (int i = 0; i < QU_TOTAL_KEYS; i++) {
+        if (priv.keyboard[i] == QU_KEY_STATE_RELEASED) {
+            priv.keyboard[i] = QU_KEY_STATE_IDLE;
+        }
+    }
+
+    if (!priv.impl->process()) {
+        return false;
+    }
+
+    for (size_t i = 0; i < arrlenu(priv.events); i++) {
+        struct libqu_event *event = &priv.events[i];
+
+        switch (event->type) {
+        case LIBQU_EVENT_ACTIVATE:
+            handle_activate_event();
+            break;
+        case LIBQU_EVENT_DEACTIVATE:
+            handle_deactivate_event();
+            break;
+        case LIBQU_EVENT_KEY_PRESSED:
+            handle_key_press_event(event->data.key);
+            break;
+        case LIBQU_EVENT_KEY_RELEASED:
+            handle_key_release_event(event->data.key);
+            break;
+        default:
+            break;
+        }
+    }
+
+    arrsetlen(priv.events, 0);
+
+    return true;
 }
 
 void libqu_core_swap(void)
 {
     priv.impl->swap();
+}
+
+bool libqu_core_is_window_active(void)
+{
+    return priv.active;
+}
+
+char const *libqu_core_get_window_title(void)
+{
+    return priv.window_title;
+}
+
+qu_vec2i libqu_core_get_window_size(void)
+{
+    return priv.window_size;
+}
+
+void libqu_core_set_window_title(char const *title)
+{
+    if (priv.impl->set_window_title(title)) {
+        priv.window_title = title;
+    }
+}
+
+void libqu_core_set_window_size(qu_vec2i size)
+{
+    if (priv.impl->set_window_size(size)) {
+        priv.window_size = size;
+    }
+}
+
+qu_key_state const *libqu_core_get_keyboard_state(void)
+{
+    return priv.keyboard;
+}
+
+void libqu_core_enqueue_event(struct libqu_event *event)
+{
+    struct libqu_event *new_event = arraddnptr(priv.events, 1);
+    memcpy(new_event, event, sizeof(*new_event));
 }
 
 int libqu_gl_get_version(void)

@@ -49,6 +49,16 @@ static void core_null_swap(void)
 {
 }
 
+static bool core_null_set_window_title(char const *title)
+{
+    return true;
+}
+
+static bool core_null_set_window_size(qu_vec2i size)
+{
+    return true;
+}
+
 static int core_null_gl_get_version(void)
 {
     return -1;
@@ -67,6 +77,8 @@ struct libqu_core_impl const libqu_core_null_impl = {
     core_null_terminate,
     core_null_process,
     core_null_swap,
+    core_null_set_window_title,
+    core_null_set_window_size,
     core_null_gl_get_version,
     core_null_gl_get_proc_address,
 };
