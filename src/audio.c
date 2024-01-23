@@ -73,17 +73,22 @@ void libqu_audio_set_master_volume(float volume)
 
 }
 
-qu_handle libqu_audio_load_sound(struct libqu_file *file)
+struct libqu_sound *libqu_audio_load_sound_from_file(struct libqu_file *file)
 {
-    return 0;
+    return NULL;
 }
 
-void libqu_audio_delete_sound(qu_handle sound_id)
+struct libqu_sound *libqu_audio_load_sound_from_wave(struct libqu_wave *wave)
+{
+    return NULL;
+}
+
+void libqu_audio_delete_sound(struct libqu_sound *sound)
 {
 
 }
 
-qu_handle libqu_audio_play_sound(qu_handle sound_id, int loop)
+qu_handle libqu_audio_play_sound(struct libqu_sound *sound, int loop)
 {
     return 0;
 }

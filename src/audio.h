@@ -24,8 +24,19 @@
 //------------------------------------------------------------------------------
 
 #include "fs.h"
+#include "wave.h"
 
 //------------------------------------------------------------------------------
+
+struct libqu_sound
+{
+    int unused;
+};
+
+struct libqu_voice
+{
+    int unused;
+};
 
 struct libqu_audio_params
 {
@@ -49,9 +60,10 @@ void libqu_audio_initialize(struct libqu_audio_params const *params);
 void libqu_audio_terminate(void);
 
 void libqu_audio_set_master_volume(float volume);
-qu_handle libqu_audio_load_sound(struct libqu_file *file);
-void libqu_audio_delete_sound(qu_handle sound_id);
-qu_handle libqu_audio_play_sound(qu_handle sound_id, int loop);
+struct libqu_sound *libqu_audio_load_sound_from_file(struct libqu_file *file);
+struct libqu_sound *libqu_audio_load_sound_from_wave(struct libqu_wave *wave);
+void libqu_audio_delete_sound(struct libqu_sound *sound);
+qu_handle libqu_audio_play_sound(struct libqu_sound *sound, int loop);
 void libqu_audio_pause_voice(qu_handle voice_id);
 void libqu_audio_unpause_voice(qu_handle voice_id);
 void libqu_audio_stop_voice(qu_handle voice_id);

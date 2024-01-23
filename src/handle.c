@@ -55,7 +55,7 @@ qu_handle libqu_handle_create(enum libqu_handle_type type, void *data)
 
 void libqu_handle_destroy(enum libqu_handle_type type, qu_handle id)
 {
-    hmdel(priv.spaces[type].map, id);
+    (void) hmdel(priv.spaces[type].map, id);
 }
 
 void *libqu_handle_get(enum libqu_handle_type type, qu_handle id)

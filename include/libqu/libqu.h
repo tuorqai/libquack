@@ -252,7 +252,8 @@ QU_API int64_t QU_CALL qu_get_wave_sample_rate(qu_wave wave);
 QU_API int16_t * QU_CALL qu_get_wave_samples(qu_wave wave);
 
 QU_API void QU_CALL qu_set_master_volume(float volume);
-QU_API qu_sound QU_CALL qu_load_sound(char const *path);
+QU_API qu_sound QU_CALL qu_load_sound_from_file(char const *path);
+QU_API qu_sound QU_CALL qu_load_sound_from_wave(qu_wave wave);
 QU_API void QU_CALL qu_delete_sound(qu_sound sound);
 QU_API qu_voice QU_CALL qu_play_sound(qu_sound sound);
 QU_API qu_voice QU_CALL qu_loop_sound(qu_sound sound);

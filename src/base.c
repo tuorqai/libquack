@@ -232,10 +232,10 @@ void qu_draw_rectangle(float x, float y, float w, float h, qu_color outline, qu_
 qu_wave qu_create_wave(int16_t channels, int64_t samples, int64_t sample_rate)
 {
     qu_wave wave = { 0 };
-    struct libqu_wave *data = libqu_wave_create(channels, samples, sample_rate);
+    struct libqu_wave *wave_p = libqu_wave_create(channels, samples, sample_rate);
 
-    if (data) {
-        wave.id = libqu_handle_create(LIBQU_HANDLE_WAVE, data);
+    if (wave_p) {
+        wave.id = libqu_handle_create(LIBQU_HANDLE_WAVE, wave_p);
     }
 
     return wave;
@@ -247,10 +247,10 @@ qu_wave qu_load_wave(char const *path)
     struct libqu_file *file = libqu_fopen(path);
 
     if (file) {
-        struct libqu_wave *data = libqu_wave_load(file);
+        struct libqu_wave *wave_p = libqu_wave_load(file);
 
-        if (data) {
-            wave.id = libqu_handle_create(LIBQU_HANDLE_WAVE, data);
+        if (wave_p) {
+            wave.id = libqu_handle_create(LIBQU_HANDLE_WAVE, wave_p);
         }
 
         libqu_fclose(file);
@@ -261,20 +261,20 @@ qu_wave qu_load_wave(char const *path)
 
 void qu_destroy_wave(qu_wave wave)
 {
-    struct libqu_wave *data = libqu_handle_get(LIBQU_HANDLE_WAVE, wave.id);
+    struct libqu_wave *wave_p = libqu_handle_get(LIBQU_HANDLE_WAVE, wave.id);
 
-    if (data) {
-        libqu_wave_destroy(data);
+    if (wave_p) {
+        libqu_wave_destroy(wave_p);
         libqu_handle_destroy(LIBQU_HANDLE_WAVE, wave.id);
     }
 }
 
 int16_t qu_get_wave_channel_count(qu_wave wave)
 {
-    struct libqu_wave *data = libqu_handle_get(LIBQU_HANDLE_WAVE, wave.id);
+    struct libqu_wave *wave_p = libqu_handle_get(LIBQU_HANDLE_WAVE, wave.id);
 
-    if (data) {
-        return data->channel_count;
+    if (wave_p) {
+        return wave_p->channel_count;
     }
 
     return 0;
@@ -282,10 +282,10 @@ int16_t qu_get_wave_channel_count(qu_wave wave)
 
 int64_t qu_get_wave_sample_count(qu_wave wave)
 {
-    struct libqu_wave *data = libqu_handle_get(LIBQU_HANDLE_WAVE, wave.id);
+    struct libqu_wave *wave_p = libqu_handle_get(LIBQU_HANDLE_WAVE, wave.id);
 
-    if (data) {
-        return data->sample_count;
+    if (wave_p) {
+        return wave_p->sample_count;
     }
 
     return 0;
@@ -293,10 +293,10 @@ int64_t qu_get_wave_sample_count(qu_wave wave)
 
 int64_t qu_get_wave_sample_rate(qu_wave wave)
 {
-    struct libqu_wave *data = libqu_handle_get(LIBQU_HANDLE_WAVE, wave.id);
+    struct libqu_wave *wave_p = libqu_handle_get(LIBQU_HANDLE_WAVE, wave.id);
 
-    if (data) {
-        return data->sample_rate;
+    if (wave_p) {
+        return wave_p->sample_rate;
     }
 
     return 0;
@@ -304,10 +304,10 @@ int64_t qu_get_wave_sample_rate(qu_wave wave)
 
 int16_t *qu_get_wave_samples(qu_wave wave)
 {
-    struct libqu_wave *data = libqu_handle_get(LIBQU_HANDLE_WAVE, wave.id);
+    struct libqu_wave *wave_p = libqu_handle_get(LIBQU_HANDLE_WAVE, wave.id);
 
-    if (data) {
-        return data->samples;
+    if (wave_p) {
+        return wave_p->samples;
     }
 
     return 0;
@@ -322,15 +322,44 @@ void qu_set_master_volume(float volume)
     libqu_audio_set_master_volume(volume);
 }
 
-qu_sound qu_load_sound(char const *path)
+qu_sound qu_load_sound_from_file(char const *path)
 {
     if (!(priv.extra & EXTRA_MODULE_AUDIO)) {
         initialize_audio();
     }
 
-    qu_sound sound = {
-        libqu_audio_load_sound(NULL),
-    };
+    qu_sound sound = { 0 };
+    struct libqu_file *file = libqu_fopen(path);
+
+    if (file) {
+        struct libqu_sound *sound_p = libqu_audio_load_sound_from_file(file);
+
+        if (sound_p) {
+            sound.id = libqu_handle_create(LIBQU_HANDLE_SOUND, sound_p);
+        }
+
+        libqu_fclose(file);
+    }
+
+    return sound;
+}
+
+qu_sound qu_load_sound_from_wave(qu_wave wave)
+{
+    if (!(priv.extra & EXTRA_MODULE_AUDIO)) {
+        initialize_audio();
+    }
+
+    qu_sound sound = { 0 };
+    struct libqu_wave *wave_p = libqu_handle_get(LIBQU_HANDLE_WAVE, wave.id);
+
+    if (wave_p) {
+        struct libqu_sound *sound_p = libqu_audio_load_sound_from_wave(wave_p);
+
+        if (sound_p) {
+            sound.id = libqu_handle_create(LIBQU_HANDLE_SOUND, sound_p);
+        }
+    }
 
     return sound;
 }
@@ -341,17 +370,25 @@ void qu_delete_sound(qu_sound sound)
         return;
     }
 
-    libqu_audio_delete_sound(sound.id);
+    struct libqu_sound *sound_p = libqu_handle_get(LIBQU_HANDLE_SOUND, sound.id);
+
+    if (sound_p) {
+        libqu_audio_delete_sound(sound_p);
+    }
 }
 
 qu_voice qu_play_sound(qu_sound sound)
 {
-    qu_voice voice;
+    qu_voice voice = { 0 };
 
-    if (priv.extra & EXTRA_MODULE_AUDIO) {
-        voice.id = libqu_audio_play_sound(sound.id, 0);
-    } else {
-        voice.id = 0;
+    if (!(priv.extra & EXTRA_MODULE_AUDIO)) {
+        return voice;
+    }
+
+    struct libqu_sound *sound_p = libqu_handle_get(LIBQU_HANDLE_SOUND, sound.id);
+
+    if (sound_p) {
+        voice.id = libqu_audio_play_sound(sound_p, 0);
     }
 
     return voice;
@@ -359,12 +396,16 @@ qu_voice qu_play_sound(qu_sound sound)
 
 qu_voice qu_loop_sound(qu_sound sound)
 {
-    qu_voice voice;
+    qu_voice voice = { 0 };
 
-    if (priv.extra & EXTRA_MODULE_AUDIO) {
-        voice.id = libqu_audio_play_sound(sound.id, -1);
-    } else {
-        voice.id = 0;
+    if (!(priv.extra & EXTRA_MODULE_AUDIO)) {
+        return voice;
+    }
+
+    struct libqu_sound *sound_p = libqu_handle_get(LIBQU_HANDLE_SOUND, sound.id);
+
+    if (sound_p) {
+        voice.id = libqu_audio_play_sound(sound_p, 0);
     }
 
     return voice;

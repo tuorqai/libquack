@@ -30,6 +30,7 @@
 enum libqu_handle_type
 {
     LIBQU_HANDLE_WAVE,
+    LIBQU_HANDLE_SOUND,
     LIBQU_TOTAL_HANDLE_TYPES,
 };
 
