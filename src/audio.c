@@ -67,3 +67,38 @@ void libqu_audio_terminate(void)
 {
     LIBQU_LOGI("Terminated.\n");
 }
+
+void libqu_audio_set_master_volume(float volume)
+{
+
+}
+
+qu_handle libqu_audio_load_sound(void *file)
+{
+
+}
+
+void libqu_audio_delete_sound(qu_handle sound_id)
+{
+
+}
+
+qu_handle libqu_audio_play_sound(qu_handle sound_id, int loop)
+{
+
+}
+
+void libqu_audio_pause_voice(qu_handle voice_id)
+{
+
+}
+
+void libqu_audio_unpause_voice(qu_handle voice_id)
+{
+
+}
+
+void libqu_audio_stop_voice(qu_handle voice_id)
+{
+
+}

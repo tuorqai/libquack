@@ -19,19 +19,29 @@
 //------------------------------------------------------------------------------
 
 #include <string.h>
+#include "audio.h"
 #include "core.h"
 #include "graphics.h"
 #include "log.h"
 
 //------------------------------------------------------------------------------
 
+enum
+{
+    EXTRA_MODULE_AUDIO = (1 << 0),
+};
+
+//------------------------------------------------------------------------------
+
 static struct
 {
     int refcount;
+    unsigned int extra;
 
     struct {
         struct libqu_core_params core;
         struct libqu_graphics_params graphics;
+        struct libqu_audio_params audio;
     } params;
 } priv;
 
@@ -59,6 +69,13 @@ static void sanitize_graphics_params(void)
         p->window_size.x = priv.params.core.window_size.x;
         p->window_size.y = priv.params.core.window_size.y;
     }
+}
+
+static void initialize_audio(void)
+{
+    libqu_audio_initialize(&priv.params.audio);
+
+    priv.extra |= EXTRA_MODULE_AUDIO;
 }
 
 //------------------------------------------------------------------------------
@@ -212,40 +229,84 @@ void qu_draw_rectangle(float x, float y, float w, float h, qu_color outline, qu_
 
 void qu_set_master_volume(float volume)
 {
-    
+    if (!(priv.extra & EXTRA_MODULE_AUDIO)) {
+        initialize_audio();
+    }
+
+    libqu_audio_set_master_volume(volume);
 }
 
 qu_sound qu_load_sound(char const *path)
 {
+    if (!(priv.extra & EXTRA_MODULE_AUDIO)) {
+        initialize_audio();
+    }
 
+    qu_sound sound = {
+        libqu_audio_load_sound(NULL),
+    };
+
+    return sound;
 }
 
 void qu_delete_sound(qu_sound sound)
 {
+    if (!(priv.extra & EXTRA_MODULE_AUDIO)) {
+        return;
+    }
 
+    libqu_audio_delete_sound(sound.id);
 }
 
 qu_voice qu_play_sound(qu_sound sound)
 {
+    if (!(priv.extra & EXTRA_MODULE_AUDIO)) {
+        return;
+    }
 
+    qu_voice voice = {
+        libqu_audio_play_sound(sound.id, 0),
+    };
+
+    return voice;
 }
 
 qu_voice qu_loop_sound(qu_sound sound)
 {
+    if (!(priv.extra & EXTRA_MODULE_AUDIO)) {
+        return;
+    }
 
+    qu_voice voice = {
+        libqu_audio_play_sound(sound.id, -1),
+    };
+
+    return voice;
 }
 
 void qu_pause_voice(qu_voice voice)
 {
+    if (!(priv.extra & EXTRA_MODULE_AUDIO)) {
+        return;
+    }
 
+    libqu_audio_pause_voice(voice.id);
 }
 
 void qu_unpause_voice(qu_voice voice)
 {
+    if (!(priv.extra & EXTRA_MODULE_AUDIO)) {
+        return;
+    }
 
+    libqu_audio_unpause_voice(voice.id);
 }
 
 void qu_stop_voice(qu_voice voice)
 {
+    if (!(priv.extra & EXTRA_MODULE_AUDIO)) {
+        return;
+    }
 
+    libqu_audio_stop_voice(voice.id);
 }
