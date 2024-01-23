@@ -23,6 +23,7 @@ add_library(libquack
     src/core.c
     src/core_null.c
     src/core_x11.c
+    src/fs.c
     src/graphics.c
     src/graphics_gl3.c
     src/graphics_null.c
