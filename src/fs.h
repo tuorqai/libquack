@@ -42,7 +42,7 @@ struct libqu_file
 {
     enum libqu_file_source source;
 
-    char name[QU_FILE_NAME_LENGTH];
+    char name[LIBQU_FILE_NAME_LENGTH];
     size_t size;
 
     void *context;

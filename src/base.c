@@ -260,26 +260,26 @@ void qu_delete_sound(qu_sound sound)
 
 qu_voice qu_play_sound(qu_sound sound)
 {
-    if (!(priv.extra & EXTRA_MODULE_AUDIO)) {
-        return;
-    }
+    qu_voice voice;
 
-    qu_voice voice = {
-        libqu_audio_play_sound(sound.id, 0),
-    };
+    if (priv.extra & EXTRA_MODULE_AUDIO) {
+        voice.id = libqu_audio_play_sound(sound.id, 0);
+    } else {
+        voice.id = 0;
+    }
 
     return voice;
 }
 
 qu_voice qu_loop_sound(qu_sound sound)
 {
-    if (!(priv.extra & EXTRA_MODULE_AUDIO)) {
-        return;
-    }
+    qu_voice voice;
 
-    qu_voice voice = {
-        libqu_audio_play_sound(sound.id, -1),
-    };
+    if (priv.extra & EXTRA_MODULE_AUDIO) {
+        voice.id = libqu_audio_play_sound(sound.id, -1);
+    } else {
+        voice.id = 0;
+    }
 
     return voice;
 }
