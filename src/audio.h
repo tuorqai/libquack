@@ -24,9 +24,16 @@
 //------------------------------------------------------------------------------
 
 #include "fs.h"
-#include "wave.h"
 
 //------------------------------------------------------------------------------
+
+struct libqu_wave
+{
+    int16_t *samples;
+    int16_t channel_count;
+    int64_t sample_count;
+    int64_t sample_rate;
+};
 
 struct libqu_sound
 {
@@ -57,6 +64,10 @@ struct libqu_audio_impl
 extern struct libqu_audio_impl const libqu_audio_null_impl;
 
 //------------------------------------------------------------------------------
+
+struct libqu_wave *libqu_wave_create(int16_t channels, int64_t samples, int64_t sample_rate);
+struct libqu_wave *libqu_wave_load(struct libqu_file *file);
+void libqu_wave_destroy(struct libqu_wave *wave);
 
 void libqu_audio_initialize(struct libqu_audio_params const *params);
 void libqu_audio_terminate(void);

@@ -33,8 +33,7 @@ add_library(libquack
     src/handle.c
     src/log.c
     src/platform_posix.c
-    src/util.c
-    src/wave.c)
+    src/util.c)
 
 add_library(libquack::libquack ALIAS libquack)
 

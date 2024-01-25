@@ -24,7 +24,6 @@
 #include "graphics.h"
 #include "handle.h"
 #include "log.h"
-#include "wave.h"
 
 //------------------------------------------------------------------------------
 

@@ -24,6 +24,31 @@
 
 //------------------------------------------------------------------------------
 
+struct libqu_wave *libqu_wave_create(int16_t channels, int64_t samples, int64_t sample_rate)
+{
+    struct libqu_wave *wave = pl_calloc(1, sizeof(*wave));
+
+    wave->samples = pl_malloc(sizeof(*wave->samples) * channels * samples);
+    wave->channel_count = channels;
+    wave->sample_count = samples;
+    wave->sample_rate = sample_rate;
+
+    return wave;
+}
+
+struct libqu_wave *libqu_wave_load(struct libqu_file *file)
+{
+    return NULL;
+}
+
+void libqu_wave_destroy(struct libqu_wave *wave)
+{
+    pl_free(wave->samples);
+    pl_free(wave);
+}
+
+//------------------------------------------------------------------------------
+
 static struct libqu_audio_impl const *impl_list[] = {
     &libqu_audio_null_impl,
 };
