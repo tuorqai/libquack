@@ -126,17 +126,36 @@ struct libqu_wave *libqu_wave_create(int16_t channels, int64_t samples, int64_t 
 {
     struct libqu_wave *wave = pl_calloc(1, sizeof(*wave));
 
-    wave->samples = pl_malloc(sizeof(*wave->samples) * channels * samples);
-    wave->channel_count = channels;
-    wave->sample_count = samples;
-    wave->sample_rate = sample_rate;
+    if (wave) {
+        wave->samples = pl_malloc(sizeof(*wave->samples) * channels * samples);
+        wave->channel_count = channels;
+        wave->sample_count = samples;
+        wave->sample_rate = sample_rate;
+    }
 
     return wave;
 }
 
 struct libqu_wave *libqu_wave_load(struct libqu_file *file)
 {
-    return NULL;
+    struct libqu_wave *wave = NULL;
+    struct libqu_sndfile *sndfile = libqu_sndfile_open(file);
+
+    if (sndfile) {
+        wave = libqu_wave_create(
+            sndfile->channel_count,
+            sndfile->sample_count,
+            sndfile->sample_rate
+        );
+
+        if (wave) {
+            libqu_sndfile_read(sndfile, wave->samples, wave->sample_count);
+        }
+
+        libqu_sndfile_close(sndfile);
+    }
+
+    return wave;
 }
 
 void libqu_wave_destroy(struct libqu_wave *wave)
