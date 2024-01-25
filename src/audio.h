@@ -27,6 +27,16 @@
 
 //------------------------------------------------------------------------------
 
+struct libqu_sndfile
+{
+    int format;
+    struct libqu_file *file;
+    void *context;
+    int16_t channel_count;
+    int64_t sample_count;
+    int64_t sample_rate;
+};
+
 struct libqu_wave
 {
     int16_t *samples;
@@ -64,6 +74,11 @@ struct libqu_audio_impl
 extern struct libqu_audio_impl const libqu_audio_null_impl;
 
 //------------------------------------------------------------------------------
+
+struct libqu_sndfile *libqu_sndfile_open(struct libqu_file *file);
+void libqu_sndfile_close(struct libqu_sndfile *sndfile);
+int64_t libqu_sndfile_read(struct libqu_sndfile *sndfile, int16_t *samples, int64_t max_samples);
+int64_t libqu_sndfile_seek(struct libqu_sndfile *sndfile, int64_t sample_offset);
 
 struct libqu_wave *libqu_wave_create(int16_t channels, int64_t samples, int64_t sample_rate);
 struct libqu_wave *libqu_wave_load(struct libqu_file *file);
