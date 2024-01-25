@@ -27,24 +27,6 @@
 
 //------------------------------------------------------------------------------
 
-struct libqu_sndfile
-{
-    int format;
-    struct libqu_file *file;
-    void *context;
-    int16_t channel_count;
-    int64_t sample_count;
-    int64_t sample_rate;
-};
-
-struct libqu_wave
-{
-    int16_t *samples;
-    int16_t channel_count;
-    int64_t sample_count;
-    int64_t sample_rate;
-};
-
 struct libqu_sound
 {
     struct libqu_wave *wave;
@@ -69,20 +51,29 @@ struct libqu_audio_impl
     int (*stop_voice)(qu_handle voice_id);
 };
 
+struct libqu_wave
+{
+    int16_t *samples;
+    int16_t channel_count;
+    int64_t sample_count;
+    int64_t sample_rate;
+};
+
+struct libqu_sndfile
+{
+    int format;
+    struct libqu_file *file;
+    void *context;
+    int16_t channel_count;
+    int64_t sample_count;
+    int64_t sample_rate;
+};
+
 //------------------------------------------------------------------------------
 
 extern struct libqu_audio_impl const libqu_audio_null_impl;
 
 //------------------------------------------------------------------------------
-
-struct libqu_sndfile *libqu_sndfile_open(struct libqu_file *file);
-void libqu_sndfile_close(struct libqu_sndfile *sndfile);
-int64_t libqu_sndfile_read(struct libqu_sndfile *sndfile, int16_t *samples, int64_t max_samples);
-int64_t libqu_sndfile_seek(struct libqu_sndfile *sndfile, int64_t sample_offset);
-
-struct libqu_wave *libqu_wave_create(int16_t channels, int64_t samples, int64_t sample_rate);
-struct libqu_wave *libqu_wave_load(struct libqu_file *file);
-void libqu_wave_destroy(struct libqu_wave *wave);
 
 void libqu_audio_initialize(struct libqu_audio_params const *params);
 void libqu_audio_terminate(void);
@@ -94,6 +85,15 @@ qu_handle libqu_audio_play_sound(struct libqu_sound *sound, int loop);
 void libqu_audio_pause_voice(qu_handle voice_id);
 void libqu_audio_unpause_voice(qu_handle voice_id);
 void libqu_audio_stop_voice(qu_handle voice_id);
+
+struct libqu_wave *libqu_wave_create(int16_t channels, int64_t samples, int64_t sample_rate);
+struct libqu_wave *libqu_wave_load(struct libqu_file *file);
+void libqu_wave_destroy(struct libqu_wave *wave);
+
+struct libqu_sndfile *libqu_sndfile_open(struct libqu_file *file);
+void libqu_sndfile_close(struct libqu_sndfile *sndfile);
+int64_t libqu_sndfile_read(struct libqu_sndfile *sndfile, int16_t *samples, int64_t max_samples);
+int64_t libqu_sndfile_seek(struct libqu_sndfile *sndfile, int64_t sample_offset);
 
 //------------------------------------------------------------------------------
 

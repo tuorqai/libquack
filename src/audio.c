@@ -26,6 +26,127 @@
 
 //------------------------------------------------------------------------------
 
+static struct libqu_audio_impl const *impl_list[] = {
+    &libqu_audio_null_impl,
+};
+
+//------------------------------------------------------------------------------
+
+static struct
+{
+    struct libqu_audio_impl const *impl;
+} priv;
+
+//------------------------------------------------------------------------------
+
+static struct libqu_audio_impl const *choose_impl(void)
+{
+    int count = sizeof(impl_list) / sizeof(impl_list[0]);
+
+    for (int i = 0; i < count; i++) {
+        if (impl_list[i]->check_if_available()) {
+            return impl_list[i];
+        }
+    }
+
+    abort();
+}
+
+//------------------------------------------------------------------------------
+
+void libqu_audio_initialize(struct libqu_audio_params const *params)
+{
+    priv.impl = choose_impl();
+
+    if (!priv.impl->initialize(params)) {
+        LIBQU_LOGE("Failed to initialize libqu::audio implementation.\n");
+        abort();
+    }
+
+    LIBQU_LOGI("Initialized.\n");
+}
+
+void libqu_audio_terminate(void)
+{
+    LIBQU_LOGI("Terminated.\n");
+}
+
+void libqu_audio_set_master_volume(float volume)
+{
+    priv.impl->set_master_volume(volume);
+}
+
+struct libqu_sound *libqu_audio_load_sound(struct libqu_wave *wave)
+{
+    struct libqu_sound *sound = pl_calloc(1, sizeof(*sound));
+
+    sound->wave = wave;
+
+    if (priv.impl->load_sound(sound) == 0) {
+        return sound;
+    }
+
+    libqu_wave_destroy(sound->wave);
+    pl_free(sound);
+
+    return NULL;
+}
+
+void libqu_audio_delete_sound(struct libqu_sound *sound)
+{
+    priv.impl->delete_sound(sound);
+
+    libqu_wave_destroy(sound->wave);
+    pl_free(sound);
+}
+
+qu_handle libqu_audio_play_sound(struct libqu_sound *sound, int loop)
+{
+    return priv.impl->play_sound(sound, loop);
+}
+
+void libqu_audio_pause_voice(qu_handle voice_id)
+{
+    priv.impl->pause_voice(voice_id);
+}
+
+void libqu_audio_unpause_voice(qu_handle voice_id)
+{
+    priv.impl->unpause_voice(voice_id);
+}
+
+void libqu_audio_stop_voice(qu_handle voice_id)
+{
+    priv.impl->stop_voice(voice_id);
+}
+
+//------------------------------------------------------------------------------
+
+struct libqu_wave *libqu_wave_create(int16_t channels, int64_t samples, int64_t sample_rate)
+{
+    struct libqu_wave *wave = pl_calloc(1, sizeof(*wave));
+
+    wave->samples = pl_malloc(sizeof(*wave->samples) * channels * samples);
+    wave->channel_count = channels;
+    wave->sample_count = samples;
+    wave->sample_rate = sample_rate;
+
+    return wave;
+}
+
+struct libqu_wave *libqu_wave_load(struct libqu_file *file)
+{
+    return NULL;
+}
+
+void libqu_wave_destroy(struct libqu_wave *wave)
+{
+    pl_free(wave->samples);
+    pl_free(wave);
+}
+
+//------------------------------------------------------------------------------
+
 struct wav_chunk
 {
     char id[4];
@@ -409,125 +530,4 @@ int64_t libqu_sndfile_read(struct libqu_sndfile *sndfile, int16_t *samples, int6
 int64_t libqu_sndfile_seek(struct libqu_sndfile *sndfile, int64_t sample_offset)
 {
     return sndfile_callbacks[sndfile->format].seek(sndfile, sample_offset);
-}
-
-//------------------------------------------------------------------------------
-
-struct libqu_wave *libqu_wave_create(int16_t channels, int64_t samples, int64_t sample_rate)
-{
-    struct libqu_wave *wave = pl_calloc(1, sizeof(*wave));
-
-    wave->samples = pl_malloc(sizeof(*wave->samples) * channels * samples);
-    wave->channel_count = channels;
-    wave->sample_count = samples;
-    wave->sample_rate = sample_rate;
-
-    return wave;
-}
-
-struct libqu_wave *libqu_wave_load(struct libqu_file *file)
-{
-    return NULL;
-}
-
-void libqu_wave_destroy(struct libqu_wave *wave)
-{
-    pl_free(wave->samples);
-    pl_free(wave);
-}
-
-//------------------------------------------------------------------------------
-
-static struct libqu_audio_impl const *impl_list[] = {
-    &libqu_audio_null_impl,
-};
-
-//------------------------------------------------------------------------------
-
-static struct
-{
-    struct libqu_audio_impl const *impl;
-} priv;
-
-//------------------------------------------------------------------------------
-
-static struct libqu_audio_impl const *choose_impl(void)
-{
-    int count = sizeof(impl_list) / sizeof(impl_list[0]);
-
-    for (int i = 0; i < count; i++) {
-        if (impl_list[i]->check_if_available()) {
-            return impl_list[i];
-        }
-    }
-
-    abort();
-}
-
-//------------------------------------------------------------------------------
-
-void libqu_audio_initialize(struct libqu_audio_params const *params)
-{
-    priv.impl = choose_impl();
-
-    if (!priv.impl->initialize(params)) {
-        LIBQU_LOGE("Failed to initialize libqu::audio implementation.\n");
-        abort();
-    }
-
-    LIBQU_LOGI("Initialized.\n");
-}
-
-void libqu_audio_terminate(void)
-{
-    LIBQU_LOGI("Terminated.\n");
-}
-
-void libqu_audio_set_master_volume(float volume)
-{
-    priv.impl->set_master_volume(volume);
-}
-
-struct libqu_sound *libqu_audio_load_sound(struct libqu_wave *wave)
-{
-    struct libqu_sound *sound = pl_calloc(1, sizeof(*sound));
-
-    sound->wave = wave;
-
-    if (priv.impl->load_sound(sound) == 0) {
-        return sound;
-    }
-
-    libqu_wave_destroy(sound->wave);
-    pl_free(sound);
-
-    return NULL;
-}
-
-void libqu_audio_delete_sound(struct libqu_sound *sound)
-{
-    priv.impl->delete_sound(sound);
-
-    libqu_wave_destroy(sound->wave);
-    pl_free(sound);
-}
-
-qu_handle libqu_audio_play_sound(struct libqu_sound *sound, int loop)
-{
-    return priv.impl->play_sound(sound, loop);
-}
-
-void libqu_audio_pause_voice(qu_handle voice_id)
-{
-    priv.impl->pause_voice(voice_id);
-}
-
-void libqu_audio_unpause_voice(qu_handle voice_id)
-{
-    priv.impl->unpause_voice(voice_id);
-}
-
-void libqu_audio_stop_voice(qu_handle voice_id)
-{
-    priv.impl->stop_voice(voice_id);
 }
