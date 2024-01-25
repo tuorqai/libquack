@@ -18,10 +18,168 @@
 // 3. This notice may not be removed or altered from any source distribution.
 //------------------------------------------------------------------------------
 
+#include <string.h>
 #include <vorbis/vorbisfile.h>
 #include "audio.h"
 #include "log.h"
 #include "platform.h"
+
+//------------------------------------------------------------------------------
+
+struct wav_chunk
+{
+    char id[4];
+    uint32_t size;
+    char format[4];
+};
+
+struct wav_subchunk
+{
+    char id[4];
+    uint32_t size;
+};
+
+struct wav_info
+{
+    uint16_t audio_format;
+    uint16_t num_channels;
+    uint32_t sample_rate;
+    uint32_t byte_rate;
+    uint16_t block_align;
+    uint16_t bits_per_sample;
+
+    int64_t data_start;
+    int64_t data_end;
+};
+
+static void *_wav_test(struct libqu_file *file)
+{
+    struct wav_chunk chunk;
+
+    if (libqu_fread(&chunk, sizeof(chunk), file) < sizeof(chunk)) {
+        return NULL;
+    }
+
+    if (memcmp("RIFF", chunk.id, 4)) {
+        return NULL;
+    }
+
+    if (memcmp("WAVE", chunk.format, 4)) {
+        return NULL;
+    }
+
+    return pl_calloc(1, sizeof(struct wav_info));
+}
+
+static int _wav_open(struct libqu_sndfile *sndfile)
+{
+    struct wav_info *info = sndfile->context;
+    int state = 0;
+
+    while (true) {
+        struct wav_subchunk sub;
+
+        if (libqu_fread(&sub, sizeof(sub), sndfile->file) < sizeof(sub)) {
+            return -1;
+        }
+
+        int64_t start = libqu_ftell(sndfile->file);
+
+        if (memcmp("fmt ", sub.id, 4) == 0) {
+            if (libqu_fread(info, 16, sndfile->file) < 16) {
+                return -1;
+            }
+
+            sndfile->channel_count = info->num_channels;
+            sndfile->sample_rate = info->sample_rate;
+
+            state |= 0x01;
+        } else if (memcmp("data", sub.id, 4) == 0) {
+            sndfile->sample_count = sub.size / (info->bits_per_sample / 8);
+            
+            info->data_start = libqu_ftell(sndfile->file);
+            info->data_end = info->data_start + sub.size;
+
+            state |= 0x02;
+        }
+
+        if (libqu_fseek(sndfile->file, start + sub.size, SEEK_SET) == -1) {
+            return -1;
+        }
+    }
+
+    if (!(state & 0x01)) {
+        LIBQU_LOGE("wav: fmt subchunk not found\n");
+        return -1;
+    }
+
+    if (!(state & 0x02)) {
+        LIBQU_LOGE("wav: data subchunk not found\n");
+        return -1;
+    }
+
+    libqu_fseek(sndfile->file, info->data_start, SEEK_SET);
+
+    return 0;
+}
+
+static void _wav_close(struct libqu_sndfile *sndfile)
+{
+    pl_free(sndfile->context);
+}
+
+static int64_t _wav_read(struct libqu_sndfile *sndfile, int16_t *samples, int64_t max_samples)
+{
+    struct wav_info *info = sndfile->context;
+
+    int16_t bytes_per_sample = info->bits_per_sample / 8;
+    int64_t samples_read = 0;
+
+    while (samples_read < max_samples) {
+        int64_t position = libqu_ftell(sndfile->file);
+
+        if (position >= info->data_end) {
+            break;
+        }
+
+        unsigned char bytes[4];
+
+        if (libqu_fread(bytes, bytes_per_sample, sndfile->file) != bytes_per_sample) {
+            break;
+        }
+
+        switch (bytes_per_sample) {
+        case 1:
+            /* Unsigned 8-bit PCM */
+            *samples++ = (((short) bytes[0]) - 128) << 8;
+            break;
+        case 2:
+            /* Signed 16-bit PCM */
+            *samples++ = (bytes[1] << 8) | bytes[0];
+            break;
+        case 3:
+            /* Signed 24-bit PCM */
+            *samples++ = (bytes[2] << 8) | bytes[1];
+            break;
+        case 4:
+            /* Signed 32-bit PCM */
+            *samples++ = (bytes[3] << 8) | bytes[2];
+            break;
+        }
+
+        samples_read++;
+    }
+
+    return samples_read;
+}
+
+static int64_t _wav_seek(struct libqu_sndfile *sndfile, int64_t sample_offset)
+{
+    struct wav_info *info = sndfile->context;
+
+    return libqu_fseek(sndfile->file, info->data_start +
+        (sample_offset * (info->bits_per_sample / 8)), SEEK_SET);
+}
 
 //------------------------------------------------------------------------------
 
@@ -157,6 +315,7 @@ static int64_t _vorbis_seek(struct libqu_sndfile *sndfile, int64_t sample_offset
 
 enum
 {
+    SNDFILE_FORMAT_WAV,
     SNDFILE_FORMAT_VORBIS,
     TOTAL_SNDFILE_FORMATS,
 };
@@ -172,6 +331,13 @@ struct sndfile_callbacks
 
 static struct sndfile_callbacks const sndfile_callbacks[] = {
     {
+        _wav_test,
+        _wav_open,
+        _wav_close,
+        _wav_read,
+        _wav_seek,
+    },
+    {
         _vorbis_test,
         _vorbis_open,
         _vorbis_close,
@@ -181,6 +347,7 @@ static struct sndfile_callbacks const sndfile_callbacks[] = {
 };
 
 static char const * const sndfile_format_names[] = {
+    "Wave",
     "Vorbis",
 };
 
