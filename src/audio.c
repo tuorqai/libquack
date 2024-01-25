@@ -177,7 +177,7 @@ static void *_wav_test(struct libqu_file *file)
 {
     struct wav_chunk chunk;
 
-    if (libqu_fread(&chunk, sizeof(chunk), file) < sizeof(chunk)) {
+    if (libqu_fread(&chunk, sizeof(chunk), file) < (int) sizeof(chunk)) {
         return NULL;
     }
 
@@ -200,7 +200,11 @@ static int _wav_open(struct libqu_sndfile *sndfile)
     while (true) {
         struct wav_subchunk sub;
 
-        if (libqu_fread(&sub, sizeof(sub), sndfile->file) < sizeof(sub)) {
+        if (libqu_fread(&sub, sizeof(sub), sndfile->file) < (int) sizeof(sub)) {
+            LIBQU_LOGE(
+                "Failed to open WAV file \"%s\": can't read subchunk header.\n",
+                sndfile->file->name
+            );
             return -1;
         }
 
@@ -208,6 +212,10 @@ static int _wav_open(struct libqu_sndfile *sndfile)
 
         if (memcmp("fmt ", sub.id, 4) == 0) {
             if (libqu_fread(info, 16, sndfile->file) < 16) {
+                LIBQU_LOGE(
+                    "Failed to open WAV file \"%s\": fmt subchunk unreadable.\n",
+                    sndfile->file->name
+                );
                 return -1;
             }
 
@@ -225,6 +233,10 @@ static int _wav_open(struct libqu_sndfile *sndfile)
         }
 
         if (libqu_fseek(sndfile->file, start + sub.size, SEEK_SET) == -1) {
+            LIBQU_LOGE(
+                "Failed to open WAV file \"%s\": unexpected end of file.\n",
+                sndfile->file->name
+            );
             return -1;
         }
     }
@@ -371,6 +383,8 @@ static int _vorbis_open(struct libqu_sndfile *sndfile)
     int status = ov_test_open(vf);
 
     if (status != 0) {
+        LIBQU_LOGE("Failed to open Vorbis audio from \"%s\": %s\n",
+            sndfile->file->name, _vorbis_err_str(status));
         return -1;
     }
 
@@ -386,8 +400,6 @@ static int _vorbis_open(struct libqu_sndfile *sndfile)
 
 static void _vorbis_close(struct libqu_sndfile *sndfile)
 {
-    OggVorbis_File *vf = sndfile->context;
-
     ov_clear(sndfile->context);
     pl_free(sndfile->context);
 }
