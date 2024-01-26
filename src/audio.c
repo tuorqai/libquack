@@ -27,6 +27,10 @@
 //------------------------------------------------------------------------------
 
 static struct libqu_audio_impl const *impl_list[] = {
+#ifdef QU_USE_OPENAL
+    &libqu_audio_openal_impl,
+#endif
+
     &libqu_audio_null_impl,
 };
 

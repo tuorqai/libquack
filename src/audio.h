@@ -73,6 +73,10 @@ struct libqu_sndfile
 
 extern struct libqu_audio_impl const libqu_audio_null_impl;
 
+#ifdef QU_USE_OPENAL
+extern struct libqu_audio_impl const libqu_audio_openal_impl;
+#endif
+
 //------------------------------------------------------------------------------
 
 void libqu_audio_initialize(struct libqu_audio_params const *params);
