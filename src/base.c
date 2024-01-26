@@ -103,6 +103,10 @@ void qu_terminate(void)
         return;
     }
 
+    if (priv.extra & EXTRA_MODULE_AUDIO) {
+        libqu_audio_terminate();
+    }
+
     libqu_graphics_terminate();
     libqu_core_terminate();
 

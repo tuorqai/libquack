@@ -72,6 +72,8 @@ void libqu_audio_initialize(struct libqu_audio_params const *params)
 
 void libqu_audio_terminate(void)
 {
+    priv.impl->terminate();
+
     LIBQU_LOGI("Terminated.\n");
 }
 
