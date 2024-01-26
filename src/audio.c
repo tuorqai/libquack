@@ -339,6 +339,8 @@ static int64_t _wav_seek(struct libqu_sndfile *sndfile, int64_t sample_offset)
 
 //------------------------------------------------------------------------------
 
+#ifdef QU_USE_VORBIS
+
 static char const *_vorbis_err_str(int status)
 {
     if (status >= 0) {
@@ -467,12 +469,16 @@ static int64_t _vorbis_seek(struct libqu_sndfile *sndfile, int64_t sample_offset
     return ov_pcm_seek(vf, sample_offset / sndfile->channel_count);
 }
 
+#endif // QU_USE_VORBIS
+
 //------------------------------------------------------------------------------
 
 enum
 {
     SNDFILE_FORMAT_WAV,
+#ifdef QU_USE_VORBIS
     SNDFILE_FORMAT_VORBIS,
+#endif
     TOTAL_SNDFILE_FORMATS,
 };
 
@@ -493,6 +499,7 @@ static struct sndfile_callbacks const sndfile_callbacks[] = {
         _wav_read,
         _wav_seek,
     },
+#ifdef QU_USE_VORBIS
     {
         _vorbis_test,
         _vorbis_open,
@@ -500,11 +507,14 @@ static struct sndfile_callbacks const sndfile_callbacks[] = {
         _vorbis_read,
         _vorbis_seek,
     },
+#endif
 };
 
 static char const * const sndfile_format_names[] = {
     "Wave",
+#ifdef QU_USE_VORBIS
     "Vorbis",
+#endif
 };
 
 struct libqu_sndfile *libqu_sndfile_open(struct libqu_file *file)
