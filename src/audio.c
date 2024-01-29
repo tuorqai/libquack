@@ -56,6 +56,19 @@ static struct libqu_audio_impl const *choose_impl(void)
     abort();
 }
 
+static qu_handle choose_voice(void)
+{
+    for (int i = 0; i < 64; i++) {
+        enum libqu_voice_state state = priv.impl->get_voice_state(i);
+
+        if (state == LIBQU_VOICE_INITIAL || state == LIBQU_VOICE_STOPPED) {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
 //------------------------------------------------------------------------------
 
 void libqu_audio_initialize(struct libqu_audio_params const *params)
@@ -87,43 +100,88 @@ struct libqu_sound *libqu_audio_load_sound(struct libqu_wave *wave)
     struct libqu_sound *sound = pl_calloc(1, sizeof(*sound));
 
     sound->wave = wave;
+    sound->buffer_id = priv.impl->load_buffer(wave);
 
-    if (priv.impl->load_sound(sound) == 0) {
-        return sound;
+    if (sound->buffer_id == -1) {
+        libqu_wave_destroy(sound->wave);
+        pl_free(sound);
+
+        return NULL;
     }
 
-    libqu_wave_destroy(sound->wave);
-    pl_free(sound);
-
-    return NULL;
+    return sound;
 }
 
 void libqu_audio_delete_sound(struct libqu_sound *sound)
 {
-    priv.impl->delete_sound(sound);
+    for (int i = 0; i < 64; i++) {
+        if (priv.impl->get_voice_buffer(i) == sound->buffer_id) {
+            if (priv.impl->get_voice_state(i) == LIBQU_VOICE_PLAYING) {
+                priv.impl->stop_voice(i);
+            }
 
+            priv.impl->set_voice_buffer(i, -1, 0);
+        }
+    }
+
+    priv.impl->unload_buffer(sound->buffer_id);
     libqu_wave_destroy(sound->wave);
     pl_free(sound);
 }
 
 qu_handle libqu_audio_play_sound(struct libqu_sound *sound, int loop)
 {
-    return priv.impl->play_sound(sound, loop);
+    qu_handle voice_id = choose_voice();
+
+    if (voice_id == -1) {
+        return -1;
+    }
+
+    priv.impl->set_voice_buffer(voice_id, sound->buffer_id, loop);
+    
+    if (priv.impl->start_voice(voice_id) == -1) {
+        return -1;
+    }
+
+    return voice_id;
 }
 
 void libqu_audio_pause_voice(qu_handle voice_id)
 {
-    priv.impl->pause_voice(voice_id);
+    enum libqu_voice_state state = priv.impl->get_voice_state(voice_id);
+
+    if (state != LIBQU_VOICE_PLAYING) {
+        LIBQU_LOGW("Voice 0x%04x is not playing, can't pause.\n", voice_id);
+        return;
+    }
+
+    priv.impl->stop_voice(voice_id);
 }
 
 void libqu_audio_unpause_voice(qu_handle voice_id)
 {
-    priv.impl->unpause_voice(voice_id);
+    enum libqu_voice_state state = priv.impl->get_voice_state(voice_id);
+
+    if (state != LIBQU_VOICE_PAUSED) {
+        LIBQU_LOGW("Voice 0x%04x is not paused, can't resume.\n", voice_id);
+        return;
+    }
+
+    priv.impl->start_voice(voice_id);
 }
 
 void libqu_audio_stop_voice(qu_handle voice_id)
 {
+    enum libqu_voice_state state = priv.impl->get_voice_state(voice_id);
+
+    if (state != LIBQU_VOICE_PLAYING && state != LIBQU_VOICE_PAUSED) {
+        LIBQU_LOGW("Voice 0x%04x is neither playing nor paused, can't stop.\n",
+            voice_id);
+        return;
+    }
+
     priv.impl->stop_voice(voice_id);
+    priv.impl->set_voice_buffer(voice_id, -1, 0);
 }
 
 //------------------------------------------------------------------------------
@@ -255,6 +313,10 @@ static int _wav_open(struct libqu_sndfile *sndfile)
             info->data_end = info->data_start + sub.size;
 
             state |= 0x02;
+        }
+
+        if ((state & 0x03) == 0x03) {
+            break;
         }
 
         if (libqu_fseek(sndfile->file, start + sub.size, SEEK_SET) == -1) {

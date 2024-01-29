@@ -27,28 +27,13 @@
 
 //------------------------------------------------------------------------------
 
-struct libqu_sound
+enum libqu_voice_state
 {
-    struct libqu_wave *wave;
-};
-
-struct libqu_audio_params
-{
-    int unused;
-};
-
-struct libqu_audio_impl
-{
-    bool (*check_if_available)(void);
-    bool (*initialize)(struct libqu_audio_params const *params);
-    void (*terminate)(void);
-    void (*set_master_volume)(float volume);
-    int (*load_sound)(struct libqu_sound *sound);
-    void (*delete_sound)(struct libqu_sound *sound);
-    qu_handle (*play_sound)(struct libqu_sound *sound, int loop);
-    int (*pause_voice)(qu_handle voice_id);
-    int (*unpause_voice)(qu_handle voice_id);
-    int (*stop_voice)(qu_handle voice_id);
+    LIBQU_VOICE_INVALID = -1,
+    LIBQU_VOICE_INITIAL,
+    LIBQU_VOICE_PLAYING,
+    LIBQU_VOICE_PAUSED,
+    LIBQU_VOICE_STOPPED,
 };
 
 struct libqu_wave
@@ -67,6 +52,32 @@ struct libqu_sndfile
     int16_t channel_count;
     int64_t sample_count;
     int64_t sample_rate;
+};
+
+struct libqu_sound
+{
+    struct libqu_wave *wave;
+    qu_handle buffer_id;
+};
+
+struct libqu_audio_params
+{
+    int unused;
+};
+
+struct libqu_audio_impl
+{
+    bool (*check_if_available)(void);
+    bool (*initialize)(struct libqu_audio_params const *params);
+    void (*terminate)(void);
+    void (*set_master_volume)(float volume);
+    qu_handle (*load_buffer)(struct libqu_wave *wave);
+    void (*unload_buffer)(qu_handle buffer_id);
+    enum libqu_voice_state (*get_voice_state)(qu_handle voice_id);
+    qu_handle (*get_voice_buffer)(qu_handle voice_id);
+    void (*set_voice_buffer)(qu_handle voice_id, qu_handle buffer_id, int loop);
+    int (*start_voice)(qu_handle voice_id);
+    int (*stop_voice)(qu_handle voice_id);
 };
 
 //------------------------------------------------------------------------------
