@@ -90,14 +90,6 @@ static struct
 
 //------------------------------------------------------------------------------
 
-static ALenum _al_get_source_state(ALuint source)
-{
-    ALint state;
-    _AL(alGetSourcei(source, AL_SOURCE_STATE, &state));
-
-    return state;
-}
-
 static ALenum choose_format(int channels)
 {
     if (channels == 1) {
@@ -115,7 +107,14 @@ static bool audio_openal_check_if_available(void)
 {
     priv.device = alcOpenDevice(NULL);
 
-    return priv.device != NULL;
+    if (!priv.device) {
+        LIBQU_LOGW("alcOpenDevice() returned NULL.\n");
+        return false;
+    }
+
+    LIBQU_LOGI("alcOpenDevice() successful.\n");
+
+    return true;
 }
 
 static bool audio_openal_initialize(struct libqu_audio_params const *params)
@@ -188,14 +187,18 @@ static qu_handle audio_openal_load_buffer(struct libqu_wave *wave)
 
 static void audio_openal_unload_buffer(qu_handle buffer_id)
 {
-    ALuint buffer = (ALuint) buffer_id;
-
-    _AL(alDeleteBuffers(1, &buffer));
+    _AL(alDeleteBuffers(1, (ALuint *) &buffer_id));
 }
 
 enum libqu_voice_state audio_openal_get_voice_state(qu_handle voice_id)
 {
-    ALenum state = _al_get_source_state(priv.sources[voice_id]);
+    if (voice_id < 0 || voice_id >= arrlen(priv.sources)) {
+        LIBQU_LOGE("get_voice_state(): out of bounds\n");
+        return LIBQU_VOICE_INVALID;
+    }
+
+    ALint state;
+    _AL(alGetSourcei(priv.sources[voice_id], AL_SOURCE_STATE, &state));
 
     switch (state) {
     case AL_INITIAL:
@@ -213,6 +216,11 @@ enum libqu_voice_state audio_openal_get_voice_state(qu_handle voice_id)
 
 static qu_handle audio_openal_get_voice_buffer(qu_handle voice_id)
 {
+    if (voice_id < 0 || voice_id >= arrlen(priv.sources)) {
+        LIBQU_LOGE("get_voice_buffer(): out of bounds\n");
+        return -1;
+    }
+
     ALuint source = priv.sources[voice_id];
 
     ALint buffer;
@@ -223,8 +231,20 @@ static qu_handle audio_openal_get_voice_buffer(qu_handle voice_id)
 
 static void audio_openal_set_voice_buffer(qu_handle voice_id, qu_handle buffer_id, int loop)
 {
+    if (voice_id < 0 || voice_id >= arrlen(priv.sources)) {
+        LIBQU_LOGE("set_voice_buffer(): out of bounds\n");
+        return;
+    }
+
     ALuint source = priv.sources[voice_id];
     ALuint buffer = (buffer_id == -1) ? 0 : (ALuint) buffer_id;
+
+    ALint state;
+    _AL(alGetSourcei(source, AL_SOURCE_STATE, &state));
+
+    if (state == AL_PAUSED) {
+        _AL(alSourceStop(source));
+    }
 
     _AL(alSourcei(source, AL_BUFFER, buffer));
     _AL(alSourcei(source, AL_LOOPING, (loop == -1) ? AL_TRUE : AL_FALSE));
@@ -232,18 +252,32 @@ static void audio_openal_set_voice_buffer(qu_handle voice_id, qu_handle buffer_i
 
 static int audio_openal_start_voice(qu_handle voice_id)
 {
-    ALuint source = priv.sources[voice_id];
+    if (voice_id < 0 || voice_id >= arrlen(priv.sources)) {
+        LIBQU_LOGE("start_voice(): out of bounds\n");
+        return -1;
+    }
 
-    _AL(alSourcePlay(source));
-    return (_al_get_source_state(source) == AL_PLAYING) ? 0 : -1;
+    _AL(alSourcePlay(priv.sources[voice_id]));
+
+    ALint state;
+    _AL(alGetSourcei(priv.sources[voice_id], AL_SOURCE_STATE, &state));
+
+    return (state == AL_PLAYING) ? 0 : -1;
 }
 
 static int audio_openal_stop_voice(qu_handle voice_id)
 {
-    ALuint source = priv.sources[voice_id];
+    if (voice_id < 0 || voice_id >= arrlen(priv.sources)) {
+        LIBQU_LOGE("stop_voice(): out of bounds\n");
+        return -1;
+    }
 
-    _AL(alSourcePause(source));
-    return (_al_get_source_state(source) == AL_PAUSED) ? 0 : -1;
+    _AL(alSourcePause(priv.sources[voice_id]));
+
+    ALint state;
+    _AL(alGetSourcei(priv.sources[voice_id], AL_SOURCE_STATE, &state));
+
+    return (state == AL_PAUSED) ? 0 : -1;
 }
 
 //------------------------------------------------------------------------------
