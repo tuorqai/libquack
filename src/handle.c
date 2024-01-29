@@ -19,6 +19,7 @@
 //------------------------------------------------------------------------------
 
 #include <stb_ds.h>
+#include "audio.h"
 #include "handle.h"
 
 //------------------------------------------------------------------------------
@@ -29,38 +30,58 @@ struct item
     void *value;
 };
 
-struct space
-{
-    struct item *map;
-    intptr_t counter;
-};
-
 static struct
 {
-    struct space spaces[LIBQU_TOTAL_HANDLE_TYPES];
+    struct item *hashmaps[LIBQU_TOTAL_HANDLE_TYPES];
+    intptr_t counter[LIBQU_TOTAL_HANDLE_TYPES];
 } priv;
 
 //------------------------------------------------------------------------------
 
+static void dtor(enum libqu_handle_type type, void *data)
+{
+    switch (type) {
+    case LIBQU_HANDLE_WAVE:
+        libqu_wave_destroy(data);
+        break;
+    case LIBQU_HANDLE_SOUND:
+        libqu_audio_delete_sound(data);
+        break;
+    default:
+        break;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void libqu_release_handles(void)
+{
+    for (int i = 0; i < LIBQU_TOTAL_HANDLE_TYPES; i++) {
+        for (int j = 0; j < hmlen(priv.hashmaps[i]); j++) {
+            dtor(i, priv.hashmaps[i][j].value);
+        }
+    }
+}
+
 qu_handle libqu_handle_create(enum libqu_handle_type type, void *data)
 {
     struct item item = {
-        priv.spaces[type].counter++,
-        data,
+        .key = priv.counter[type]++,
+        .value = data,
     };
 
-    hmputs(priv.spaces[type].map, item);
+    hmputs(priv.hashmaps[type], item);
     return item.key;
 }
 
 void libqu_handle_destroy(enum libqu_handle_type type, qu_handle id)
 {
-    (void) hmdel(priv.spaces[type].map, id);
+    (void) hmdel(priv.hashmaps[type], id);
 }
 
 void *libqu_handle_get(enum libqu_handle_type type, qu_handle id)
 {
-    struct item *item_p = hmgetp_null(priv.spaces[type].map, id);
+    struct item *item_p = hmgetp_null(priv.hashmaps[type], id);
 
     if (item_p) {
         return item_p->value;

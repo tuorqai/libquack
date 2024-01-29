@@ -36,6 +36,8 @@ enum libqu_handle_type
 
 //------------------------------------------------------------------------------
 
+void libqu_release_handles(void);
+
 qu_handle libqu_handle_create(enum libqu_handle_type type, void *data);
 void libqu_handle_destroy(enum libqu_handle_type type, qu_handle id);
 void *libqu_handle_get(enum libqu_handle_type type, qu_handle id);

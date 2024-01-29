@@ -103,6 +103,8 @@ void qu_terminate(void)
         return;
     }
 
+    libqu_release_handles();
+
     if (priv.extra & EXTRA_MODULE_AUDIO) {
         libqu_audio_terminate();
     }
@@ -123,6 +125,8 @@ void qu_present(void)
     libqu_graphics_flush();
     libqu_core_swap();
 }
+
+//------------------------------------------------------------------------------
 
 char const *qu_get_window_title(void)
 {
@@ -195,6 +199,8 @@ bool qu_is_key_released(qu_key key)
     return libqu_core_get_keyboard_state()[key] == QU_KEY_STATE_RELEASED;
 }
 
+//------------------------------------------------------------------------------
+
 void qu_clear(qu_color color)
 {
     libqu_graphics_clear(color);
@@ -231,6 +237,8 @@ void qu_draw_rectangle(float x, float y, float w, float h, qu_color outline, qu_
 
     libqu_graphics_draw_rectangle(xy, wh, outline, fill);
 }
+
+//------------------------------------------------------------------------------
 
 qu_wave qu_create_wave(int16_t channels, int64_t samples, int64_t sample_rate)
 {
