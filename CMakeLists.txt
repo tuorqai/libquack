@@ -8,6 +8,7 @@ option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 option(QU_BUILD_EXAMPLES "Build examples" ON)
 option(QU_USE_OPENGL "Use OpenGL" OFF)
 option(QU_USE_X11 "Use X11" OFF)
+option(QU_USE_OPENAL "Use OpenAL" OFF)
 option(QU_USE_VORBIS "Use Vorbis" OFF)
 
 #-------------------------------------------------------------------------------
@@ -84,6 +85,13 @@ if(QU_USE_X11)
     target_compile_definitions(libquack PRIVATE QU_USE_X11)
     target_include_directories(libquack PRIVATE ${X11_INCLUDE_DIR})
     target_link_libraries(libquack PRIVATE ${X11_LIBRARIES})
+endif()
+
+if(QU_USE_OPENAL)
+    find_package(OpenAL REQUIRED)
+    target_compile_definitions(libquack PRIVATE QU_USE_OPENAL)
+    target_include_directories(libquack PRIVATE ${OPENAL_INCLUDE_DIR})
+    target_link_libraries(libquack PRIVATE ${OPENAL_LIBRARY})
 endif()
 
 if(QU_USE_VORBIS)
