@@ -24,7 +24,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install ninja-build libgl-dev xorg-dev
+        sudo apt-get install ninja-build libgl-dev xorg-dev libopenal-dev libvorbis-dev
 
     - name: Configure
       run: >
