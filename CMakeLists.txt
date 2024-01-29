@@ -8,8 +8,12 @@ option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 option(QU_BUILD_EXAMPLES "Build examples" ON)
 option(QU_USE_OPENGL "Use OpenGL" OFF)
 option(QU_USE_X11 "Use X11" OFF)
+option(QU_USE_OPENAL "Use OpenAL" OFF)
+option(QU_USE_VORBIS "Use Vorbis" OFF)
 
 #-------------------------------------------------------------------------------
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 include(GNUInstallDirs)
 
@@ -17,13 +21,18 @@ include(GNUInstallDirs)
 
 add_library(libquack
     src/algebra.c
+    src/audio.c
+    src/audio_null.c
+    src/audio_openal.c
     src/base.c
     src/core.c
     src/core_null.c
     src/core_x11.c
+    src/fs.c
     src/graphics.c
     src/graphics_gl3.c
     src/graphics_null.c
+    src/handle.c
     src/log.c
     src/platform_posix.c
     src/util.c)
@@ -41,7 +50,7 @@ set_target_properties(libquack
     PROPERTIES
         PREFIX ""
         C_STANDARD 99
-        C_EXTENSIONS OFF
+        C_EXTENSIONS ON
         C_VISIBILITY_PRESET hidden)
 
 target_compile_definitions(libquack PRIVATE QU_BUILD)
@@ -78,9 +87,21 @@ if(QU_USE_X11)
     target_link_libraries(libquack PRIVATE ${X11_LIBRARIES})
 endif()
 
+if(QU_USE_OPENAL)
+    find_package(OpenAL REQUIRED)
+    target_compile_definitions(libquack PRIVATE QU_USE_OPENAL)
+    target_include_directories(libquack PRIVATE ${OPENAL_INCLUDE_DIR})
+    target_link_libraries(libquack PRIVATE ${OPENAL_LIBRARY})
+endif()
+
+if(QU_USE_VORBIS)
+    find_package(Vorbis REQUIRED)
+    target_compile_definitions(libquack PRIVATE QU_USE_VORBIS)
+    target_link_libraries(libquack PRIVATE Vorbis::vorbisfile)
+endif()
+
 #-------------------------------------------------------------------------------
 
 if(QU_BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif()
-

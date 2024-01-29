@@ -19,19 +19,30 @@
 //------------------------------------------------------------------------------
 
 #include <string.h>
+#include "audio.h"
 #include "core.h"
 #include "graphics.h"
+#include "handle.h"
 #include "log.h"
+
+//------------------------------------------------------------------------------
+
+enum
+{
+    EXTRA_MODULE_AUDIO = (1 << 0),
+};
 
 //------------------------------------------------------------------------------
 
 static struct
 {
     int refcount;
+    unsigned int extra;
 
     struct {
         struct libqu_core_params core;
         struct libqu_graphics_params graphics;
+        struct libqu_audio_params audio;
     } params;
 } priv;
 
@@ -61,6 +72,13 @@ static void sanitize_graphics_params(void)
     }
 }
 
+static void initialize_audio(void)
+{
+    libqu_audio_initialize(&priv.params.audio);
+
+    priv.extra |= EXTRA_MODULE_AUDIO;
+}
+
 //------------------------------------------------------------------------------
 
 void qu_initialize(void)
@@ -85,6 +103,12 @@ void qu_terminate(void)
         return;
     }
 
+    libqu_release_handles();
+
+    if (priv.extra & EXTRA_MODULE_AUDIO) {
+        libqu_audio_terminate();
+    }
+
     libqu_graphics_terminate();
     libqu_core_terminate();
 
@@ -101,6 +125,8 @@ void qu_present(void)
     libqu_graphics_flush();
     libqu_core_swap();
 }
+
+//------------------------------------------------------------------------------
 
 char const *qu_get_window_title(void)
 {
@@ -173,6 +199,8 @@ bool qu_is_key_released(qu_key key)
     return libqu_core_get_keyboard_state()[key] == QU_KEY_STATE_RELEASED;
 }
 
+//------------------------------------------------------------------------------
+
 void qu_clear(qu_color color)
 {
     libqu_graphics_clear(color);
@@ -210,3 +238,217 @@ void qu_draw_rectangle(float x, float y, float w, float h, qu_color outline, qu_
     libqu_graphics_draw_rectangle(xy, wh, outline, fill);
 }
 
+//------------------------------------------------------------------------------
+
+qu_wave qu_create_wave(int16_t channels, int64_t samples, int64_t sample_rate)
+{
+    qu_wave wave = { 0 };
+    struct libqu_wave *wave_p = libqu_wave_create(channels, samples, sample_rate);
+
+    if (wave_p) {
+        wave.id = libqu_handle_create(LIBQU_HANDLE_WAVE, wave_p);
+    }
+
+    return wave;
+}
+
+qu_wave qu_load_wave(char const *path)
+{
+    qu_wave wave = { 0 };
+    struct libqu_file *file = libqu_fopen(path);
+
+    if (file) {
+        struct libqu_wave *wave_p = libqu_wave_load(file);
+
+        if (wave_p) {
+            wave.id = libqu_handle_create(LIBQU_HANDLE_WAVE, wave_p);
+        }
+
+        libqu_fclose(file);
+    }
+
+    return wave;
+}
+
+void qu_destroy_wave(qu_wave wave)
+{
+    struct libqu_wave *wave_p = libqu_handle_get(LIBQU_HANDLE_WAVE, wave.id);
+
+    if (wave_p) {
+        libqu_wave_destroy(wave_p);
+        libqu_handle_destroy(LIBQU_HANDLE_WAVE, wave.id);
+    }
+}
+
+int16_t qu_get_wave_channel_count(qu_wave wave)
+{
+    struct libqu_wave *wave_p = libqu_handle_get(LIBQU_HANDLE_WAVE, wave.id);
+
+    if (wave_p) {
+        return wave_p->channel_count;
+    }
+
+    return 0;
+}
+
+int64_t qu_get_wave_sample_count(qu_wave wave)
+{
+    struct libqu_wave *wave_p = libqu_handle_get(LIBQU_HANDLE_WAVE, wave.id);
+
+    if (wave_p) {
+        return wave_p->sample_count;
+    }
+
+    return 0;
+}
+
+int64_t qu_get_wave_sample_rate(qu_wave wave)
+{
+    struct libqu_wave *wave_p = libqu_handle_get(LIBQU_HANDLE_WAVE, wave.id);
+
+    if (wave_p) {
+        return wave_p->sample_rate;
+    }
+
+    return 0;
+}
+
+int16_t *qu_get_wave_samples(qu_wave wave)
+{
+    struct libqu_wave *wave_p = libqu_handle_get(LIBQU_HANDLE_WAVE, wave.id);
+
+    if (wave_p) {
+        return wave_p->samples;
+    }
+
+    return 0;
+}
+
+void qu_set_master_volume(float volume)
+{
+    if (!(priv.extra & EXTRA_MODULE_AUDIO)) {
+        initialize_audio();
+    }
+
+    libqu_audio_set_master_volume(volume);
+}
+
+qu_sound qu_load_sound_from_file(char const *path)
+{
+    if (!(priv.extra & EXTRA_MODULE_AUDIO)) {
+        initialize_audio();
+    }
+
+    qu_sound sound = { 0 };
+    struct libqu_file *file = libqu_fopen(path);
+
+    if (file) {
+        struct libqu_wave *wave_p = libqu_wave_load(file);
+
+        if (wave_p) {
+            struct libqu_sound *sound_p = libqu_audio_load_sound(wave_p);
+
+            if (sound_p) {
+                sound.id = libqu_handle_create(LIBQU_HANDLE_SOUND, sound_p);
+            }
+        }
+
+        libqu_fclose(file);
+    }
+
+    return sound;
+}
+
+qu_sound qu_load_sound_from_wave(qu_wave wave)
+{
+    if (!(priv.extra & EXTRA_MODULE_AUDIO)) {
+        initialize_audio();
+    }
+
+    qu_sound sound = { 0 };
+    struct libqu_wave *wave_p = libqu_handle_get(LIBQU_HANDLE_WAVE, wave.id);
+
+    if (wave_p) {
+        struct libqu_sound *sound_p = libqu_audio_load_sound(wave_p);
+
+        if (sound_p) {
+            sound.id = libqu_handle_create(LIBQU_HANDLE_SOUND, sound_p);
+        }
+    }
+
+    return sound;
+}
+
+void qu_delete_sound(qu_sound sound)
+{
+    if (!(priv.extra & EXTRA_MODULE_AUDIO)) {
+        return;
+    }
+
+    struct libqu_sound *sound_p = libqu_handle_get(LIBQU_HANDLE_SOUND, sound.id);
+
+    if (sound_p) {
+        libqu_audio_delete_sound(sound_p);
+    }
+}
+
+qu_voice qu_play_sound(qu_sound sound)
+{
+    qu_voice voice = { 0 };
+
+    if (!(priv.extra & EXTRA_MODULE_AUDIO)) {
+        return voice;
+    }
+
+    struct libqu_sound *sound_p = libqu_handle_get(LIBQU_HANDLE_SOUND, sound.id);
+
+    if (sound_p) {
+        voice.id = libqu_audio_play_sound(sound_p, 0);
+    }
+
+    return voice;
+}
+
+qu_voice qu_loop_sound(qu_sound sound)
+{
+    qu_voice voice = { 0 };
+
+    if (!(priv.extra & EXTRA_MODULE_AUDIO)) {
+        return voice;
+    }
+
+    struct libqu_sound *sound_p = libqu_handle_get(LIBQU_HANDLE_SOUND, sound.id);
+
+    if (sound_p) {
+        voice.id = libqu_audio_play_sound(sound_p, 0);
+    }
+
+    return voice;
+}
+
+void qu_pause_voice(qu_voice voice)
+{
+    if (!(priv.extra & EXTRA_MODULE_AUDIO)) {
+        return;
+    }
+
+    libqu_audio_pause_voice(voice.id);
+}
+
+void qu_unpause_voice(qu_voice voice)
+{
+    if (!(priv.extra & EXTRA_MODULE_AUDIO)) {
+        return;
+    }
+
+    libqu_audio_unpause_voice(voice.id);
+}
+
+void qu_stop_voice(qu_voice voice)
+{
+    if (!(priv.extra & EXTRA_MODULE_AUDIO)) {
+        return;
+    }
+
+    libqu_audio_stop_voice(voice.id);
+}
