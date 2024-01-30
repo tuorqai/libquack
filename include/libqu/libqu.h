@@ -189,6 +189,15 @@ typedef enum qu_key_state
     QU_KEY_STATE_RELEASED,
 } qu_key_state;
 
+typedef enum qu_pixel_format
+{
+    QU_PIXFMT_INVALID = 0,      /*!< Invalid pixel format */
+    QU_PIXFMT_Y8 = 1,           /*!< 1 byte per pixel: luminance */
+    QU_PIXFMT_Y8A8 = 2,         /*!< 2 bytes per pixel: luminance and alpha */
+    QU_PIXFMT_R8G8B8 = 3,       /*!< 3 bytes per pixel: red, green and blue */
+    QU_PIXFMT_R8G8B8A8 = 4,     /*!< 4 bytes per pixel: RGB and alpha */
+} qu_pixel_format;
+
 typedef struct qu_vec2i
 {
     int x;
@@ -200,6 +209,16 @@ typedef struct qu_vec2f
     float x;
     float y;
 } qu_vec2f;
+
+typedef struct qu_image
+{
+    qu_handle id;
+} qu_image;
+
+typedef struct qu_texture
+{
+    qu_handle id;
+} qu_texture;
 
 typedef struct qu_wave
 {
@@ -242,6 +261,14 @@ QU_API void QU_CALL qu_draw_point(float x, float y, qu_color color);
 QU_API void QU_CALL qu_draw_line(float ax, float ay, float bx, float by, qu_color color);
 QU_API void QU_CALL qu_draw_triangle(float ax, float ay, float bx, float by, float cx, float cy, qu_color outline, qu_color fill);
 QU_API void QU_CALL qu_draw_rectangle(float x, float y, float w, float h, qu_color outline, qu_color fill);
+
+QU_API qu_image QU_CALL qu_create_image(int width, int height, qu_pixel_format format);
+QU_API qu_image QU_CALL qu_load_image_from_file(char const *path);
+QU_API qu_image QU_CALL qu_load_image_from_buffer(void *buffer, size_t size);
+QU_API void QU_CALL qu_destroy_image(qu_image image);
+QU_API qu_vec2i QU_CALL qu_get_image_size(qu_image image);
+QU_API qu_pixel_format QU_CALL qu_get_image_format(qu_image image);
+QU_API unsigned char * QU_CALL qu_get_image_pixels(qu_image image);
 
 QU_API qu_wave QU_CALL qu_create_wave(int16_t channels, int64_t samples, int64_t sample_rate);
 QU_API qu_wave QU_CALL qu_load_wave(char const *path);

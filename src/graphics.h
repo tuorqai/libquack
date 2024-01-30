@@ -23,7 +23,7 @@
 
 //------------------------------------------------------------------------------
 
-#include "libqu/libqu.h"
+#include "fs.h"
 
 //------------------------------------------------------------------------------
 
@@ -43,6 +43,13 @@ struct libqu_vertex
 {
     qu_vec2f pos;
     qu_color color;
+};
+
+struct libqu_image
+{
+    qu_pixel_format format;
+    qu_vec2i size;
+    unsigned char *pixels;
 };
 
 struct libqu_graphics_params
@@ -78,6 +85,10 @@ void libqu_graphics_draw_point(qu_vec2f pos, qu_color color);
 void libqu_graphics_draw_line(qu_vec2f a, qu_vec2f b, qu_color color);
 void libqu_graphics_draw_triangle(qu_vec2f a, qu_vec2f b, qu_vec2f c, qu_color outline, qu_color fill);
 void libqu_graphics_draw_rectangle(qu_vec2f pos, qu_vec2f size, qu_color outline, qu_color fill);
+
+struct libqu_image *libqu_image_create(qu_pixel_format format, qu_vec2i size);
+struct libqu_image *libqu_image_load(struct libqu_file *file);
+void libqu_image_destroy(struct libqu_image *image);
 
 //------------------------------------------------------------------------------
 

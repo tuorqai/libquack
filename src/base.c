@@ -238,6 +238,100 @@ void qu_draw_rectangle(float x, float y, float w, float h, qu_color outline, qu_
     libqu_graphics_draw_rectangle(xy, wh, outline, fill);
 }
 
+qu_image qu_create_image(int width, int height, qu_pixel_format format)
+{
+    qu_image handle = { 0 };
+    qu_vec2i size = { width, height };
+    struct libqu_image *image = libqu_image_create(format, size);
+
+    if (image) {
+        handle.id = libqu_handle_create(LIBQU_HANDLE_IMAGE, image);
+    }
+
+    return handle;
+}
+
+qu_image qu_load_image_from_file(char const *path)
+{
+    qu_image handle = { 0 };
+    struct libqu_file *file = libqu_fopen(path);
+
+    if (file) {
+        struct libqu_image *image = libqu_image_load(file);
+
+        if (image) {
+            handle.id = libqu_handle_create(LIBQU_HANDLE_IMAGE, image);
+        }
+
+        libqu_fclose(file);
+    }
+
+    return handle;
+}
+
+qu_image qu_load_image_from_buffer(void *buffer, size_t size)
+{
+    qu_image handle = { 0 };
+    struct libqu_file *file = libqu_fopen_buffer(buffer, size);
+
+    if (file) {
+        struct libqu_image *image = libqu_image_load(file);
+
+        if (image) {
+            handle.id = libqu_handle_create(LIBQU_HANDLE_IMAGE, image);
+        }
+
+        libqu_fclose(file);
+    }
+
+    return handle;
+}
+
+void qu_destroy_image(qu_image handle)
+{
+    struct libqu_image *image = libqu_handle_get(LIBQU_HANDLE_IMAGE, handle.id);
+
+    if (image) {
+        libqu_image_destroy(image);
+        libqu_handle_destroy(LIBQU_HANDLE_IMAGE, handle.id);
+    }
+}
+
+qu_vec2i qu_get_image_size(qu_image handle)
+{
+    qu_vec2i size = { -1, -1 };
+    struct libqu_image *image = libqu_handle_get(LIBQU_HANDLE_IMAGE, handle.id);
+
+    if (image) {
+        size.x = image->size.x;
+        size.y = image->size.y;
+    }
+
+    return size;
+}
+
+qu_pixel_format qu_get_image_format(qu_image handle)
+{
+    struct libqu_image *image = libqu_handle_get(LIBQU_HANDLE_IMAGE, handle.id);
+
+    if (image) {
+        return image->format;
+    }
+
+    return QU_PIXFMT_INVALID;
+}
+
+unsigned char *qu_get_image_pixels(qu_image handle)
+{
+    struct libqu_image *image = libqu_handle_get(LIBQU_HANDLE_IMAGE, handle.id);
+
+    if (image) {
+        return image->pixels;
+    }
+
+    return NULL;
+}
+
 //------------------------------------------------------------------------------
 
 qu_wave qu_create_wave(int16_t channels, int64_t samples, int64_t sample_rate)
