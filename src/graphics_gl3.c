@@ -500,7 +500,7 @@ static void push_vertex(size_t index, struct libqu_vertex const *vertex)
     *d++ = QU_EXTRACT_ALPHA(vertex->color) / 255.f;
 
     *d++ = vertex->texcoord.x;
-    *d++ = vertex->texcoord.y;
+    *d++ = 1.f - vertex->texcoord.y;
 }
 
 //------------------------------------------------------------------------------
@@ -607,12 +607,16 @@ static int graphics_gl3_load_texture(struct libqu_texture *texture)
     priv.current_texture = texture;
     _GL(glBindTexture(GL_TEXTURE_2D, id));
 
+    struct libqu_image *flipped = libqu_image_copy_flipped(texture->image);
+
     _GL(glTexImage2D(GL_TEXTURE_2D,
         0, iformat,
         texture->image->size.x,
         texture->image->size.y,
         0, format,
-        GL_UNSIGNED_BYTE, texture->image->pixels));
+        GL_UNSIGNED_BYTE, flipped->pixels));
+    
+    libqu_image_destroy(flipped);
 
     set_texture_parameters(texture->flags);
 
@@ -655,22 +659,7 @@ static int graphics_gl3_capture_screen(struct libqu_image *image)
     _GL(glReadPixels(0, 0, image->size.x, image->size.y,
         GL_RGB, GL_UNSIGNED_BYTE, image->pixels));
 
-    int row_size = image->size.x * 3;
-    unsigned char *tmp = pl_malloc(row_size);
-
-    for (int y = 0; y < image->size.y / 2; y++) {
-        int top_line = y;
-        int bottom_line = image->size.y - y - 1;
-
-        void *top = &image->pixels[image->size.x * top_line * 3];
-        void *bottom = &image->pixels[image->size.x * bottom_line * 3];
-
-        memcpy(tmp, top, row_size);
-        memcpy(top, bottom, row_size);
-        memcpy(bottom, tmp, row_size);
-    }
-
-    pl_free(tmp);
+    libqu_image_flip(image);
 
     return 0;
 }

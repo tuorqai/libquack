@@ -100,8 +100,10 @@ void libqu_graphics_draw_triangle(qu_vec2f a, qu_vec2f b, qu_vec2f c, qu_color o
 void libqu_graphics_draw_rectangle(qu_vec2f pos, qu_vec2f size, qu_color outline, qu_color fill);
 
 struct libqu_image *libqu_image_create(qu_pixel_format format, qu_vec2i size);
+struct libqu_image *libqu_image_copy_flipped(struct libqu_image *image);
 struct libqu_image *libqu_image_load(struct libqu_file *file);
 void libqu_image_destroy(struct libqu_image *image);
+void libqu_image_flip(struct libqu_image *image);
 
 void libqu_graphics_set_default_texture_flags(unsigned int flags);
 struct libqu_texture *libqu_graphics_load_texture(struct libqu_image *image);

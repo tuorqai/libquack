@@ -412,10 +412,56 @@ struct libqu_image *libqu_image_load(struct libqu_file *file)
     return image;
 }
 
+struct libqu_image *libqu_image_copy_flipped(struct libqu_image *image)
+{
+    struct libqu_image *copy = libqu_image_create(image->format, image->size);
+
+    if (!copy) {
+        return NULL;
+    }
+
+    int w = image->size.x;
+    int h = image->size.y;
+    int c = pixfmt_to_channels(image->format);
+
+    for (int y = 0; y < image->size.y; y++) {
+        void *src = &image->pixels[w * c * y];
+        void *dst = &copy->pixels[w * c * (h - y - 1)];
+
+        memcpy(dst, src, w * c);
+    }
+
+    return copy;
+}
+
 void libqu_image_destroy(struct libqu_image *image)
 {
     pl_free(image->pixels);
     pl_free(image);
+}
+
+void libqu_image_flip(struct libqu_image *image)
+{
+    int w = image->size.x;
+    int h = image->size.y;
+    int c = pixfmt_to_channels(image->format);
+
+    unsigned char *tmp = pl_malloc(w * c);
+
+    if (!tmp) {
+        return;
+    }
+
+    for (int y = 0; y < h / 2; y++) {
+        void *top = &image->pixels[w * c * y];
+        void *bottom = &image->pixels[w * c * (h - y - 1)];
+
+        memcpy(tmp, top, w * c);
+        memcpy(top, bottom, w * c);
+        memcpy(bottom, tmp, w * c);
+    }
+
+    pl_free(tmp);
 }
 
 //------------------------------------------------------------------------------
