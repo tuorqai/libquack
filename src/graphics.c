@@ -89,6 +89,10 @@ static void exec_cmd(struct rendercmd const *cmd)
         priv.impl->clear(cmd->args.clear.color);
         break;
     case RENDEROP_DRAW:
+        if (cmd->args.draw.texture) {
+            priv.impl->apply_texture(cmd->args.draw.texture);
+        }
+
         priv.impl->draw(cmd->args.draw.mode, cmd->args.draw.vertex, cmd->args.draw.count);
         break;
     default:

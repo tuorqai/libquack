@@ -231,6 +231,63 @@ static void unpack_color(qu_color color, GLfloat *out)
     out[3] = QU_EXTRACT_ALPHA(color) / 255.f;
 }
 
+static int choose_texture_format(struct libqu_texture *texture,
+    GLenum *iformat, GLenum *format)
+{
+    switch (texture->image->format) {
+    case QU_PIXFMT_Y8:
+        *iformat = GL_R8;
+        *format = GL_RED;
+        return 0;
+    case QU_PIXFMT_Y8A8:
+        *iformat = GL_RG8;
+        *format = GL_RG;
+        return 0;
+    case QU_PIXFMT_R8G8B8:
+        *iformat = GL_RGB8;
+        *format = GL_RGB;
+        return 0;
+    case QU_PIXFMT_R8G8B8A8:
+        *iformat = GL_RGBA8;
+        *format = GL_RGBA;
+        return 0;
+    default:
+        return -1;
+    }
+}
+
+static void get_texture_swizzle(struct libqu_texture *texture, GLenum *swizzle)
+{
+    switch (texture->image->format) {
+    case QU_PIXFMT_Y8:
+        swizzle[0] = GL_RED;
+        swizzle[1] = GL_RED;
+        swizzle[2] = GL_RED;
+        swizzle[3] = GL_ONE;
+        break;
+    case QU_PIXFMT_Y8A8:
+        swizzle[0] = GL_RED;
+        swizzle[1] = GL_RED;
+        swizzle[2] = GL_RED;
+        swizzle[3] = GL_GREEN;
+        break;
+    case QU_PIXFMT_R8G8B8:
+        swizzle[0] = GL_RED;
+        swizzle[1] = GL_GREEN;
+        swizzle[2] = GL_BLUE;
+        swizzle[3] = GL_ONE;
+        break;
+    case QU_PIXFMT_R8G8B8A8:
+        swizzle[0] = GL_RED;
+        swizzle[1] = GL_GREEN;
+        swizzle[2] = GL_BLUE;
+        swizzle[3] = GL_ALPHA;
+        break;
+    default:
+        break;
+    }
+}
+
 static void load_gl_functions(void)
 {
     priv.ext.glAttachShader = libqu_gl_get_proc_address("glAttachShader");
@@ -454,11 +511,57 @@ static void graphics_gl3_draw(enum libqu_draw_mode mode, size_t vertex, size_t c
 
 static int graphics_gl3_load_texture(struct libqu_texture *texture)
 {
+    GLenum iformat, format;
+
+    if (choose_texture_format(texture, &iformat, &format) == -1) {
+        return -1;
+    }
+
+    GLuint id;
+
+    _GL(glGenTextures(1, &id));
+
+    if (id == 0) {
+        return -1;
+    }
+
+    _GL(glBindTexture(GL_TEXTURE_2D, id));
+
+    _GL(glTexImage2D(GL_TEXTURE_2D,
+        0, iformat,
+        texture->image->size.x,
+        texture->image->size.y,
+        0, format,
+        GL_UNSIGNED_BYTE, texture->image->pixels));
+
+    _GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+    _GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
+
+    GLenum swizzle[4];
+    get_texture_swizzle(texture, swizzle);
+
+    _GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, swizzle[0]));
+    _GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, swizzle[1]));
+    _GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, swizzle[2]));
+    _GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, swizzle[3]));
+
+    texture->priv[0] = (uintptr_t) id;
+
     return 0;
 }
 
 static void graphics_gl3_destroy_texture(struct libqu_texture *texture)
 {
+    GLuint id = (GLuint) texture->priv[0];
+
+    _GL(glDeleteTextures(1, &id));
+}
+
+static void graphics_gl3_apply_texture(struct libqu_texture *texture)
+{
+    GLuint id = (GLuint) texture->priv[0];
+
+    _GL(glBindTexture(GL_TEXTURE_2D, id));
 }
 
 //------------------------------------------------------------------------------
@@ -472,6 +575,7 @@ struct libqu_graphics_impl const libqu_graphics_gl3_impl = {
     graphics_gl3_draw,
     graphics_gl3_load_texture,
     graphics_gl3_destroy_texture,
+    graphics_gl3_apply_texture,
 };
 
 //------------------------------------------------------------------------------

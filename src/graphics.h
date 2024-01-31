@@ -74,6 +74,7 @@ struct libqu_graphics_impl
     void (*draw)(enum libqu_draw_mode mode, size_t vertex, size_t count);
     int (*load_texture)(struct libqu_texture *texture);
     void (*destroy_texture)(struct libqu_texture *texture);
+    void (*apply_texture)(struct libqu_texture *texture);
 };
 
 //------------------------------------------------------------------------------
