@@ -75,7 +75,7 @@ void libqu_release_handles(void)
 qu_handle libqu_handle_create(enum libqu_handle_type type, void *data)
 {
     struct item item = {
-        .key = priv.counter[type]++,
+        .key = ++priv.counter[type],
         .value = data,
     };
 
