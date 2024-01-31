@@ -70,7 +70,7 @@ endif()
 find_library(MATH_LIBRARY m)
 
 if(MATH_LIBRARY)
-    target_link_libraries(libquack PRIVATE ${MATH_LIBRARY})
+    target_link_libraries(libquack PUBLIC ${MATH_LIBRARY})
 endif()
 
 if(QU_USE_OPENGL)
