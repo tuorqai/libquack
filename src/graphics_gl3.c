@@ -89,12 +89,14 @@ enum
 {
     SHADER_VERT_GENERIC,
     SHADER_FRAG_PRIMITIVE,
+    SHADER_FRAG_TEXTURED,
     TOTAL_SHADERS,
 };
 
 enum
 {
     PROGRAM_PRIMITIVE,
+    PROGRAM_TEXTURED,
     TOTAL_PROGRAMS,
 };
 
@@ -168,10 +170,22 @@ static struct shader_info const shader_info[TOTAL_SHADERS] = {
         "}\n",
         GL_FRAGMENT_SHADER,
     },
+    {
+        "#version 330 core\n"
+        "in vec4 v_color;\n"
+        "in vec2 v_texCoord;\n"
+        "uniform sampler2D u_texture;\n"
+        "void main()\n"
+        "{\n"
+        "    gl_FragColor = texture2D(u_texture, v_texCoord) * v_color;\n"
+        "}\n",
+        GL_FRAGMENT_SHADER,
+    },
 };
 
 static struct program_info const program_info[TOTAL_PROGRAMS] = {
     { SHADER_VERT_GENERIC, SHADER_FRAG_PRIMITIVE },
+    { SHADER_VERT_GENERIC, SHADER_FRAG_TEXTURED },
 };
 
 //------------------------------------------------------------------------------
@@ -412,8 +426,8 @@ static void push_vertex(size_t index, struct libqu_vertex const *vertex)
     *d++ = QU_EXTRACT_BLUE(vertex->color) / 255.f;
     *d++ = QU_EXTRACT_ALPHA(vertex->color) / 255.f;
 
-    *d++ = 0.f;
-    *d++ = 0.f;
+    *d++ = vertex->texcoord.x;
+    *d++ = vertex->texcoord.y;
 }
 
 //------------------------------------------------------------------------------
@@ -456,15 +470,24 @@ static bool graphics_gl3_initialize(struct libqu_graphics_params const *params)
     mat4_t modelview;
     mat4_identity(&modelview);
 
-    _GL(priv.ext.glUniformMatrix4fv(
-        priv.programs[0].uniloc[UNIFORM_PROJECTION],
-        1, GL_FALSE, projection.m
-    ));
+    for (int i = 0; i < TOTAL_PROGRAMS; i++) {
+        _GL(priv.ext.glUseProgram(priv.programs[i].id));
 
-    _GL(priv.ext.glUniformMatrix4fv(
-        priv.programs[0].uniloc[UNIFORM_MODELVIEW],
-        1, GL_FALSE, modelview.m
-    ));
+        _GL(priv.ext.glUniformMatrix4fv(
+            priv.programs[i].uniloc[UNIFORM_PROJECTION],
+            1, GL_FALSE, projection.m
+        ));
+
+        _GL(priv.ext.glUniformMatrix4fv(
+            priv.programs[i].uniloc[UNIFORM_MODELVIEW],
+            1, GL_FALSE, modelview.m
+        ));
+    }
+
+    _GL(priv.ext.glUseProgram(priv.programs[priv.current_program].id));
+
+    _GL(glEnable(GL_BLEND));
+    _GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 
     LIBQU_LOGI("Initialized.\n");
 
@@ -534,8 +557,8 @@ static int graphics_gl3_load_texture(struct libqu_texture *texture)
         0, format,
         GL_UNSIGNED_BYTE, texture->image->pixels));
 
-    _GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
-    _GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
+    _GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+    _GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
 
     GLenum swizzle[4];
     get_texture_swizzle(texture, swizzle);
@@ -559,9 +582,22 @@ static void graphics_gl3_destroy_texture(struct libqu_texture *texture)
 
 static void graphics_gl3_apply_texture(struct libqu_texture *texture)
 {
-    GLuint id = (GLuint) texture->priv[0];
+    if (texture) {
+        GLuint id = (GLuint) texture->priv[0];
+        _GL(glBindTexture(GL_TEXTURE_2D, id));
 
-    _GL(glBindTexture(GL_TEXTURE_2D, id));
+        if (priv.current_program != PROGRAM_TEXTURED) {
+            priv.current_program = PROGRAM_TEXTURED;
+            _GL(priv.ext.glUseProgram(priv.programs[PROGRAM_TEXTURED].id));
+        }
+    } else {
+        _GL(glBindTexture(GL_TEXTURE_2D, 0));
+        
+        if (priv.current_program != PROGRAM_PRIMITIVE) {
+            priv.current_program = PROGRAM_PRIMITIVE;
+            _GL(priv.ext.glUseProgram(priv.programs[PROGRAM_PRIMITIVE].id));
+        }
+    }
 }
 
 //------------------------------------------------------------------------------
