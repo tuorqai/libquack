@@ -20,6 +20,7 @@
 
 #include <stb_ds.h>
 #include "audio.h"
+#include "graphics.h"
 #include "handle.h"
 
 //------------------------------------------------------------------------------
@@ -41,6 +42,12 @@ static struct
 static void dtor(enum libqu_handle_type type, void *data)
 {
     switch (type) {
+    case LIBQU_HANDLE_IMAGE:
+        libqu_image_destroy(data);
+        break;
+    case LIBQU_HANDLE_TEXTURE:
+        libqu_graphics_destroy_texture(data);
+        break;
     case LIBQU_HANDLE_WAVE:
         libqu_wave_destroy(data);
         break;
@@ -60,13 +67,15 @@ void libqu_release_handles(void)
         for (int j = 0; j < hmlen(priv.hashmaps[i]); j++) {
             dtor(i, priv.hashmaps[i][j].value);
         }
+
+        hmfree(priv.hashmaps[i]);
     }
 }
 
 qu_handle libqu_handle_create(enum libqu_handle_type type, void *data)
 {
     struct item item = {
-        .key = priv.counter[type]++,
+        .key = ++priv.counter[type],
         .value = data,
     };
 
@@ -76,7 +85,12 @@ qu_handle libqu_handle_create(enum libqu_handle_type type, void *data)
 
 void libqu_handle_destroy(enum libqu_handle_type type, qu_handle id)
 {
-    (void) hmdel(priv.hashmaps[type], id);
+    struct item *item_p = hmgetp_null(priv.hashmaps[type], id);
+
+    if (item_p) {
+        dtor(type, item_p->value);
+        (void) hmdel(priv.hashmaps[type], id);
+    }
 }
 
 void *libqu_handle_get(enum libqu_handle_type type, qu_handle id)

@@ -19,8 +19,10 @@
 //------------------------------------------------------------------------------
 
 #include <stb_ds.h>
+#include <stb_image.h>
 #include "graphics.h"
 #include "log.h"
+#include "platform.h"
 
 //------------------------------------------------------------------------------
 
@@ -53,6 +55,7 @@ struct rendercmd
             enum libqu_draw_mode mode;
             size_t vertex;
             size_t count;
+            struct libqu_texture *texture;
         } draw;
     } args;
 };
@@ -62,6 +65,8 @@ static struct
     struct libqu_graphics_impl const *impl;
     struct libqu_vertex *vertbuf;
     struct rendercmd *rendercmds;
+    unsigned int default_texture_flags;
+    qu_vec2i window_size;
 } priv;
 
 //------------------------------------------------------------------------------
@@ -86,6 +91,7 @@ static void exec_cmd(struct rendercmd const *cmd)
         priv.impl->clear(cmd->args.clear.color);
         break;
     case RENDEROP_DRAW:
+        priv.impl->apply_texture(cmd->args.draw.texture);
         priv.impl->draw(cmd->args.draw.mode, cmd->args.draw.vertex, cmd->args.draw.count);
         break;
     default:
@@ -113,6 +119,8 @@ void libqu_graphics_initialize(struct libqu_graphics_params const *params)
         LIBQU_LOGE("Failed to initialize libqu::graphics implementation.\n");
         abort();
     }
+
+    priv.window_size = params->window_size;
 
     LIBQU_LOGI("Initialized.\n");
 }
@@ -156,7 +164,7 @@ void libqu_graphics_clear(qu_color color)
 void libqu_graphics_draw_point(qu_vec2f pos, qu_color color)
 {
     struct libqu_vertex vertices[] = {
-        { pos, color },
+        { pos, color, {} },
     };
 
     struct rendercmd cmd = {
@@ -176,8 +184,8 @@ void libqu_graphics_draw_point(qu_vec2f pos, qu_color color)
 void libqu_graphics_draw_line(qu_vec2f a, qu_vec2f b, qu_color color)
 {
     struct libqu_vertex vertices[] = {
-        { a, color },
-        { b, color },
+        { a, color, {} },
+        { b, color, {} },
     };
 
     struct rendercmd cmd = {
@@ -198,9 +206,9 @@ void libqu_graphics_draw_triangle(qu_vec2f a, qu_vec2f b, qu_vec2f c, qu_color o
 {
     if (QU_EXTRACT_ALPHA(fill) > 0) {
         struct libqu_vertex vertices[] = {
-            { a, fill },
-            { b, fill },
-            { c, fill },
+            { a, fill, {} },
+            { b, fill, {} },
+            { c, fill, {} },
         };
 
         struct rendercmd cmd = {
@@ -219,9 +227,9 @@ void libqu_graphics_draw_triangle(qu_vec2f a, qu_vec2f b, qu_vec2f c, qu_color o
 
     if (QU_EXTRACT_ALPHA(outline) > 0) {
         struct libqu_vertex vertices[] = {
-            { a, outline },
-            { b, outline },
-            { c, outline },
+            { a, outline, {} },
+            { b, outline, {} },
+            { c, outline, {} },
         };
 
         struct rendercmd cmd = {
@@ -241,17 +249,17 @@ void libqu_graphics_draw_triangle(qu_vec2f a, qu_vec2f b, qu_vec2f c, qu_color o
 
 void libqu_graphics_draw_rectangle(qu_vec2f pos, qu_vec2f size, qu_color outline, qu_color fill)
 {
-    qu_vec2f a = { pos.x, pos.y };
-    qu_vec2f b = { pos.x + size.x, pos.y };
-    qu_vec2f c = { pos.x + size.x, pos.y + size.y };
-    qu_vec2f d = { pos.x, pos.y + size.y };
+    float ax = pos.x;
+    float ay = pos.y;
+    float bx = pos.x + size.x;
+    float by = pos.y + size.y;
 
     if (QU_EXTRACT_ALPHA(fill) > 0) {
         struct libqu_vertex vertices[] = {
-            { a, fill },
-            { b, fill },
-            { c, fill },
-            { d, fill },
+            { { ax, ay }, fill, {} },
+            { { bx, ay }, fill, {} },
+            { { bx, by }, fill, {} },
+            { { ax, by }, fill, {} },
         };
 
         struct rendercmd cmd = {
@@ -270,10 +278,10 @@ void libqu_graphics_draw_rectangle(qu_vec2f pos, qu_vec2f size, qu_color outline
 
     if (QU_EXTRACT_ALPHA(outline) > 0) {
         struct libqu_vertex vertices[] = {
-            { a, outline },
-            { b, outline },
-            { c, outline },
-            { d, outline },
+            { { ax, ay }, outline, {} },
+            { { bx, ay }, outline, {} },
+            { { bx, by }, outline, {} },
+            { { ax, by }, outline, {} },
         };
 
         struct rendercmd cmd = {
@@ -291,3 +299,289 @@ void libqu_graphics_draw_rectangle(qu_vec2f pos, qu_vec2f size, qu_color outline
     }
 }
 
+//------------------------------------------------------------------------------
+
+static int _stbi_io_read(struct libqu_file *file, char *data, int size)
+{
+    return (int) libqu_fread(data, size, file);
+}
+
+static void _stbi_io_skip(struct libqu_file *file, int n)
+{
+    libqu_fseek(file, n, SEEK_CUR);
+}
+
+static int _stbi_io_eof(struct libqu_file *file)
+{
+    return libqu_ftell(file) == (int64_t) file->size;
+}
+
+typedef int (*_stbi_io_read_func)(void *, char *, int);
+typedef void (*_stbi_io_skip_func)(void *, int);
+typedef int (*_stbi_io_eof_func)(void *);
+
+static stbi_io_callbacks const _stbi_io = {
+    .read = (_stbi_io_read_func) _stbi_io_read,
+    .skip = (_stbi_io_skip_func) _stbi_io_skip,
+    .eof = (_stbi_io_eof_func) _stbi_io_eof,
+};
+
+//------------------------------------------------------------------------------
+
+static int pixfmt_to_channels(qu_pixel_format format)
+{
+    switch (format) {
+    default:
+        return 0;
+    case QU_PIXFMT_Y8:
+        return 1;
+    case QU_PIXFMT_Y8A8:
+        return 2;
+    case QU_PIXFMT_R8G8B8:
+        return 3;
+    case QU_PIXFMT_R8G8B8A8:
+        return 4;
+    }
+}
+
+static qu_pixel_format channels_to_pixfmt(int channels)
+{
+    switch (channels) {
+    default:
+        return QU_PIXFMT_INVALID;
+    case 1:
+        return QU_PIXFMT_Y8;
+    case 2:
+        return QU_PIXFMT_Y8A8;
+    case 3:
+        return QU_PIXFMT_R8G8B8;
+    case 4:
+        return QU_PIXFMT_R8G8B8A8;
+    }
+}
+
+struct libqu_image *libqu_image_create(qu_pixel_format format, qu_vec2i size)
+{
+    struct libqu_image *image = pl_calloc(1, sizeof(*image));
+
+    if (image) {
+        int channels = pixfmt_to_channels(format);
+
+        if (channels > 0) {
+            image->pixels = pl_malloc(channels * size.x * size.y);
+
+            if (image->pixels) {
+                image->format = format;
+                image->size.x = size.x;
+                image->size.y = size.y;
+
+                return image;
+            }
+        }
+
+        pl_free(image);
+    }
+
+    return NULL;
+}
+
+struct libqu_image *libqu_image_load(struct libqu_file *file)
+{
+    int w, h, c;
+
+    unsigned char *data =
+        stbi_load_from_callbacks(&_stbi_io, file, &w, &h, &c, 0);
+    
+    struct libqu_image *image = NULL;
+
+    if (data) {
+        qu_pixel_format format = channels_to_pixfmt(c);
+
+        if (format != QU_PIXFMT_INVALID) {
+            qu_vec2i size = { w, h };
+            image = libqu_image_create(format, size);
+
+            if (image) {
+                memcpy(image->pixels, data, w * h * c);
+            }
+        }
+
+        stbi_image_free(data);
+    }
+
+    return image;
+}
+
+struct libqu_image *libqu_image_copy_flipped(struct libqu_image *image)
+{
+    struct libqu_image *copy = libqu_image_create(image->format, image->size);
+
+    if (!copy) {
+        return NULL;
+    }
+
+    int w = image->size.x;
+    int h = image->size.y;
+    int c = pixfmt_to_channels(image->format);
+
+    for (int y = 0; y < image->size.y; y++) {
+        void *src = &image->pixels[w * c * y];
+        void *dst = &copy->pixels[w * c * (h - y - 1)];
+
+        memcpy(dst, src, w * c);
+    }
+
+    return copy;
+}
+
+void libqu_image_destroy(struct libqu_image *image)
+{
+    pl_free(image->pixels);
+    pl_free(image);
+}
+
+void libqu_image_flip(struct libqu_image *image)
+{
+    int w = image->size.x;
+    int h = image->size.y;
+    int c = pixfmt_to_channels(image->format);
+
+    unsigned char *tmp = pl_malloc(w * c);
+
+    if (!tmp) {
+        return;
+    }
+
+    for (int y = 0; y < h / 2; y++) {
+        void *top = &image->pixels[w * c * y];
+        void *bottom = &image->pixels[w * c * (h - y - 1)];
+
+        memcpy(tmp, top, w * c);
+        memcpy(top, bottom, w * c);
+        memcpy(bottom, tmp, w * c);
+    }
+
+    pl_free(tmp);
+}
+
+//------------------------------------------------------------------------------
+
+void libqu_graphics_set_default_texture_flags(unsigned int flags)
+{
+    priv.default_texture_flags = flags;
+}
+
+struct libqu_texture *libqu_graphics_load_texture(struct libqu_image *image)
+{
+    struct libqu_texture *texture = pl_calloc(1, sizeof(*texture));
+
+    if (texture) {
+        texture->image = image;
+        texture->flags = priv.default_texture_flags;
+
+        if (priv.impl->load_texture(texture) == 0) {
+            return texture;
+        }
+
+        pl_free(texture);
+    }
+
+    libqu_image_destroy(image);
+
+    return NULL;
+}
+
+void libqu_graphics_destroy_texture(struct libqu_texture *texture)
+{
+    priv.impl->destroy_texture(texture);
+    libqu_image_destroy(texture->image);
+    pl_free(texture);
+}
+
+void libqu_graphics_set_texture_flags(struct libqu_texture *texture,
+    unsigned int flags)
+{
+    texture->flags = flags;
+    priv.impl->update_texture_flags(texture);
+}
+
+void libqu_graphics_draw_texture(struct libqu_texture *texture, qu_rectf rect)
+{
+    float ax = rect.x;
+    float ay = rect.y;
+    float bx = rect.x + rect.w;
+    float by = rect.y + rect.h;
+
+    struct libqu_vertex vertices[] = {
+        { { ax, ay }, 0xFFFFFFFF, { 0.f, 0.f } },
+        { { bx, ay }, 0xFFFFFFFF, { 1.f, 0.f } },
+        { { bx, by }, 0xFFFFFFFF, { 1.f, 1.f } },
+        { { ax, by }, 0xFFFFFFFF, { 0.f, 1.f } },
+    };
+
+    struct rendercmd cmd = {
+        .op = RENDEROP_DRAW,
+        .args = {
+            .draw = {
+                .mode = LIBQU_DRAW_MODE_TRIANGLE_FAN,
+                .vertex = append_vertices(vertices, 4),
+                .count = 4,
+                .texture = texture,
+            },
+        },
+    };
+
+    arrput(priv.rendercmds, cmd);
+}
+
+void libqu_graphics_draw_subtexture(struct libqu_texture *texture,
+    qu_rectf rect, qu_rectf sub)
+{
+    float ax = rect.x;
+    float ay = rect.y;
+    float bx = rect.x + rect.w;
+    float by = rect.y + rect.h;
+
+    float s = sub.x / texture->image->size.x;
+    float t = sub.y / texture->image->size.y;
+    float u = (sub.x + sub.w) / texture->image->size.x;
+    float v = (sub.y + sub.h) / texture->image->size.y;
+
+    struct libqu_vertex vertices[] = {
+        { { ax, ay }, 0xFFFFFFFF, { s, t } },
+        { { bx, ay }, 0xFFFFFFFF, { u, t } },
+        { { bx, by }, 0xFFFFFFFF, { u, v } },
+        { { ax, by }, 0xFFFFFFFF, { s, v } },
+    };
+
+    struct rendercmd cmd = {
+        .op = RENDEROP_DRAW,
+        .args = {
+            .draw = {
+                .mode = LIBQU_DRAW_MODE_TRIANGLE_FAN,
+                .vertex = append_vertices(vertices, 4),
+                .count = 4,
+                .texture = texture,
+            },
+        },
+    };
+
+    arrput(priv.rendercmds, cmd);
+}
+
+struct libqu_image *libqu_graphics_capture_screen(void)
+{
+    struct libqu_image *image =
+        libqu_image_create(QU_PIXFMT_R8G8B8, priv.window_size);
+    
+    if (!image) {
+        return NULL;
+    }
+
+    if (priv.impl->capture_screen(image) == -1) {
+        libqu_image_destroy(image);
+        return NULL;
+    }
+
+    return image;
+}

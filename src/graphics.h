@@ -23,7 +23,7 @@
 
 //------------------------------------------------------------------------------
 
-#include "libqu/libqu.h"
+#include "fs.h"
 
 //------------------------------------------------------------------------------
 
@@ -43,6 +43,21 @@ struct libqu_vertex
 {
     qu_vec2f pos;
     qu_color color;
+    qu_vec2f texcoord;
+};
+
+struct libqu_image
+{
+    qu_pixel_format format;
+    qu_vec2i size;
+    unsigned char *pixels;
+};
+
+struct libqu_texture
+{
+    struct libqu_image *image;
+    unsigned int flags;
+    uintptr_t priv[4];
 };
 
 struct libqu_graphics_params
@@ -58,6 +73,11 @@ struct libqu_graphics_impl
     void (*upload_vertices)(struct libqu_vertex *vertices, size_t count);
     void (*clear)(qu_color color);
     void (*draw)(enum libqu_draw_mode mode, size_t vertex, size_t count);
+    int (*load_texture)(struct libqu_texture *texture);
+    void (*destroy_texture)(struct libqu_texture *texture);
+    void (*update_texture_flags)(struct libqu_texture *texture);
+    void (*apply_texture)(struct libqu_texture *texture);
+    int (*capture_screen)(struct libqu_image *image);
 };
 
 //------------------------------------------------------------------------------
@@ -78,6 +98,21 @@ void libqu_graphics_draw_point(qu_vec2f pos, qu_color color);
 void libqu_graphics_draw_line(qu_vec2f a, qu_vec2f b, qu_color color);
 void libqu_graphics_draw_triangle(qu_vec2f a, qu_vec2f b, qu_vec2f c, qu_color outline, qu_color fill);
 void libqu_graphics_draw_rectangle(qu_vec2f pos, qu_vec2f size, qu_color outline, qu_color fill);
+
+struct libqu_image *libqu_image_create(qu_pixel_format format, qu_vec2i size);
+struct libqu_image *libqu_image_copy_flipped(struct libqu_image *image);
+struct libqu_image *libqu_image_load(struct libqu_file *file);
+void libqu_image_destroy(struct libqu_image *image);
+void libqu_image_flip(struct libqu_image *image);
+
+void libqu_graphics_set_default_texture_flags(unsigned int flags);
+struct libqu_texture *libqu_graphics_load_texture(struct libqu_image *image);
+void libqu_graphics_destroy_texture(struct libqu_texture *texture);
+void libqu_graphics_set_texture_flags(struct libqu_texture *texture, unsigned int flags);
+void libqu_graphics_draw_texture(struct libqu_texture *texture, qu_rectf rect);
+void libqu_graphics_draw_subtexture(struct libqu_texture *texture, qu_rectf rect, qu_rectf sub);
+
+struct libqu_image *libqu_graphics_capture_screen(void);
 
 //------------------------------------------------------------------------------
 

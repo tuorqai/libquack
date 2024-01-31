@@ -29,6 +29,7 @@
 #include "core.h"
 #include "graphics.h"
 #include "log.h"
+#include "platform.h"
 
 //------------------------------------------------------------------------------
 
@@ -89,12 +90,14 @@ enum
 {
     SHADER_VERT_GENERIC,
     SHADER_FRAG_PRIMITIVE,
+    SHADER_FRAG_TEXTURED,
     TOTAL_SHADERS,
 };
 
 enum
 {
     PROGRAM_PRIMITIVE,
+    PROGRAM_TEXTURED,
     TOTAL_PROGRAMS,
 };
 
@@ -126,6 +129,7 @@ struct program
 {
     GLuint id;
     GLint uniloc[TOTAL_UNIFORMS];
+    unsigned int dirty;
 };
 
 //------------------------------------------------------------------------------
@@ -168,10 +172,22 @@ static struct shader_info const shader_info[TOTAL_SHADERS] = {
         "}\n",
         GL_FRAGMENT_SHADER,
     },
+    {
+        "#version 330 core\n"
+        "in vec4 v_color;\n"
+        "in vec2 v_texCoord;\n"
+        "uniform sampler2D u_texture;\n"
+        "void main()\n"
+        "{\n"
+        "    gl_FragColor = texture2D(u_texture, v_texCoord) * v_color;\n"
+        "}\n",
+        GL_FRAGMENT_SHADER,
+    },
 };
 
 static struct program_info const program_info[TOTAL_PROGRAMS] = {
     { SHADER_VERT_GENERIC, SHADER_FRAG_PRIMITIVE },
+    { SHADER_VERT_GENERIC, SHADER_FRAG_TEXTURED },
 };
 
 //------------------------------------------------------------------------------
@@ -185,7 +201,11 @@ static struct
     struct shader shaders[TOTAL_SHADERS];
     struct program programs[TOTAL_PROGRAMS];
 
+    mat4_t projection;
+    mat4_t modelview;
+
     int current_program;
+    struct libqu_texture *current_texture;
 
     struct {
         PFNGLATTACHSHADERPROC glAttachShader;
@@ -229,6 +249,78 @@ static void unpack_color(qu_color color, GLfloat *out)
     out[1] = QU_EXTRACT_GREEN(color) / 255.f;
     out[2] = QU_EXTRACT_BLUE(color) / 255.f;
     out[3] = QU_EXTRACT_ALPHA(color) / 255.f;
+}
+
+static int choose_texture_format(struct libqu_texture *texture,
+    GLenum *iformat, GLenum *format)
+{
+    switch (texture->image->format) {
+    case QU_PIXFMT_Y8:
+        *iformat = GL_R8;
+        *format = GL_RED;
+        return 0;
+    case QU_PIXFMT_Y8A8:
+        *iformat = GL_RG8;
+        *format = GL_RG;
+        return 0;
+    case QU_PIXFMT_R8G8B8:
+        *iformat = GL_RGB8;
+        *format = GL_RGB;
+        return 0;
+    case QU_PIXFMT_R8G8B8A8:
+        *iformat = GL_RGBA8;
+        *format = GL_RGBA;
+        return 0;
+    default:
+        return -1;
+    }
+}
+
+static void set_texture_parameters(unsigned int flags)
+{
+    GLenum mag_filter = (flags & QU_TEXTURE_SMOOTH) ? GL_LINEAR : GL_NEAREST;
+    GLenum min_filter = GL_LINEAR;
+
+    _GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter));
+    _GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter));
+
+    GLenum wrap_s = (flags & QU_TEXTURE_REPEAT) ? GL_REPEAT : GL_CLAMP_TO_EDGE;
+    GLenum wrap_t = wrap_s;
+
+    _GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap_s));
+    _GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap_t));
+}
+
+static void get_texture_swizzle(struct libqu_texture *texture, GLenum *swizzle)
+{
+    switch (texture->image->format) {
+    case QU_PIXFMT_Y8:
+        swizzle[0] = GL_RED;
+        swizzle[1] = GL_RED;
+        swizzle[2] = GL_RED;
+        swizzle[3] = GL_ONE;
+        break;
+    case QU_PIXFMT_Y8A8:
+        swizzle[0] = GL_RED;
+        swizzle[1] = GL_RED;
+        swizzle[2] = GL_RED;
+        swizzle[3] = GL_GREEN;
+        break;
+    case QU_PIXFMT_R8G8B8:
+        swizzle[0] = GL_RED;
+        swizzle[1] = GL_GREEN;
+        swizzle[2] = GL_BLUE;
+        swizzle[3] = GL_ONE;
+        break;
+    case QU_PIXFMT_R8G8B8A8:
+        swizzle[0] = GL_RED;
+        swizzle[1] = GL_GREEN;
+        swizzle[2] = GL_BLUE;
+        swizzle[3] = GL_ALPHA;
+        break;
+    default:
+        break;
+    }
 }
 
 static void load_gl_functions(void)
@@ -338,9 +430,61 @@ static bool load_programs(void)
 
         priv.programs[i].uniloc[UNIFORM_MODELVIEW] =
             priv.ext.glGetUniformLocation(priv.programs[i].id, "u_modelView");
+        
+        priv.programs[i].dirty = 0xFFFFFFFF;
     }
 
     return true;
+}
+
+static void apply_program(int program)
+{
+    if (priv.current_program == program) {
+        return;
+    }
+
+    priv.current_program = program;
+
+    _GL(priv.ext.glUseProgram(priv.programs[program].id));
+
+    if (priv.programs[program].dirty & (1 << UNIFORM_PROJECTION)) {
+        _GL(priv.ext.glUniformMatrix4fv(
+            priv.programs[program].uniloc[UNIFORM_PROJECTION],
+            1, GL_FALSE, priv.projection.m
+        ));
+    }
+
+    if (priv.programs[program].dirty & (1 << UNIFORM_MODELVIEW)) {
+        _GL(priv.ext.glUniformMatrix4fv(
+            priv.programs[program].uniloc[UNIFORM_MODELVIEW],
+            1, GL_FALSE, priv.modelview.m
+        ));
+    }
+
+    priv.programs[program].dirty = 0;
+}
+
+static void apply_texture(struct libqu_texture *texture)
+{
+    if (priv.current_texture == texture) {
+        return;
+    }
+
+    priv.current_texture = texture;
+
+    if (priv.current_texture) {
+        _GL(glBindTexture(GL_TEXTURE_2D, texture->priv[0]));
+
+        if (priv.current_program != PROGRAM_TEXTURED) {
+            apply_program(PROGRAM_TEXTURED);
+        }
+    } else {
+        _GL(glBindTexture(GL_TEXTURE_2D, 0));
+
+        if (priv.current_program != PROGRAM_PRIMITIVE) {
+            apply_program(PROGRAM_PRIMITIVE);
+        }
+    }
 }
 
 static void push_vertex(size_t index, struct libqu_vertex const *vertex)
@@ -355,8 +499,8 @@ static void push_vertex(size_t index, struct libqu_vertex const *vertex)
     *d++ = QU_EXTRACT_BLUE(vertex->color) / 255.f;
     *d++ = QU_EXTRACT_ALPHA(vertex->color) / 255.f;
 
-    *d++ = 0.f;
-    *d++ = 0.f;
+    *d++ = vertex->texcoord.x;
+    *d++ = 1.f - vertex->texcoord.y;
 }
 
 //------------------------------------------------------------------------------
@@ -380,8 +524,8 @@ static bool graphics_gl3_initialize(struct libqu_graphics_params const *params)
         return false;
     }
 
-    priv.current_program = 0;
-    _GL(priv.ext.glUseProgram(priv.programs[priv.current_program].id));
+    priv.current_program = -1;
+    priv.current_texture = NULL;
 
     _GL(priv.ext.glGenVertexArrays(1, &priv.vao));
     _GL(priv.ext.glGenBuffers(1, &priv.vbo));
@@ -391,23 +535,16 @@ static bool graphics_gl3_initialize(struct libqu_graphics_params const *params)
     _GL(priv.ext.glEnableVertexAttribArray(1));
     _GL(priv.ext.glEnableVertexAttribArray(2));
 
-    _GL(glViewport(0, 0, params->window_size.x, params->window_size.y));
+    int width = params->window_size.x;
+    int height = params->window_size.y;
 
-    mat4_t projection;
-    mat4_ortho(&projection, 0.f, params->window_size.x, params->window_size.y, 0.f);
+    _GL(glViewport(0, 0, width, height));
 
-    mat4_t modelview;
-    mat4_identity(&modelview);
+    mat4_ortho(&priv.projection, 0.f, width, height, 0.f);
+    mat4_identity(&priv.modelview);
 
-    _GL(priv.ext.glUniformMatrix4fv(
-        priv.programs[0].uniloc[UNIFORM_PROJECTION],
-        1, GL_FALSE, projection.m
-    ));
-
-    _GL(priv.ext.glUniformMatrix4fv(
-        priv.programs[0].uniloc[UNIFORM_MODELVIEW],
-        1, GL_FALSE, modelview.m
-    ));
+    _GL(glEnable(GL_BLEND));
+    _GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 
     LIBQU_LOGI("Initialized.\n");
 
@@ -452,6 +589,81 @@ static void graphics_gl3_draw(enum libqu_draw_mode mode, size_t vertex, size_t c
     _GL(glDrawArrays(mode_map[mode], (GLint) vertex, (GLsizei) count));
 }
 
+static int graphics_gl3_load_texture(struct libqu_texture *texture)
+{
+    GLenum iformat, format;
+
+    if (choose_texture_format(texture, &iformat, &format) == -1) {
+        return -1;
+    }
+
+    GLuint id;
+    _GL(glGenTextures(1, &id));
+
+    if (id == 0) {
+        return -1;
+    }
+
+    priv.current_texture = texture;
+    _GL(glBindTexture(GL_TEXTURE_2D, id));
+
+    struct libqu_image *flipped = libqu_image_copy_flipped(texture->image);
+
+    _GL(glTexImage2D(GL_TEXTURE_2D,
+        0, iformat,
+        texture->image->size.x,
+        texture->image->size.y,
+        0, format,
+        GL_UNSIGNED_BYTE, flipped->pixels));
+    
+    libqu_image_destroy(flipped);
+
+    set_texture_parameters(texture->flags);
+
+    GLenum swizzle[4];
+    get_texture_swizzle(texture, swizzle);
+
+    _GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, swizzle[0]));
+    _GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, swizzle[1]));
+    _GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, swizzle[2]));
+    _GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, swizzle[3]));
+
+    texture->priv[0] = (uintptr_t) id;
+
+    return 0;
+}
+
+static void graphics_gl3_destroy_texture(struct libqu_texture *texture)
+{
+    if (priv.current_texture == texture) {
+        apply_texture(NULL);
+    }
+
+    GLuint id = (GLuint) texture->priv[0];
+    _GL(glDeleteTextures(1, &id));
+}
+
+static void graphics_gl3_update_texture_flags(struct libqu_texture *texture)
+{
+    apply_texture(texture);
+    set_texture_parameters(texture->flags);
+}
+
+static void graphics_gl3_apply_texture(struct libqu_texture *texture)
+{
+    apply_texture(texture);
+}
+
+static int graphics_gl3_capture_screen(struct libqu_image *image)
+{
+    _GL(glReadPixels(0, 0, image->size.x, image->size.y,
+        GL_RGB, GL_UNSIGNED_BYTE, image->pixels));
+
+    libqu_image_flip(image);
+
+    return 0;
+}
+
 //------------------------------------------------------------------------------
 
 struct libqu_graphics_impl const libqu_graphics_gl3_impl = {
@@ -461,6 +673,11 @@ struct libqu_graphics_impl const libqu_graphics_gl3_impl = {
     graphics_gl3_upload_vertices,
     graphics_gl3_clear,
     graphics_gl3_draw,
+    graphics_gl3_load_texture,
+    graphics_gl3_destroy_texture,
+    graphics_gl3_update_texture_flags,
+    graphics_gl3_apply_texture,
+    graphics_gl3_capture_screen,
 };
 
 //------------------------------------------------------------------------------

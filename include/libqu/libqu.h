@@ -189,6 +189,21 @@ typedef enum qu_key_state
     QU_KEY_STATE_RELEASED,
 } qu_key_state;
 
+typedef enum qu_pixel_format
+{
+    QU_PIXFMT_INVALID = 0,      /*!< Invalid pixel format */
+    QU_PIXFMT_Y8 = 1,           /*!< 1 byte per pixel: luminance */
+    QU_PIXFMT_Y8A8 = 2,         /*!< 2 bytes per pixel: luminance and alpha */
+    QU_PIXFMT_R8G8B8 = 3,       /*!< 3 bytes per pixel: red, green and blue */
+    QU_PIXFMT_R8G8B8A8 = 4,     /*!< 4 bytes per pixel: RGB and alpha */
+} qu_pixel_format;
+
+typedef enum qu_texture_flags
+{
+    QU_TEXTURE_SMOOTH = (1 << 0),
+    QU_TEXTURE_REPEAT = (1 << 1),
+} qu_texture_flags;
+
 typedef struct qu_vec2i
 {
     int x;
@@ -200,6 +215,32 @@ typedef struct qu_vec2f
     float x;
     float y;
 } qu_vec2f;
+
+typedef struct qu_recti
+{
+    int x;
+    int y;
+    int w;
+    int h;
+} qu_recti;
+
+typedef struct qu_rectf
+{
+    float x;
+    float y;
+    float w;
+    float h;
+} qu_rectf;
+
+typedef struct qu_image
+{
+    qu_handle id;
+} qu_image;
+
+typedef struct qu_texture
+{
+    qu_handle id;
+} qu_texture;
 
 typedef struct qu_wave
 {
@@ -242,6 +283,30 @@ QU_API void QU_CALL qu_draw_point(float x, float y, qu_color color);
 QU_API void QU_CALL qu_draw_line(float ax, float ay, float bx, float by, qu_color color);
 QU_API void QU_CALL qu_draw_triangle(float ax, float ay, float bx, float by, float cx, float cy, qu_color outline, qu_color fill);
 QU_API void QU_CALL qu_draw_rectangle(float x, float y, float w, float h, qu_color outline, qu_color fill);
+
+QU_API qu_image QU_CALL qu_create_image(int width, int height, qu_pixel_format format);
+QU_API qu_image QU_CALL qu_load_image_from_file(char const *path);
+QU_API qu_image QU_CALL qu_load_image_from_buffer(void *buffer, size_t size);
+QU_API void QU_CALL qu_destroy_image(qu_image image);
+QU_API qu_vec2i QU_CALL qu_get_image_size(qu_image image);
+QU_API qu_pixel_format QU_CALL qu_get_image_format(qu_image image);
+QU_API unsigned char * QU_CALL qu_get_image_pixels(qu_image image);
+
+QU_API void QU_CALL qu_set_default_texture_flags(unsigned int flags);
+QU_API qu_texture QU_CALL qu_load_texture_from_file(char const *path);
+QU_API qu_texture QU_CALL qu_load_texture_from_buffer(void *buffer, size_t size);
+QU_API qu_texture QU_CALL qu_load_texture_from_image(qu_image image);
+QU_API void QU_CALL qu_destroy_texture(qu_texture texture);
+QU_API qu_vec2i QU_CALL qu_get_texture_size(qu_texture texture);
+QU_API qu_pixel_format QU_CALL qu_get_texture_format(qu_texture texture);
+QU_API unsigned int QU_CALL qu_get_texture_flags(qu_texture texture);
+QU_API void QU_CALL qu_set_texture_flags(qu_texture texture, unsigned int flags);
+QU_API void QU_CALL qu_draw_texture(qu_texture texture, float x, float y, float w, float h);
+QU_API void QU_CALL qu_draw_texture_r(qu_texture texture, qu_rectf rect);
+QU_API void QU_CALL qu_draw_subtexture(qu_texture texture, float x, float y, float w, float h, float s, float t, float u, float v);
+QU_API void QU_CALL qu_draw_subtexture_r(qu_texture texture, qu_rectf rect, qu_rectf sub);
+
+QU_API qu_image QU_CALL qu_capture_screen(void);
 
 QU_API qu_wave QU_CALL qu_create_wave(int16_t channels, int64_t samples, int64_t sample_rate);
 QU_API qu_wave QU_CALL qu_load_wave(char const *path);
