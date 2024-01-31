@@ -270,6 +270,21 @@ static int choose_texture_format(struct libqu_texture *texture,
     }
 }
 
+static void set_texture_parameters(unsigned int flags)
+{
+    GLenum mag_filter = (flags & QU_TEXTURE_SMOOTH) ? GL_LINEAR : GL_NEAREST;
+    GLenum min_filter = GL_LINEAR;
+
+    _GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter));
+    _GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter));
+
+    GLenum wrap_s = (flags & QU_TEXTURE_REPEAT) ? GL_REPEAT : GL_CLAMP_TO_EDGE;
+    GLenum wrap_t = wrap_s;
+
+    _GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap_s));
+    _GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap_t));
+}
+
 static void get_texture_swizzle(struct libqu_texture *texture, GLenum *swizzle)
 {
     switch (texture->image->format) {
@@ -557,8 +572,7 @@ static int graphics_gl3_load_texture(struct libqu_texture *texture)
         0, format,
         GL_UNSIGNED_BYTE, texture->image->pixels));
 
-    _GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
-    _GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
+    set_texture_parameters(texture->flags);
 
     GLenum swizzle[4];
     get_texture_swizzle(texture, swizzle);
@@ -578,6 +592,14 @@ static void graphics_gl3_destroy_texture(struct libqu_texture *texture)
     GLuint id = (GLuint) texture->priv[0];
 
     _GL(glDeleteTextures(1, &id));
+}
+
+static void graphics_gl3_update_texture_flags(struct libqu_texture *texture)
+{
+    GLuint id = (GLuint) texture->priv[0];
+    _GL(glBindTexture(GL_TEXTURE_2D, id));
+
+    set_texture_parameters(texture->flags);
 }
 
 static void graphics_gl3_apply_texture(struct libqu_texture *texture)
@@ -611,6 +633,7 @@ struct libqu_graphics_impl const libqu_graphics_gl3_impl = {
     graphics_gl3_draw,
     graphics_gl3_load_texture,
     graphics_gl3_destroy_texture,
+    graphics_gl3_update_texture_flags,
     graphics_gl3_apply_texture,
 };
 

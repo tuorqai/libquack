@@ -327,6 +327,11 @@ unsigned char *qu_get_image_pixels(qu_image handle)
     return NULL;
 }
 
+void qu_set_default_texture_flags(unsigned int flags)
+{
+    libqu_graphics_set_default_texture_flags(flags);
+}
+
 qu_texture qu_load_texture_from_file(char const *path)
 {
     qu_texture texture_h = { 0 };
@@ -422,6 +427,28 @@ qu_pixel_format qu_get_texture_format(qu_texture texture_h)
     }
 
     return QU_PIXFMT_INVALID;
+}
+
+unsigned int qu_get_texture_flags(qu_texture texture_h)
+{
+    struct libqu_texture *texture =
+        libqu_handle_get(LIBQU_HANDLE_TEXTURE, texture_h.id);
+    
+    if (texture) {
+        return texture->flags;
+    }
+
+    return 0;
+}
+
+void qu_set_texture_flags(qu_texture texture_h, unsigned int flags)
+{
+    struct libqu_texture *texture =
+        libqu_handle_get(LIBQU_HANDLE_TEXTURE, texture_h.id);
+    
+    if (texture) {
+        libqu_graphics_set_texture_flags(texture, flags);
+    }
 }
 
 void qu_draw_texture(qu_texture texture_h, float x, float y, float w, float h)

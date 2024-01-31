@@ -56,6 +56,7 @@ struct libqu_image
 struct libqu_texture
 {
     struct libqu_image *image;
+    unsigned int flags;
     uintptr_t priv[4];
 };
 
@@ -74,6 +75,7 @@ struct libqu_graphics_impl
     void (*draw)(enum libqu_draw_mode mode, size_t vertex, size_t count);
     int (*load_texture)(struct libqu_texture *texture);
     void (*destroy_texture)(struct libqu_texture *texture);
+    void (*update_texture_flags)(struct libqu_texture *texture);
     void (*apply_texture)(struct libqu_texture *texture);
 };
 
@@ -100,8 +102,10 @@ struct libqu_image *libqu_image_create(qu_pixel_format format, qu_vec2i size);
 struct libqu_image *libqu_image_load(struct libqu_file *file);
 void libqu_image_destroy(struct libqu_image *image);
 
+void libqu_graphics_set_default_texture_flags(unsigned int flags);
 struct libqu_texture *libqu_graphics_load_texture(struct libqu_image *image);
 void libqu_graphics_destroy_texture(struct libqu_texture *texture);
+void libqu_graphics_set_texture_flags(struct libqu_texture *texture, unsigned int flags);
 void libqu_graphics_draw_texture(struct libqu_texture *texture, qu_rectf rect);
 void libqu_graphics_draw_subtexture(struct libqu_texture *texture, qu_rectf rect, qu_rectf sub);
 

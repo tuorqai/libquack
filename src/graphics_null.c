@@ -61,6 +61,10 @@ static void graphics_null_destroy_texture(struct libqu_texture *texture)
 {
 }
 
+static void graphics_null_update_texture_flags(struct libqu_texture *texture)
+{
+}
+
 static void graphics_null_apply_texture(struct libqu_texture *texture)
 {
 }
@@ -76,6 +80,7 @@ struct libqu_graphics_impl const libqu_graphics_null_impl = {
     graphics_null_draw,
     graphics_null_load_texture,
     graphics_null_destroy_texture,
+    graphics_null_update_texture_flags,
     graphics_null_apply_texture,
 };
 

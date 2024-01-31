@@ -65,6 +65,7 @@ static struct
     struct libqu_graphics_impl const *impl;
     struct libqu_vertex *vertbuf;
     struct rendercmd *rendercmds;
+    unsigned int default_texture_flags;
 } priv;
 
 //------------------------------------------------------------------------------
@@ -416,12 +417,18 @@ void libqu_image_destroy(struct libqu_image *image)
 
 //------------------------------------------------------------------------------
 
+void libqu_graphics_set_default_texture_flags(unsigned int flags)
+{
+    priv.default_texture_flags = flags;
+}
+
 struct libqu_texture *libqu_graphics_load_texture(struct libqu_image *image)
 {
     struct libqu_texture *texture = pl_calloc(1, sizeof(*texture));
 
     if (texture) {
         texture->image = image;
+        texture->flags = priv.default_texture_flags;
 
         if (priv.impl->load_texture(texture) == 0) {
             return texture;
@@ -440,6 +447,13 @@ void libqu_graphics_destroy_texture(struct libqu_texture *texture)
     priv.impl->destroy_texture(texture);
     libqu_image_destroy(texture->image);
     pl_free(texture);
+}
+
+void libqu_graphics_set_texture_flags(struct libqu_texture *texture,
+    unsigned int flags)
+{
+    texture->flags = flags;
+    priv.impl->update_texture_flags(texture);
 }
 
 void libqu_graphics_draw_texture(struct libqu_texture *texture, qu_rectf rect)
