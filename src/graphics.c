@@ -159,7 +159,7 @@ void libqu_graphics_clear(qu_color color)
 void libqu_graphics_draw_point(qu_vec2f pos, qu_color color)
 {
     struct libqu_vertex vertices[] = {
-        { pos, color, { 0.f, 0.f} },
+        { pos, color, {} },
     };
 
     struct rendercmd cmd = {
@@ -179,8 +179,8 @@ void libqu_graphics_draw_point(qu_vec2f pos, qu_color color)
 void libqu_graphics_draw_line(qu_vec2f a, qu_vec2f b, qu_color color)
 {
     struct libqu_vertex vertices[] = {
-        { a, color },
-        { b, color },
+        { a, color, {} },
+        { b, color, {} },
     };
 
     struct rendercmd cmd = {
@@ -201,9 +201,9 @@ void libqu_graphics_draw_triangle(qu_vec2f a, qu_vec2f b, qu_vec2f c, qu_color o
 {
     if (QU_EXTRACT_ALPHA(fill) > 0) {
         struct libqu_vertex vertices[] = {
-            { a, fill },
-            { b, fill },
-            { c, fill },
+            { a, fill, {} },
+            { b, fill, {} },
+            { c, fill, {} },
         };
 
         struct rendercmd cmd = {
@@ -222,9 +222,9 @@ void libqu_graphics_draw_triangle(qu_vec2f a, qu_vec2f b, qu_vec2f c, qu_color o
 
     if (QU_EXTRACT_ALPHA(outline) > 0) {
         struct libqu_vertex vertices[] = {
-            { a, outline },
-            { b, outline },
-            { c, outline },
+            { a, outline, {} },
+            { b, outline, {} },
+            { c, outline, {} },
         };
 
         struct rendercmd cmd = {
@@ -244,17 +244,17 @@ void libqu_graphics_draw_triangle(qu_vec2f a, qu_vec2f b, qu_vec2f c, qu_color o
 
 void libqu_graphics_draw_rectangle(qu_vec2f pos, qu_vec2f size, qu_color outline, qu_color fill)
 {
-    qu_vec2f a = { pos.x, pos.y };
-    qu_vec2f b = { pos.x + size.x, pos.y };
-    qu_vec2f c = { pos.x + size.x, pos.y + size.y };
-    qu_vec2f d = { pos.x, pos.y + size.y };
+    float ax = pos.x;
+    float ay = pos.y;
+    float bx = pos.x + size.x;
+    float by = pos.y + size.y;
 
     if (QU_EXTRACT_ALPHA(fill) > 0) {
         struct libqu_vertex vertices[] = {
-            { a, fill },
-            { b, fill },
-            { c, fill },
-            { d, fill },
+            { { ax, ay }, fill, {} },
+            { { bx, ay }, fill, {} },
+            { { bx, by }, fill, {} },
+            { { ax, by }, fill, {} },
         };
 
         struct rendercmd cmd = {
@@ -273,10 +273,10 @@ void libqu_graphics_draw_rectangle(qu_vec2f pos, qu_vec2f size, qu_color outline
 
     if (QU_EXTRACT_ALPHA(outline) > 0) {
         struct libqu_vertex vertices[] = {
-            { a, outline },
-            { b, outline },
-            { c, outline },
-            { d, outline },
+            { { ax, ay }, outline, {} },
+            { { bx, ay }, outline, {} },
+            { { bx, by }, outline, {} },
+            { { ax, by }, outline, {} },
         };
 
         struct rendercmd cmd = {
