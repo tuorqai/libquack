@@ -77,6 +77,7 @@ struct libqu_graphics_impl
     void (*destroy_texture)(struct libqu_texture *texture);
     void (*update_texture_flags)(struct libqu_texture *texture);
     void (*apply_texture)(struct libqu_texture *texture);
+    int (*capture_screen)(struct libqu_image *image);
 };
 
 //------------------------------------------------------------------------------
@@ -108,6 +109,8 @@ void libqu_graphics_destroy_texture(struct libqu_texture *texture);
 void libqu_graphics_set_texture_flags(struct libqu_texture *texture, unsigned int flags);
 void libqu_graphics_draw_texture(struct libqu_texture *texture, qu_rectf rect);
 void libqu_graphics_draw_subtexture(struct libqu_texture *texture, qu_rectf rect, qu_rectf sub);
+
+struct libqu_image *libqu_graphics_capture_screen(void);
 
 //------------------------------------------------------------------------------
 

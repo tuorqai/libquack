@@ -306,6 +306,8 @@ QU_API void QU_CALL qu_draw_texture_r(qu_texture texture, qu_rectf rect);
 QU_API void QU_CALL qu_draw_subtexture(qu_texture texture, float x, float y, float w, float h, float s, float t, float u, float v);
 QU_API void QU_CALL qu_draw_subtexture_r(qu_texture texture, qu_rectf rect, qu_rectf sub);
 
+QU_API qu_image QU_CALL qu_capture_screen(void);
+
 QU_API qu_wave QU_CALL qu_create_wave(int16_t channels, int64_t samples, int64_t sample_rate);
 QU_API qu_wave QU_CALL qu_load_wave(char const *path);
 QU_API void QU_CALL qu_destroy_wave(qu_wave wave);

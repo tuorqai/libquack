@@ -66,6 +66,7 @@ static struct
     struct libqu_vertex *vertbuf;
     struct rendercmd *rendercmds;
     unsigned int default_texture_flags;
+    qu_vec2i window_size;
 } priv;
 
 //------------------------------------------------------------------------------
@@ -118,6 +119,8 @@ void libqu_graphics_initialize(struct libqu_graphics_params const *params)
         LIBQU_LOGE("Failed to initialize libqu::graphics implementation.\n");
         abort();
     }
+
+    priv.window_size = params->window_size;
 
     LIBQU_LOGI("Initialized.\n");
 }
@@ -518,4 +521,21 @@ void libqu_graphics_draw_subtexture(struct libqu_texture *texture,
     };
 
     arrput(priv.rendercmds, cmd);
+}
+
+struct libqu_image *libqu_graphics_capture_screen(void)
+{
+    struct libqu_image *image =
+        libqu_image_create(QU_PIXFMT_R8G8B8, priv.window_size);
+    
+    if (!image) {
+        return NULL;
+    }
+
+    if (priv.impl->capture_screen(image) == -1) {
+        libqu_image_destroy(image);
+        return NULL;
+    }
+
+    return image;
 }

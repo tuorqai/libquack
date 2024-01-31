@@ -29,6 +29,7 @@
 #include "core.h"
 #include "graphics.h"
 #include "log.h"
+#include "platform.h"
 
 //------------------------------------------------------------------------------
 
@@ -649,6 +650,31 @@ static void graphics_gl3_apply_texture(struct libqu_texture *texture)
     apply_texture(texture);
 }
 
+static int graphics_gl3_capture_screen(struct libqu_image *image)
+{
+    _GL(glReadPixels(0, 0, image->size.x, image->size.y,
+        GL_RGB, GL_UNSIGNED_BYTE, image->pixels));
+
+    int row_size = image->size.x * 3;
+    unsigned char *tmp = pl_malloc(row_size);
+
+    for (int y = 0; y < image->size.y / 2; y++) {
+        int top_line = y;
+        int bottom_line = image->size.y - y - 1;
+
+        void *top = &image->pixels[image->size.x * top_line * 3];
+        void *bottom = &image->pixels[image->size.x * bottom_line * 3];
+
+        memcpy(tmp, top, row_size);
+        memcpy(top, bottom, row_size);
+        memcpy(bottom, tmp, row_size);
+    }
+
+    pl_free(tmp);
+
+    return 0;
+}
+
 //------------------------------------------------------------------------------
 
 struct libqu_graphics_impl const libqu_graphics_gl3_impl = {
@@ -662,6 +688,7 @@ struct libqu_graphics_impl const libqu_graphics_gl3_impl = {
     graphics_gl3_destroy_texture,
     graphics_gl3_update_texture_flags,
     graphics_gl3_apply_texture,
+    graphics_gl3_capture_screen,
 };
 
 //------------------------------------------------------------------------------

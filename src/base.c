@@ -496,6 +496,18 @@ void qu_draw_subtexture_r(qu_texture texture_h, qu_rectf rect, qu_rectf sub)
     }
 }
 
+qu_image qu_capture_screen(void)
+{
+    qu_image image_h = { 0 };
+    struct libqu_image *image = libqu_graphics_capture_screen();
+
+    if (image) {
+        image_h.id = libqu_handle_create(LIBQU_HANDLE_IMAGE, image);
+    }
+
+    return image_h;
+}
+
 //------------------------------------------------------------------------------
 
 qu_wave qu_create_wave(int16_t channels, int64_t samples, int64_t sample_rate)
