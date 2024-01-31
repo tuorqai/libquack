@@ -128,6 +128,7 @@ struct program
 {
     GLuint id;
     GLint uniloc[TOTAL_UNIFORMS];
+    unsigned int dirty;
 };
 
 //------------------------------------------------------------------------------
@@ -199,7 +200,11 @@ static struct
     struct shader shaders[TOTAL_SHADERS];
     struct program programs[TOTAL_PROGRAMS];
 
+    mat4_t projection;
+    mat4_t modelview;
+
     int current_program;
+    struct libqu_texture *current_texture;
 
     struct {
         PFNGLATTACHSHADERPROC glAttachShader;
@@ -424,9 +429,61 @@ static bool load_programs(void)
 
         priv.programs[i].uniloc[UNIFORM_MODELVIEW] =
             priv.ext.glGetUniformLocation(priv.programs[i].id, "u_modelView");
+        
+        priv.programs[i].dirty = 0xFFFFFFFF;
     }
 
     return true;
+}
+
+static void apply_program(int program)
+{
+    if (priv.current_program == program) {
+        return;
+    }
+
+    priv.current_program = program;
+
+    _GL(priv.ext.glUseProgram(priv.programs[program].id));
+
+    if (priv.programs[program].dirty & (1 << UNIFORM_PROJECTION)) {
+        _GL(priv.ext.glUniformMatrix4fv(
+            priv.programs[program].uniloc[UNIFORM_PROJECTION],
+            1, GL_FALSE, priv.projection.m
+        ));
+    }
+
+    if (priv.programs[program].dirty & (1 << UNIFORM_MODELVIEW)) {
+        _GL(priv.ext.glUniformMatrix4fv(
+            priv.programs[program].uniloc[UNIFORM_MODELVIEW],
+            1, GL_FALSE, priv.modelview.m
+        ));
+    }
+
+    priv.programs[program].dirty = 0;
+}
+
+static void apply_texture(struct libqu_texture *texture)
+{
+    if (priv.current_texture == texture) {
+        return;
+    }
+
+    priv.current_texture = texture;
+
+    if (priv.current_texture) {
+        _GL(glBindTexture(GL_TEXTURE_2D, texture->priv[0]));
+
+        if (priv.current_program != PROGRAM_TEXTURED) {
+            apply_program(PROGRAM_TEXTURED);
+        }
+    } else {
+        _GL(glBindTexture(GL_TEXTURE_2D, 0));
+
+        if (priv.current_program != PROGRAM_PRIMITIVE) {
+            apply_program(PROGRAM_PRIMITIVE);
+        }
+    }
 }
 
 static void push_vertex(size_t index, struct libqu_vertex const *vertex)
@@ -466,8 +523,8 @@ static bool graphics_gl3_initialize(struct libqu_graphics_params const *params)
         return false;
     }
 
-    priv.current_program = 0;
-    _GL(priv.ext.glUseProgram(priv.programs[priv.current_program].id));
+    priv.current_program = -1;
+    priv.current_texture = NULL;
 
     _GL(priv.ext.glGenVertexArrays(1, &priv.vao));
     _GL(priv.ext.glGenBuffers(1, &priv.vbo));
@@ -477,29 +534,13 @@ static bool graphics_gl3_initialize(struct libqu_graphics_params const *params)
     _GL(priv.ext.glEnableVertexAttribArray(1));
     _GL(priv.ext.glEnableVertexAttribArray(2));
 
-    _GL(glViewport(0, 0, params->window_size.x, params->window_size.y));
+    int width = params->window_size.x;
+    int height = params->window_size.y;
 
-    mat4_t projection;
-    mat4_ortho(&projection, 0.f, params->window_size.x, params->window_size.y, 0.f);
+    _GL(glViewport(0, 0, width, height));
 
-    mat4_t modelview;
-    mat4_identity(&modelview);
-
-    for (int i = 0; i < TOTAL_PROGRAMS; i++) {
-        _GL(priv.ext.glUseProgram(priv.programs[i].id));
-
-        _GL(priv.ext.glUniformMatrix4fv(
-            priv.programs[i].uniloc[UNIFORM_PROJECTION],
-            1, GL_FALSE, projection.m
-        ));
-
-        _GL(priv.ext.glUniformMatrix4fv(
-            priv.programs[i].uniloc[UNIFORM_MODELVIEW],
-            1, GL_FALSE, modelview.m
-        ));
-    }
-
-    _GL(priv.ext.glUseProgram(priv.programs[priv.current_program].id));
+    mat4_ortho(&priv.projection, 0.f, width, height, 0.f);
+    mat4_identity(&priv.modelview);
 
     _GL(glEnable(GL_BLEND));
     _GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
@@ -556,13 +597,13 @@ static int graphics_gl3_load_texture(struct libqu_texture *texture)
     }
 
     GLuint id;
-
     _GL(glGenTextures(1, &id));
 
     if (id == 0) {
         return -1;
     }
 
+    priv.current_texture = texture;
     _GL(glBindTexture(GL_TEXTURE_2D, id));
 
     _GL(glTexImage2D(GL_TEXTURE_2D,
@@ -589,37 +630,23 @@ static int graphics_gl3_load_texture(struct libqu_texture *texture)
 
 static void graphics_gl3_destroy_texture(struct libqu_texture *texture)
 {
-    GLuint id = (GLuint) texture->priv[0];
+    if (priv.current_texture == texture) {
+        apply_texture(NULL);
+    }
 
+    GLuint id = (GLuint) texture->priv[0];
     _GL(glDeleteTextures(1, &id));
 }
 
 static void graphics_gl3_update_texture_flags(struct libqu_texture *texture)
 {
-    GLuint id = (GLuint) texture->priv[0];
-    _GL(glBindTexture(GL_TEXTURE_2D, id));
-
+    apply_texture(texture);
     set_texture_parameters(texture->flags);
 }
 
 static void graphics_gl3_apply_texture(struct libqu_texture *texture)
 {
-    if (texture) {
-        GLuint id = (GLuint) texture->priv[0];
-        _GL(glBindTexture(GL_TEXTURE_2D, id));
-
-        if (priv.current_program != PROGRAM_TEXTURED) {
-            priv.current_program = PROGRAM_TEXTURED;
-            _GL(priv.ext.glUseProgram(priv.programs[PROGRAM_TEXTURED].id));
-        }
-    } else {
-        _GL(glBindTexture(GL_TEXTURE_2D, 0));
-        
-        if (priv.current_program != PROGRAM_PRIMITIVE) {
-            priv.current_program = PROGRAM_PRIMITIVE;
-            _GL(priv.ext.glUseProgram(priv.programs[PROGRAM_PRIMITIVE].id));
-        }
-    }
+    apply_texture(texture);
 }
 
 //------------------------------------------------------------------------------
