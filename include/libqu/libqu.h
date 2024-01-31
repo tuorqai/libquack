@@ -210,6 +210,22 @@ typedef struct qu_vec2f
     float y;
 } qu_vec2f;
 
+typedef struct qu_recti
+{
+    int x;
+    int y;
+    int w;
+    int h;
+} qu_recti;
+
+typedef struct qu_rectf
+{
+    float x;
+    float y;
+    float w;
+    float h;
+} qu_rectf;
+
 typedef struct qu_image
 {
     qu_handle id;
@@ -269,6 +285,15 @@ QU_API void QU_CALL qu_destroy_image(qu_image image);
 QU_API qu_vec2i QU_CALL qu_get_image_size(qu_image image);
 QU_API qu_pixel_format QU_CALL qu_get_image_format(qu_image image);
 QU_API unsigned char * QU_CALL qu_get_image_pixels(qu_image image);
+
+QU_API qu_texture QU_CALL qu_load_texture_from_file(char const *path);
+QU_API qu_texture QU_CALL qu_load_texture_from_buffer(void *buffer, size_t size);
+QU_API qu_texture QU_CALL qu_load_texture_from_image(qu_image image);
+QU_API void QU_CALL qu_destroy_texture(qu_texture texture);
+QU_API void QU_CALL qu_draw_texture(qu_texture texture, float x, float y, float w, float h);
+QU_API void QU_CALL qu_draw_texture_r(qu_texture texture, qu_rectf rect);
+QU_API void QU_CALL qu_draw_subtexture(qu_texture texture, float x, float y, float w, float h, float s, float t, float u, float v);
+QU_API void QU_CALL qu_draw_subtexture_r(qu_texture texture, qu_rectf rect, qu_rectf sub);
 
 QU_API qu_wave QU_CALL qu_create_wave(int16_t channels, int64_t samples, int64_t sample_rate);
 QU_API qu_wave QU_CALL qu_load_wave(char const *path);

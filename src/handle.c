@@ -20,6 +20,7 @@
 
 #include <stb_ds.h>
 #include "audio.h"
+#include "graphics.h"
 #include "handle.h"
 
 //------------------------------------------------------------------------------
@@ -41,6 +42,12 @@ static struct
 static void dtor(enum libqu_handle_type type, void *data)
 {
     switch (type) {
+    case LIBQU_HANDLE_IMAGE:
+        libqu_image_destroy(data);
+        break;
+    case LIBQU_HANDLE_TEXTURE:
+        libqu_graphics_destroy_texture(data);
+        break;
     case LIBQU_HANDLE_WAVE:
         libqu_wave_destroy(data);
         break;
@@ -60,6 +67,8 @@ void libqu_release_handles(void)
         for (int j = 0; j < hmlen(priv.hashmaps[i]); j++) {
             dtor(i, priv.hashmaps[i][j].value);
         }
+
+        hmfree(priv.hashmaps[i]);
     }
 }
 

@@ -332,6 +332,127 @@ unsigned char *qu_get_image_pixels(qu_image handle)
     return NULL;
 }
 
+qu_texture qu_load_texture_from_file(char const *path)
+{
+    qu_texture texture_h = { 0 };
+
+    struct libqu_file *file = libqu_fopen(path);
+
+    if (file) {
+        struct libqu_image *image = libqu_image_load(file);
+
+        if (image) {
+            struct libqu_texture *texture = libqu_graphics_load_texture(image);
+
+            if (texture) {
+                texture_h.id =
+                    libqu_handle_create(LIBQU_HANDLE_TEXTURE, texture);
+            }
+        }
+
+        libqu_fclose(file);
+    }
+
+    return texture_h;
+}
+
+qu_texture qu_load_texture_from_buffer(void *buffer, size_t size)
+{
+    qu_texture texture_h = { 0 };
+
+    struct libqu_file *file = libqu_fopen_buffer(buffer, size);
+
+    if (file) {
+        struct libqu_image *image = libqu_image_load(file);
+
+        if (image) {
+            struct libqu_texture *texture = libqu_graphics_load_texture(image);
+
+            if (texture) {
+                texture_h.id =
+                    libqu_handle_create(LIBQU_HANDLE_TEXTURE, texture);
+            }
+        }
+
+        libqu_fclose(file);
+    }
+
+    return texture_h;
+}
+
+qu_texture qu_load_texture_from_image(qu_image image_h)
+{
+    qu_texture texture_h = { 0 };
+
+    struct libqu_image *image =
+        libqu_handle_get(LIBQU_HANDLE_IMAGE, image_h.id);
+    
+    if (image) {
+        struct libqu_texture *texture = libqu_graphics_load_texture(image);
+
+        if (texture) {
+            texture_h.id = libqu_handle_create(LIBQU_HANDLE_TEXTURE, texture);
+        }
+    }
+
+    return texture_h;
+}
+
+void qu_destroy_texture(qu_texture texture_h)
+{
+    struct libqu_texture *texture =
+        libqu_handle_get(LIBQU_HANDLE_TEXTURE, texture_h.id);
+
+    if (texture) {
+        libqu_graphics_destroy_texture(texture);
+    }
+}
+
+void qu_draw_texture(qu_texture texture_h, float x, float y, float w, float h)
+{
+    struct libqu_texture *texture =
+        libqu_handle_get(LIBQU_HANDLE_TEXTURE, texture_h.id);
+    
+    if (texture) {
+        qu_rectf rect = { x, y, w, h };
+        libqu_graphics_draw_texture(texture, rect);
+    }
+}
+
+void qu_draw_texture_r(qu_texture texture_h, qu_rectf rect)
+{
+    struct libqu_texture *texture =
+        libqu_handle_get(LIBQU_HANDLE_TEXTURE, texture_h.id);
+    
+    if (texture) {
+        libqu_graphics_draw_texture(texture, rect);
+    }
+}
+
+void qu_draw_subtexture(qu_texture texture_h,
+    float x, float y, float w, float h,
+    float s, float t, float u, float v)
+{
+    struct libqu_texture *texture =
+        libqu_handle_get(LIBQU_HANDLE_TEXTURE, texture_h.id);
+    
+    if (texture) {
+        qu_rectf rect = { x, y, w, h };
+        qu_rectf sub = { s, t, u, v };
+        libqu_graphics_draw_subtexture(texture, rect, sub);
+    }
+}
+
+void qu_draw_subtexture_r(qu_texture texture_h, qu_rectf rect, qu_rectf sub)
+{
+    struct libqu_texture *texture =
+        libqu_handle_get(LIBQU_HANDLE_TEXTURE, texture_h.id);
+    
+    if (texture) {
+        libqu_graphics_draw_subtexture(texture, rect, sub);
+    }
+}
+
 //------------------------------------------------------------------------------
 
 qu_wave qu_create_wave(int16_t channels, int64_t samples, int64_t sample_rate)

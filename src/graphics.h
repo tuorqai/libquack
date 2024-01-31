@@ -52,6 +52,11 @@ struct libqu_image
     unsigned char *pixels;
 };
 
+struct libqu_texture
+{
+    struct libqu_image *image;
+};
+
 struct libqu_graphics_params
 {
     qu_vec2i window_size;
@@ -89,6 +94,11 @@ void libqu_graphics_draw_rectangle(qu_vec2f pos, qu_vec2f size, qu_color outline
 struct libqu_image *libqu_image_create(qu_pixel_format format, qu_vec2i size);
 struct libqu_image *libqu_image_load(struct libqu_file *file);
 void libqu_image_destroy(struct libqu_image *image);
+
+struct libqu_texture *libqu_graphics_load_texture(struct libqu_image *image);
+void libqu_graphics_destroy_texture(struct libqu_texture *texture);
+void libqu_graphics_draw_texture(struct libqu_texture *texture, qu_rectf rect);
+void libqu_graphics_draw_subtexture(struct libqu_texture *texture, qu_rectf rect, qu_rectf sub);
 
 //------------------------------------------------------------------------------
 

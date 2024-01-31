@@ -411,3 +411,27 @@ void libqu_image_destroy(struct libqu_image *image)
     pl_free(image->pixels);
     pl_free(image);
 }
+
+//------------------------------------------------------------------------------
+
+struct libqu_texture *libqu_graphics_load_texture(struct libqu_image *image)
+{
+    libqu_image_destroy(image);
+
+    return NULL;
+}
+
+void libqu_graphics_destroy_texture(struct libqu_texture *texture)
+{
+
+}
+
+void libqu_graphics_draw_texture(struct libqu_texture *texture, qu_rectf rect)
+{
+
+}
+
+void libqu_graphics_draw_subtexture(struct libqu_texture *texture, qu_rectf rect, qu_rectf sub)
+{
+
+}
