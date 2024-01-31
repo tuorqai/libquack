@@ -43,6 +43,7 @@ struct libqu_vertex
 {
     qu_vec2f pos;
     qu_color color;
+    qu_vec2f texcoord;
 };
 
 struct libqu_image
@@ -55,6 +56,7 @@ struct libqu_image
 struct libqu_texture
 {
     struct libqu_image *image;
+    uintptr_t priv[4];
 };
 
 struct libqu_graphics_params
@@ -70,6 +72,8 @@ struct libqu_graphics_impl
     void (*upload_vertices)(struct libqu_vertex *vertices, size_t count);
     void (*clear)(qu_color color);
     void (*draw)(enum libqu_draw_mode mode, size_t vertex, size_t count);
+    int (*load_texture)(struct libqu_texture *texture);
+    void (*destroy_texture)(struct libqu_texture *texture);
 };
 
 //------------------------------------------------------------------------------

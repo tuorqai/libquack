@@ -452,6 +452,15 @@ static void graphics_gl3_draw(enum libqu_draw_mode mode, size_t vertex, size_t c
     _GL(glDrawArrays(mode_map[mode], (GLint) vertex, (GLsizei) count));
 }
 
+static int graphics_gl3_load_texture(struct libqu_texture *texture)
+{
+    return 0;
+}
+
+static void graphics_gl3_destroy_texture(struct libqu_texture *texture)
+{
+}
+
 //------------------------------------------------------------------------------
 
 struct libqu_graphics_impl const libqu_graphics_gl3_impl = {
@@ -461,6 +470,8 @@ struct libqu_graphics_impl const libqu_graphics_gl3_impl = {
     graphics_gl3_upload_vertices,
     graphics_gl3_clear,
     graphics_gl3_draw,
+    graphics_gl3_load_texture,
+    graphics_gl3_destroy_texture,
 };
 
 //------------------------------------------------------------------------------

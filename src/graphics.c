@@ -55,6 +55,7 @@ struct rendercmd
             enum libqu_draw_mode mode;
             size_t vertex;
             size_t count;
+            struct libqu_texture *texture;
         } draw;
     } args;
 };
@@ -158,7 +159,7 @@ void libqu_graphics_clear(qu_color color)
 void libqu_graphics_draw_point(qu_vec2f pos, qu_color color)
 {
     struct libqu_vertex vertices[] = {
-        { pos, color },
+        { pos, color, { 0.f, 0.f} },
     };
 
     struct rendercmd cmd = {
@@ -416,6 +417,18 @@ void libqu_image_destroy(struct libqu_image *image)
 
 struct libqu_texture *libqu_graphics_load_texture(struct libqu_image *image)
 {
+    struct libqu_texture *texture = pl_calloc(1, sizeof(*texture));
+
+    if (texture) {
+        texture->image = image;
+
+        if (priv.impl->load_texture(texture) == 0) {
+            return texture;
+        }
+
+        pl_free(texture);
+    }
+
     libqu_image_destroy(image);
 
     return NULL;
@@ -423,15 +436,71 @@ struct libqu_texture *libqu_graphics_load_texture(struct libqu_image *image)
 
 void libqu_graphics_destroy_texture(struct libqu_texture *texture)
 {
-
+    priv.impl->destroy_texture(texture);
+    libqu_image_destroy(texture->image);
+    pl_free(texture);
 }
 
 void libqu_graphics_draw_texture(struct libqu_texture *texture, qu_rectf rect)
 {
+    float ax = rect.x;
+    float ay = rect.y;
+    float bx = rect.x + rect.w;
+    float by = rect.y + rect.h;
 
+    struct libqu_vertex vertices[] = {
+        { { ax, ay }, 0xFFFFFFFF, { 0.f, 0.f } },
+        { { bx, ay }, 0xFFFFFFFF, { 1.f, 0.f } },
+        { { bx, by }, 0xFFFFFFFF, { 1.f, 1.f } },
+        { { ax, by }, 0xFFFFFFFF, { 0.f, 1.f } },
+    };
+
+    struct rendercmd cmd = {
+        .op = RENDEROP_DRAW,
+        .args = {
+            .draw = {
+                .mode = LIBQU_DRAW_MODE_TRIANGLE_FAN,
+                .vertex = append_vertices(vertices, 4),
+                .count = 4,
+                .texture = texture,
+            },
+        },
+    };
+
+    arrput(priv.rendercmds, cmd);
 }
 
-void libqu_graphics_draw_subtexture(struct libqu_texture *texture, qu_rectf rect, qu_rectf sub)
+void libqu_graphics_draw_subtexture(struct libqu_texture *texture,
+    qu_rectf rect, qu_rectf sub)
 {
+    float ax = rect.x;
+    float ay = rect.y;
+    float bx = rect.x + rect.w;
+    float by = rect.y + rect.h;
 
+    float s = sub.x / texture->image->size.x;
+    float t = sub.y / texture->image->size.y;
+    float u = (sub.x + sub.w) / texture->image->size.x;
+    float v = (sub.y + sub.h) / texture->image->size.y;
+
+    struct libqu_vertex vertices[] = {
+        { { ax, ay }, 0xFFFFFFFF, { s, t } },
+        { { bx, ay }, 0xFFFFFFFF, { u, t } },
+        { { bx, by }, 0xFFFFFFFF, { u, v } },
+        { { ax, by }, 0xFFFFFFFF, { s, v } },
+    };
+
+    struct rendercmd cmd = {
+        .op = RENDEROP_DRAW,
+        .args = {
+            .draw = {
+                .mode = LIBQU_DRAW_MODE_TRIANGLE_FAN,
+                .vertex = append_vertices(vertices, 4),
+                .count = 4,
+                .texture = texture,
+            },
+        },
+    };
+
+    arrput(priv.rendercmds, cmd);
 }
