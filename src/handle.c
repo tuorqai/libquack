@@ -85,7 +85,12 @@ qu_handle libqu_handle_create(enum libqu_handle_type type, void *data)
 
 void libqu_handle_destroy(enum libqu_handle_type type, qu_handle id)
 {
-    (void) hmdel(priv.hashmaps[type], id);
+    struct item *item_p = hmgetp_null(priv.hashmaps[type], id);
+
+    if (item_p) {
+        dtor(type, item_p->value);
+        (void) hmdel(priv.hashmaps[type], id);
+    }
 }
 
 void *libqu_handle_get(enum libqu_handle_type type, qu_handle id)

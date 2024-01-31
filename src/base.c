@@ -289,12 +289,7 @@ qu_image qu_load_image_from_buffer(void *buffer, size_t size)
 
 void qu_destroy_image(qu_image handle)
 {
-    struct libqu_image *image = libqu_handle_get(LIBQU_HANDLE_IMAGE, handle.id);
-
-    if (image) {
-        libqu_image_destroy(image);
-        libqu_handle_destroy(LIBQU_HANDLE_IMAGE, handle.id);
-    }
+    libqu_handle_destroy(LIBQU_HANDLE_IMAGE, handle.id);
 }
 
 qu_vec2i qu_get_image_size(qu_image handle)
@@ -400,12 +395,7 @@ qu_texture qu_load_texture_from_image(qu_image image_h)
 
 void qu_destroy_texture(qu_texture texture_h)
 {
-    struct libqu_texture *texture =
-        libqu_handle_get(LIBQU_HANDLE_TEXTURE, texture_h.id);
-
-    if (texture) {
-        libqu_graphics_destroy_texture(texture);
-    }
+    libqu_handle_destroy(LIBQU_HANDLE_TEXTURE, texture_h.id);
 }
 
 void qu_draw_texture(qu_texture texture_h, float x, float y, float w, float h)
@@ -487,12 +477,7 @@ qu_wave qu_load_wave(char const *path)
 
 void qu_destroy_wave(qu_wave wave)
 {
-    struct libqu_wave *wave_p = libqu_handle_get(LIBQU_HANDLE_WAVE, wave.id);
-
-    if (wave_p) {
-        libqu_wave_destroy(wave_p);
-        libqu_handle_destroy(LIBQU_HANDLE_WAVE, wave.id);
-    }
+    libqu_handle_destroy(LIBQU_HANDLE_WAVE, wave.id);
 }
 
 int16_t qu_get_wave_channel_count(qu_wave wave)
