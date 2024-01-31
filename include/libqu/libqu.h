@@ -290,6 +290,8 @@ QU_API qu_texture QU_CALL qu_load_texture_from_file(char const *path);
 QU_API qu_texture QU_CALL qu_load_texture_from_buffer(void *buffer, size_t size);
 QU_API qu_texture QU_CALL qu_load_texture_from_image(qu_image image);
 QU_API void QU_CALL qu_destroy_texture(qu_texture texture);
+QU_API qu_vec2i QU_CALL qu_get_texture_size(qu_texture texture);
+QU_API qu_pixel_format QU_CALL qu_get_texture_format(qu_texture texture);
 QU_API void QU_CALL qu_draw_texture(qu_texture texture, float x, float y, float w, float h);
 QU_API void QU_CALL qu_draw_texture_r(qu_texture texture, qu_rectf rect);
 QU_API void QU_CALL qu_draw_subtexture(qu_texture texture, float x, float y, float w, float h, float s, float t, float u, float v);

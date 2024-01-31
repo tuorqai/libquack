@@ -398,6 +398,32 @@ void qu_destroy_texture(qu_texture texture_h)
     libqu_handle_destroy(LIBQU_HANDLE_TEXTURE, texture_h.id);
 }
 
+qu_vec2i qu_get_texture_size(qu_texture texture_h)
+{
+    qu_vec2i size = { -1, -1 };
+
+    struct libqu_texture *texture =
+        libqu_handle_get(LIBQU_HANDLE_TEXTURE, texture_h.id);
+
+    if (texture) {
+        size = texture->image->size;
+    }
+
+    return size;
+}
+
+qu_pixel_format qu_get_texture_format(qu_texture texture_h)
+{
+    struct libqu_texture *texture =
+        libqu_handle_get(LIBQU_HANDLE_TEXTURE, texture_h.id);
+    
+    if (texture) {
+        return texture->image->format;
+    }
+
+    return QU_PIXFMT_INVALID;
+}
+
 void qu_draw_texture(qu_texture texture_h, float x, float y, float w, float h)
 {
     struct libqu_texture *texture =
