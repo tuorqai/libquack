@@ -35,6 +35,23 @@ jobs:
     - name: Build (Debug)
       run: cmake --build build --config Debug
 
+    - name: Install (Debug)
+      run: cmake --install build --config Debug --prefix install-debug/libquack
+
     - name: Build (Release)
       run: cmake --build build --config Release
 
+    - name: Install (Release)
+      run: cmake --install build --config Release --prefix install/libquack
+
+    - name: Create archives
+      run: |
+        tar -vcf libquack-linux-${{ matrix.config.name }}-debug.tar.gz install-debug/*
+        tar -vcf libquack-linux-${{ matrix.config.name }}.tar.gz install/*
+    
+    - uses: actions/upload-artifact@v3
+      with:
+        name: libquack-linux-${{ matrix.config.name }}
+        path: |
+          libquack-linux-${{ matrix.config.name }}-debug.tar.gz
+          libquack-linux-${{ matrix.config.name }}.tar.gz
