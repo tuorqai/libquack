@@ -3,6 +3,8 @@
 include(CMakeFindDependencyMacro)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/modules")
 
+find_dependency(Threads)
+
 if(@QU_USE_OPENGL@) # QU_USE_OPENGL
     find_dependency(OpenGL)
 endif()

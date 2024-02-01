@@ -75,6 +75,13 @@ set(_QU_PC_LIBS "-lquack")
 set(_QU_PC_LIBS_PRIVATE "")
 set(_QU_PC_REQUIRES_PRIVATE "")
 
+find_package(Threads REQUIRED)
+target_link_libraries(libquack PUBLIC Threads::Threads)
+
+if(CMAKE_THREAD_LIBS_INIT)
+    list(APPEND _QU_PC_LIBS_PRIVATE "-l${CMAKE_THREAD_LIBS_INIT}")
+endif()
+
 find_library(MATH_LIBRARY m)
 
 if(MATH_LIBRARY)
@@ -84,7 +91,7 @@ endif()
 
 if(CMAKE_DL_LIBS)
     target_link_libraries(libquack PUBLIC ${CMAKE_DL_LIBS})
-    list(APPEND _QU_PC_LIBS_PRIVATE ${CMAKE_DL_LIBS})
+    list(APPEND _QU_PC_LIBS_PRIVATE "-l${CMAKE_DL_LIBS}")
 endif()
 
 if(QU_USE_OPENGL)
