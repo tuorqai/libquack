@@ -1,0 +1,22 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/modules")
+
+if(@QU_USE_OPENGL@) # QU_USE_OPENGL
+    find_dependency(OpenGL)
+endif()
+
+if(@QU_USE_X11@) # QU_USE_X11
+    find_dependency(X11)
+endif()
+
+if(@QU_USE_OPENAL@) # QU_USE_OPENAL
+    find_dependency(OpenAL)
+endif()
+
+if(@QU_USE_VORBIS@) # QU_USE_VORBIS
+    find_dependency(Vorbis)
+endif()
+
+include("${CMAKE_CURRENT_LIST_DIR}/libquack-targets.cmake")
