@@ -543,6 +543,8 @@ static bool graphics_gl3_initialize(struct libqu_graphics_params const *params)
     mat4_ortho(&priv.projection, 0.f, width, height, 0.f);
     mat4_identity(&priv.modelview);
 
+    apply_program(PROGRAM_PRIMITIVE);
+
     _GL(glEnable(GL_BLEND));
     _GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 
