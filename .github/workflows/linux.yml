@@ -44,10 +44,15 @@ jobs:
     - name: Install (Release)
       run: cmake --install build --config Release --prefix install/libquack
 
+    - name: Add extra files
+      run: |
+        cp -av LICENSE README.md install-debug/libquack
+        cp -av LICENSE README.md install/libquack
+
     - name: Create archives
       run: |
-        tar -vcf libquack-linux-${{ matrix.config.name }}-debug.tar.gz install-debug/*
-        tar -vcf libquack-linux-${{ matrix.config.name }}.tar.gz install/*
+        tar -C install-debug -vcf libquack-linux-${{ matrix.config.name }}-debug.tar.gz libquack
+        tar -C install -vcf libquack-linux-${{ matrix.config.name }}.tar.gz libquack
     
     - uses: actions/upload-artifact@v3
       with:
