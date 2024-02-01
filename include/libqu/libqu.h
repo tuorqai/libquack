@@ -232,6 +232,18 @@ typedef struct qu_rectf
     float h;
 } qu_rectf;
 
+typedef struct qu_date_time
+{
+    int year;           /*!< Year (e.g. 2022) */
+    int month;          /*!< Month (1: Jan, 2: Feb, etc) */
+    int day;            /*!< Day (1-31) */
+    int weekday;        /*!< Weekday (1: Mon, 2: Tue, 3: Wed, etc) */
+    int hours;          /*!< Hours (0-23) */
+    int minutes;        /*!< Minutes (0-59) */
+    int seconds;        /*!< Seconds (0-59) */
+    int milliseconds;   /*!< Milliseconds (0-999) */
+} qu_date_time;
+
 typedef struct qu_image
 {
     qu_handle id;
@@ -263,6 +275,14 @@ QU_API void QU_CALL qu_initialize(void);
 QU_API void QU_CALL qu_terminate(void);
 QU_API bool QU_CALL qu_process(void);
 QU_API void QU_CALL qu_present(void);
+
+QU_API uint32_t QU_CALL qu_get_ticks_msec(void);
+QU_API uint64_t QU_CALL qu_get_ticks_nsec(void);
+
+QU_API float QU_CALL qu_get_time_mediump(void);
+QU_API double QU_CALL qu_get_time_highp(void);
+
+QU_API qu_date_time QU_CALL qu_get_date_time(void);
 
 QU_API char const * QU_CALL qu_get_window_title(void);
 QU_API qu_vec2i QU_CALL qu_get_window_size(void);

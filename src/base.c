@@ -24,6 +24,7 @@
 #include "graphics.h"
 #include "handle.h"
 #include "log.h"
+#include "platform.h"
 
 //------------------------------------------------------------------------------
 
@@ -38,6 +39,9 @@ static struct
 {
     int refcount;
     unsigned int extra;
+
+    uint32_t start_ticks_mediump;
+    uint64_t start_ticks_highp;
 
     struct {
         struct libqu_core_params core;
@@ -88,6 +92,9 @@ void qu_initialize(void)
         return;
     }
 
+    priv.start_ticks_mediump = pl_get_ticks_mediump();
+    priv.start_ticks_highp = pl_get_ticks_highp();
+
     sanitize_core_params();
     sanitize_graphics_params();
 
@@ -124,6 +131,47 @@ void qu_present(void)
 {
     libqu_graphics_flush();
     libqu_core_swap();
+}
+
+//------------------------------------------------------------------------------
+
+uint32_t qu_get_ticks_msec(void)
+{
+    return pl_get_ticks_mediump() - priv.start_ticks_mediump;
+}
+
+uint64_t qu_get_ticks_nsec(void)
+{
+    return pl_get_ticks_highp() - priv.start_ticks_highp;
+}
+
+float qu_get_time_mediump(void)
+{
+    return qu_get_ticks_msec() / 1000.f;
+}
+
+double qu_get_time_highp(void)
+{
+    return qu_get_ticks_nsec() / 1000000000.0;
+}
+
+qu_date_time qu_get_datetime(void)
+{
+    pl_date_time pdt;
+    qu_date_time qdt;
+
+    pl_get_date_time(&pdt);
+
+    qdt.year            = pdt.year;
+    qdt.month           = pdt.month;
+    qdt.day             = pdt.day;
+    qdt.weekday         = pdt.weekday;
+    qdt.hours           = pdt.hours;
+    qdt.minutes         = pdt.minutes;
+    qdt.seconds         = pdt.seconds;
+    qdt.milliseconds    = pdt.milliseconds;
+
+    return qdt;
 }
 
 //------------------------------------------------------------------------------
