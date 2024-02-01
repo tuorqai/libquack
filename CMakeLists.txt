@@ -4,19 +4,20 @@ project(libquack)
 
 #-------------------------------------------------------------------------------
 
-option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
-option(QU_BUILD_EXAMPLES "Build examples" ON)
-option(QU_USE_OPENGL "Use OpenGL" OFF)
-option(QU_USE_X11 "Use X11" OFF)
-option(QU_USE_OPENAL "Use OpenAL" OFF)
-option(QU_USE_VORBIS "Use Vorbis" OFF)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
+
+include(CMakeDependentOption)
+include(CMakePackageConfigHelpers)
+include(GNUInstallDirs)
 
 #-------------------------------------------------------------------------------
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
-
-include(GNUInstallDirs)
-include(CMakePackageConfigHelpers)
+option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
+option(QU_BUILD_EXAMPLES "Build examples" ON)
+option(QU_USE_OPENGL "Use OpenGL" ON)
+cmake_dependent_option(QU_USE_X11 "Use X11" ON "UNIX;NOT APPLE" OFF)
+option(QU_USE_OPENAL "Use OpenAL" ON)
+option(QU_USE_VORBIS "Use Vorbis" ON)
 
 #-------------------------------------------------------------------------------
 
