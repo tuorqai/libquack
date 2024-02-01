@@ -71,14 +71,20 @@ endif()
 #-------------------------------------------------------------------------------
 # Dependencies
 
-set(_QU_PC_REQUIRES_PRIVATE "")
+set(_QU_PC_LIBS "-lquack")
 set(_QU_PC_LIBS_PRIVATE "")
+set(_QU_PC_REQUIRES_PRIVATE "")
 
 find_library(MATH_LIBRARY m)
 
 if(MATH_LIBRARY)
     target_link_libraries(libquack PUBLIC ${MATH_LIBRARY})
     list(APPEND _QU_PC_LIBS_PRIVATE "-lm")
+endif()
+
+if(CMAKE_DL_LIBS)
+    target_link_libraries(libquack PUBLIC ${CMAKE_DL_LIBS})
+    list(APPEND _QU_PC_LIBS_PRIVATE ${CMAKE_DL_LIBS})
 endif()
 
 if(QU_USE_OPENGL)
@@ -156,9 +162,9 @@ write_basic_package_version_file(
 #-------------------------------------------------------------------------------
 # Generate .pc (pkg-config) file
 
-set(QU_PC_LIBS "-lquack")
-string(REPLACE ";" " " QU_PC_REQUIRES_PRIVATE "${_QU_PC_REQUIRES_PRIVATE}")
+string(REPLACE ";" " " QU_PC_LIBS "${_QU_PC_LIBS}")
 string(REPLACE ";" " " QU_PC_LIBS_PRIVATE "${_QU_PC_LIBS_PRIVATE}")
+string(REPLACE ";" " " QU_PC_REQUIRES_PRIVATE "${_QU_PC_REQUIRES_PRIVATE}")
 
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/libquack.pc.in"
