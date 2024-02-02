@@ -27,7 +27,7 @@ jobs:
     - name: Set variables
       id: set-vars
       run: |
-        echo "PACKAGE=libquack-linux-${{ matrix.type.name }}-${{ matrix.build.name }}-$(git rev-parse --short HEAD) >> ${GITHUB_OUTPUT}"
+        echo "PACKAGE=libquack-linux-${{ matrix.type.name }}-${{ matrix.build.name }}-$(git rev-parse --short HEAD)" >> ${GITHUB_OUTPUT}
 
     - name: Install dependencies
       run: |
