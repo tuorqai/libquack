@@ -28,6 +28,7 @@ jobs:
       id: set-vars
       run: |
         echo "PACKAGE=libquack-linux-${{ matrix.type.name }}-${{ matrix.build.name }}-$(git rev-parse --short HEAD)" >> ${GITHUB_OUTPUT}
+        echo "GIT_SHORT_SHA=$(git rev-parse --short HEAD)" >> ${GITHUB_OUTPUT}
 
     - name: Install dependencies
       run: |
@@ -54,6 +55,6 @@ jobs:
     
     - uses: actions/upload-artifact@v3
       with:
-        name: libquack-linux
+        name: libquack-linux-${{ steps.set-vars.outputs.GIT_SHORT_SHA }}
         path: |
           ${{ steps.set-vars.outputs.PACKAGE }}.tar.gz
