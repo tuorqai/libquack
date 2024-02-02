@@ -31,6 +31,28 @@
 
 //------------------------------------------------------------------------------
 
+typedef XClassHint *(*PFNXALLOCCLASSHINTPROC)(void);
+typedef int (*PFNXCHANGEPROPERTYPROC)(Display *, Window, Atom, Atom, int, int, _Xconst unsigned char *, int);
+typedef int (*PFNXCHECKTYPEDWINDOWEVENTPROC)(Display *, Window, int, XEvent *);
+typedef int (*PFNXCHECKWINDOWEVENTPROC)(Display *, Window, long, XEvent *);
+typedef int (*PFNXCLOSEDISPLAYPROC)(Display *);
+typedef Colormap (*PFNXCREATECOLORMAPPROC)(Display *, Window, Visual *, int);
+typedef Window (*PFNXCREATEWINDOWPROC)(Display *, Window, int, int, unsigned int, unsigned int, unsigned int, int, unsigned int, Visual *, unsigned long, XSetWindowAttributes *);
+typedef int (*PFNXDESTROYWINDOWPROC)(Display *, Window);
+typedef int (*PFNXFREEPROC)(void *);
+typedef int (*PFNXFREECOLORMAPPROC)(Display *, Colormap);
+typedef int (*PFNXGETWINDOWPROPERTYPROC)(Display *, Window, Atom, long,long, Bool, Atom, Atom *, int *, unsigned long *, unsigned long *, unsigned char **);
+typedef Status (*PFNXINTERNATOMSPROC)(Display *, char **, int, Bool, Atom *);
+typedef KeySym (*PFNXLOOKUPKEYSYMPROC)(XKeyEvent *, int);
+typedef int (*PFNXMAPWINDOWPROC)(Display *, Window);
+typedef int (*PFNXMOVERESIZEWINDOWPROC)(Display *, Window, int, int, unsigned int, unsigned int);
+typedef Display *(*PFNXOPENDISPLAYPROC)(_Xconst char *);
+typedef int (*PFNXSETCLASSHINTPROC)(Display *, Window, XClassHint *);
+typedef void (*PFNXSETWMNORMALHINTSPROC)(Display *, Window, XSizeHints *);
+typedef Status (*PFNXSETWMPROTOCOLSPROC)(Display *, Window, Atom *, int);
+typedef int (*PFNXSTORENAMEPROC)(Display *, Window, _Xconst char *);
+typedef Bool (*PFNXKBSETDETECTABLEAUTOREPEATPROC)(Display *, Bool, Bool *);
+
 // glXCreateContext() from GLX 1.0
 typedef GLXContext(*PFNGLXCREATECONTEXTPROC)(Display *, XVisualInfo *,
     GLXContext, Bool);
@@ -48,6 +70,33 @@ typedef void (*PFNGLXSWAPBUFFERSPROC)(Display *, GLXDrawable);
 typedef char const *(*PFNGLXQUERYEXTENSIONSSTRINGPROC)(Display *, int);
 
 //------------------------------------------------------------------------------
+
+struct xlib
+{
+    void *so;
+
+    PFNXALLOCCLASSHINTPROC              _XAllocClassHint;
+    PFNXCHANGEPROPERTYPROC              _XChangeProperty;
+    PFNXCHECKTYPEDWINDOWEVENTPROC       _XCheckTypedWindowEvent;
+    PFNXCHECKWINDOWEVENTPROC            _XCheckWindowEvent;
+    PFNXCLOSEDISPLAYPROC                _XCloseDisplay;
+    PFNXCREATECOLORMAPPROC              _XCreateColormap;
+    PFNXCREATEWINDOWPROC                _XCreateWindow;
+    PFNXDESTROYWINDOWPROC               _XDestroyWindow;
+    PFNXFREEPROC                        _XFree;
+    PFNXFREECOLORMAPPROC                _XFreeColormap;
+    PFNXGETWINDOWPROPERTYPROC           _XGetWindowProperty;
+    PFNXINTERNATOMSPROC                 _XInternAtoms;
+    PFNXLOOKUPKEYSYMPROC                _XLookupKeysym;
+    PFNXMAPWINDOWPROC                   _XMapWindow;
+    PFNXMOVERESIZEWINDOWPROC            _XMoveResizeWindow;
+    PFNXOPENDISPLAYPROC                 _XOpenDisplay;
+    PFNXSETCLASSHINTPROC                _XSetClassHint;
+    PFNXSETWMNORMALHINTSPROC            _XSetWMNormalHints;
+    PFNXSETWMPROTOCOLSPROC              _XSetWMProtocols;
+    PFNXSTORENAMEPROC                   _XStoreName;
+    PFNXKBSETDETECTABLEAUTOREPEATPROC   _XkbSetDetectableAutoRepeat;
+};
 
 struct glx_lib
 {
@@ -92,6 +141,28 @@ struct glx_lib
 };
 
 //------------------------------------------------------------------------------
+
+#define XAllocClassHint                 priv.xlib._XAllocClassHint
+#define XChangeProperty                 priv.xlib._XChangeProperty
+#define XCheckTypedWindowEvent          priv.xlib._XCheckTypedWindowEvent
+#define XCheckWindowEvent               priv.xlib._XCheckWindowEvent
+#define XCloseDisplay                   priv.xlib._XCloseDisplay
+#define XCreateColormap                 priv.xlib._XCreateColormap
+#define XCreateWindow                   priv.xlib._XCreateWindow
+#define XDestroyWindow                  priv.xlib._XDestroyWindow
+#define XFree                           priv.xlib._XFree
+#define XFreeColormap                   priv.xlib._XFreeColormap
+#define XGetWindowProperty              priv.xlib._XGetWindowProperty
+#define XInternAtoms                    priv.xlib._XInternAtoms
+#define XLookupKeysym                   priv.xlib._XLookupKeysym
+#define XMapWindow                      priv.xlib._XMapWindow
+#define XMoveResizeWindow               priv.xlib._XMoveResizeWindow
+#define XOpenDisplay                    priv.xlib._XOpenDisplay
+#define XSetClassHint                   priv.xlib._XSetClassHint
+#define XSetWMNormalHints               priv.xlib._XSetWMNormalHints
+#define XSetWMProtocols                 priv.xlib._XSetWMProtocols
+#define XStoreName                      priv.xlib._XStoreName
+#define XkbSetDetectableAutoRepeat      priv.xlib._XkbSetDetectableAutoRepeat
 
 #define glXCreateContext                priv.glx._glXCreateContext
 #define glXDestroyContext               priv.glx._glXDestroyContext

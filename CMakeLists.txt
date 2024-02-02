@@ -108,9 +108,6 @@ if(QU_USE_X11)
     find_package(X11 REQUIRED)
     target_compile_definitions(libquack PRIVATE QU_USE_X11)
     target_include_directories(libquack PRIVATE ${X11_INCLUDE_DIR})
-    target_link_libraries(libquack PRIVATE ${X11_LIBRARIES})
-
-    list(APPEND _QU_PC_REQUIRES_PRIVATE "x11")
 endif()
 
 if(QU_USE_OPENAL)

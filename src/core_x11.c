@@ -43,6 +43,7 @@ enum
 
 static struct
 {
+    struct xlib xlib;
     struct glx_lib glx;
 
     Display *dpy;
@@ -179,6 +180,67 @@ static qu_key key_conv(KeySym sym)
     }
 
     return QU_KEY_INVALID;
+}
+
+static bool load_xfuncs(void)
+{
+    XAllocClassHint = pl_get_dll_proc(priv.xlib.so, "XAllocClassHint");
+    XChangeProperty = pl_get_dll_proc(priv.xlib.so, "XChangeProperty");
+    XCheckTypedWindowEvent = pl_get_dll_proc(priv.xlib.so, "XCheckTypedWindowEvent");
+    XCheckWindowEvent = pl_get_dll_proc(priv.xlib.so, "XCheckWindowEvent");
+    XCloseDisplay = pl_get_dll_proc(priv.xlib.so, "XCloseDisplay");
+    XCreateColormap = pl_get_dll_proc(priv.xlib.so, "XCreateColormap");
+    XCreateWindow = pl_get_dll_proc(priv.xlib.so, "XCreateWindow");
+    XDestroyWindow = pl_get_dll_proc(priv.xlib.so, "XDestroyWindow");
+    XFree = pl_get_dll_proc(priv.xlib.so, "XFree");
+    XFreeColormap = pl_get_dll_proc(priv.xlib.so, "XFreeColormap");
+    XGetWindowProperty = pl_get_dll_proc(priv.xlib.so, "XGetWindowProperty");
+    XInternAtoms = pl_get_dll_proc(priv.xlib.so, "XInternAtoms");
+    XLookupKeysym = pl_get_dll_proc(priv.xlib.so, "XLookupKeysym");
+    XMapWindow = pl_get_dll_proc(priv.xlib.so, "XMapWindow");
+    XMoveResizeWindow = pl_get_dll_proc(priv.xlib.so, "XMoveResizeWindow");
+    XOpenDisplay = pl_get_dll_proc(priv.xlib.so, "XOpenDisplay");
+    XSetClassHint = pl_get_dll_proc(priv.xlib.so, "XSetClassHint");
+    XSetWMNormalHints = pl_get_dll_proc(priv.xlib.so, "XSetWMNormalHints");
+    XSetWMProtocols = pl_get_dll_proc(priv.xlib.so, "XSetWMProtocols");
+    XStoreName = pl_get_dll_proc(priv.xlib.so, "XStoreName");
+    XkbSetDetectableAutoRepeat = pl_get_dll_proc(priv.xlib.so, "XkbSetDetectableAutoRepeat");
+
+    return XAllocClassHint && XChangeProperty && XCheckTypedWindowEvent
+        && XCheckWindowEvent && XCloseDisplay && XCreateColormap
+        && XCreateWindow && XDestroyWindow && XFree
+        && XFreeColormap && XGetWindowProperty && XInternAtoms
+        && XLookupKeysym && XMapWindow && XMoveResizeWindow
+        && XOpenDisplay && XSetClassHint && XSetWMNormalHints
+        && XSetWMProtocols && XStoreName && XkbSetDetectableAutoRepeat;
+}
+
+static bool load_xlib(void)
+{
+    char const *names[] = {
+        "libX11.so.6",
+        "libX11.so",
+    };
+
+    for (size_t i = 0; i < sizeof(names) / sizeof(*names); i++) {
+        priv.xlib.so = pl_open_dll("libX11.so.6");
+
+        if (priv.xlib.so) {
+            break;
+        }
+    }
+
+    if (!priv.xlib.so) {
+        return false;
+    }
+
+    LIBQU_LOGI("Loaded X11 library from libX11.so.6.\n");
+
+    if (!load_xfuncs()) {
+        return false;
+    }
+
+    return true;
 }
 
 static bool load_glx_funcs(void)
@@ -616,6 +678,10 @@ static bool handle_event(XEvent *ev)
 
 static bool core_x11_check_if_available(void)
 {
+    if (!load_xlib()) {
+        return false;
+    }
+
     if (!load_glx_lib()) {
         return false;
     }
