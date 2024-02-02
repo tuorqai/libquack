@@ -352,7 +352,7 @@ static bool load_glx_lib(void)
     return true;
 }
 
-static void *get_glx_proc(char const *name)
+static void *get_glx_proc_address(char const *name)
 {
     if (glXGetProcAddress) {
         return glXGetProcAddress((GLubyte const *) name);
@@ -409,7 +409,7 @@ static void parse_single_glx_extension(char const *ext)
     if (strcmp(ext, "GLX_ARB_create_context") == 0) {
         priv.glx.ARB_create_context = true;
         glXCreateContextAttribsARB =
-            get_glx_proc("glXCreateContextAttribsARB");
+            get_glx_proc_address("glXCreateContextAttribsARB");
         return;
     }
 
@@ -421,7 +421,7 @@ static void parse_single_glx_extension(char const *ext)
     if (strcmp(ext, "GLX_EXT_swap_control") == 0) {
         priv.glx.EXT_swap_control = true;
         glXSwapIntervalEXT =
-            get_glx_proc("glXSwapIntervalEXT");
+            get_glx_proc_address("glXSwapIntervalEXT");
         return;
     }
 
@@ -874,7 +874,7 @@ static int core_glx_get_version(void)
 
 static void *core_glx_get_proc_address(char const *name)
 {
-    return glXGetProcAddress((GLubyte const *) name);
+    return get_glx_proc_address(name);
 }
 
 //------------------------------------------------------------------------------
