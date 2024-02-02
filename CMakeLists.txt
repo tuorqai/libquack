@@ -101,15 +101,7 @@ if(QU_USE_OPENGL)
 
     find_package(OpenGL REQUIRED)
     target_compile_definitions(libquack PRIVATE QU_USE_OPENGL)
-
-    if(TARGET OpenGL::GL)
-        target_link_libraries(libquack PRIVATE OpenGL::GL)
-    else()
-        target_include_directories(libquack PRIVATE ${OPENGL_INCLUDE_DIR})
-        target_link_libraries(libquack PRIVATE ${OPENGL_gl_LIBRARY})
-    endif()
-
-    list(APPEND _QU_PC_REQUIRES_PRIVATE "opengl")
+    target_include_directories(libquack PRIVATE ${OPENGL_INCLUDE_DIR})
 endif()
 
 if(QU_USE_X11)
