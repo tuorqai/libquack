@@ -21,13 +21,13 @@ jobs:
         - { name: rel, flags: -DCMAKE_BUILD_TYPE=Release }
 
     steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
     - name: Set variables
       id: set-vars
       run: |
         echo "package=libquack-linux-${{ matrix.type.name }}-${{ matrix.build.name }}-$(git rev-parse --short HEAD) >> ${GITHUB_OUTPUT}"
-
-    - name: Checkout
-      uses: actions/checkout@v3
 
     - name: Install dependencies
       run: |
