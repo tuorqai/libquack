@@ -135,7 +135,14 @@ if(QU_USE_VORBIS)
     target_compile_definitions(libquack PRIVATE QU_USE_VORBIS)
     target_link_libraries(libquack PRIVATE Vorbis::vorbisfile)
 
-    list(APPEND _QU_PC_REQUIRES_PRIVATE "vorbisfile")
+    get_target_property(_VORBIS_TYPE Vorbis::vorbisfile TYPE)
+
+    if(_VORBIS_TYPE STREQUAL "STATIC_LIBRARY")
+        set(QU_STATIC_VORBIS 1)
+        list(APPEND _QU_PC_REQUIRES_PRIVATE "vorbisfile")
+    else()
+        set(QU_STATIC_VORBIS 0)
+    endif()
 endif()
 
 #-------------------------------------------------------------------------------
