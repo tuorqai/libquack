@@ -5,32 +5,12 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/modules")
 
 find_dependency(Threads)
 
-set(_qu_use_opengl @QU_USE_OPENGL@)
-set(_qu_use_x11 @QU_USE_X11@)
-set(_qu_use_openal @QU_USE_OPENAL@)
 set(_qu_use_vorbis @QU_USE_VORBIS@)
-set(_qu_static_vorbis @QU_STATIC_VORBIS@)
 
-if(_qu_use_opengl)
-    find_dependency(OpenGL)
-endif()
-
-if(_qu_use_x11)
-    find_dependency(X11)
-endif()
-
-if(_qu_use_openal)
-    find_dependency(OpenAL)
-endif()
-
-if(_qu_use_vorbis AND NOT _qu_static_vorbis)
+if(_qu_use_vorbis)
     find_dependency(Vorbis)
 endif()
 
 include("${CMAKE_CURRENT_LIST_DIR}/libquack-targets.cmake")
 
-unset(_qu_use_opengl)
-unset(_qu_use_x11)
-unset(_qu_use_openal)
 unset(_qu_use_vorbis)
-unset(_qu_static_vorbis)
