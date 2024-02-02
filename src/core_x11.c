@@ -43,16 +43,72 @@ enum
     TOTAL_ATOMS,
 };
 
-enum
+//------------------------------------------------------------------------------
+
+// glXCreateContext() from GLX 1.0
+typedef GLXContext(*PFNGLXCREATECONTEXTPROC)(Display *, XVisualInfo *,
+    GLXContext, Bool);
+
+// glXDestroyContext() from GLX 1.0
+typedef void (*PFNGLXDESTROYCONTEXTPROC)(Display *, GLXContext);
+
+// glXQueryVersion() from GLX 1.0
+typedef Bool (*PFNGLXQUERYVERSION)(Display *, int *, int *);
+
+// glXSwapBuffers() from GLX 1.0
+typedef void (*PFNGLXSWAPBUFFERSPROC)(Display *, GLXDrawable);
+
+// glXQueryExtensionsString() from GLX 1.1
+typedef char const *(*PFNGLXQUERYEXTENSIONSSTRINGPROC)(Display *, int);
+
+//------------------------------------------------------------------------------
+
+struct glx_lib
 {
-    _ARB_create_context = (1 << 0),
-    _ARB_create_context_profile = (1 << 1),
-    _EXT_swap_control = (1 << 2),
-    _EXT_create_context_es2_profile = (1 << 3),
+    void *so;
+
+    // GLX 1.0+
+
+    PFNGLXCREATECONTEXTPROC             _glXCreateContext;
+    PFNGLXDESTROYCONTEXTPROC            _glXDestroyContext;
+    PFNGLXQUERYVERSION                  _glXQueryVersion;
+    PFNGLXSWAPBUFFERSPROC               _glXSwapBuffers;
+
+    // GLX 1.1+
+
+    PFNGLXQUERYEXTENSIONSSTRINGPROC     _glXQueryExtensionsString;
+
+    // GLX 1.3+
+
+    PFNGLXCHOOSEFBCONFIGPROC            _glXChooseFBConfig;
+    PFNGLXCREATEWINDOWPROC              _glXCreateWindow;
+    PFNGLXDESTROYWINDOWPROC             _glXDestroyWindow;
+    PFNGLXGETFBCONFIGATTRIBPROC         _glXGetFBConfigAttrib;
+    PFNGLXGETVISUALFROMFBCONFIGPROC     _glXGetVisualFromFBConfig;
+    PFNGLXMAKECONTEXTCURRENTPROC        _glXMakeContextCurrent;
+
+    // GLX 1.4+
+
+    PFNGLXGETPROCADDRESSPROC            _glXGetProcAddress;
+
+    // Extensions
+
+    PFNGLXCREATECONTEXTATTRIBSARBPROC   _glXCreateContextAttribsARB;
+    PFNGLXGETPROCADDRESSPROC            _glXGetProcAddressARB;
+    PFNGLXSWAPINTERVALEXTPROC           _glXSwapIntervalEXT;
+
+    // Flags
+
+    bool ARB_create_context;
+    bool ARB_create_context_profile;
+    bool EXT_swap_control;
+    bool EXT_create_context_es2_profile;
 };
 
 static struct
 {
+    struct glx_lib glx;
+
     Display *dpy;
     int screen;
     Window root;
@@ -62,19 +118,33 @@ static struct
     Colormap colormap;
     Window window;
 
+    GLXContext context;
+    GLXDrawable surface;
+
+    int gl_version;
+    int glx_version;
+
     char class_str[256];
     char title_str[256];
-
-    struct {
-        unsigned int extensions;
-        PFNGLXCREATECONTEXTATTRIBSARBPROC glXCreateContextAttribsARB;
-        PFNGLXSWAPINTERVALEXTPROC glXSwapIntervalEXT;
-
-        int version;
-        GLXContext context;
-        GLXDrawable surface;
-    } glx;
 } priv;
+
+//------------------------------------------------------------------------------
+
+#define glXCreateContext                priv.glx._glXCreateContext
+#define glXDestroyContext               priv.glx._glXDestroyContext
+#define glXQueryVersion                 priv.glx._glXQueryVersion
+#define glXSwapBuffers                  priv.glx._glXSwapBuffers
+#define glXQueryExtensionsString        priv.glx._glXQueryExtensionsString
+#define glXChooseFBConfig               priv.glx._glXChooseFBConfig
+#define glXCreateWindow                 priv.glx._glXCreateWindow
+#define glXDestroyWindow                priv.glx._glXDestroyWindow
+#define glXGetFBConfigAttrib            priv.glx._glXGetFBConfigAttrib
+#define glXGetVisualFromFBConfig        priv.glx._glXGetVisualFromFBConfig
+#define glXMakeContextCurrent           priv.glx._glXMakeContextCurrent
+#define glXGetProcAddress               priv.glx._glXGetProcAddress
+#define glXCreateContextAttribsARB      priv.glx._glXCreateContextAttribsARB
+#define glXGetProcAddressARB            priv.glx._glXGetProcAddressARB
+#define glXSwapIntervalEXT              priv.glx._glXSwapIntervalEXT
 
 //------------------------------------------------------------------------------
 
@@ -193,6 +263,108 @@ static qu_key key_conv(KeySym sym)
     return QU_KEY_INVALID;
 }
 
+static bool load_glx_funcs(void)
+{
+    glXCreateContext = pl_get_dll_proc(priv.glx.so,
+        "glXCreateContext");
+
+    glXDestroyContext = pl_get_dll_proc(priv.glx.so,
+        "glXDestroyContext");
+
+    glXQueryVersion = pl_get_dll_proc(priv.glx.so,
+        "glXQueryVersion");
+
+    glXSwapBuffers = pl_get_dll_proc(priv.glx.so,
+        "glXSwapBuffers");
+
+    glXQueryExtensionsString = pl_get_dll_proc(priv.glx.so,
+        "glXQueryExtensionsString");
+
+    glXChooseFBConfig = pl_get_dll_proc(priv.glx.so,
+        "glXChooseFBConfig");
+
+    glXCreateWindow = pl_get_dll_proc(priv.glx.so,
+        "glXCreateWindow");
+
+    glXDestroyWindow = pl_get_dll_proc(priv.glx.so,
+        "glXDestroyWindow");
+
+    glXGetFBConfigAttrib = pl_get_dll_proc(priv.glx.so,
+        "glXGetFBConfigAttrib");
+
+    glXGetVisualFromFBConfig = pl_get_dll_proc(priv.glx.so,
+        "glXGetVisualFromFBConfig");
+
+    glXMakeContextCurrent = pl_get_dll_proc(priv.glx.so,
+        "glXMakeContextCurrent");
+
+    glXGetProcAddress = pl_get_dll_proc(priv.glx.so,
+        "glXGetProcAddress");
+
+    glXCreateContextAttribsARB = pl_get_dll_proc(priv.glx.so,
+        "glXCreateContextAttribsARB");
+
+    glXGetProcAddressARB = pl_get_dll_proc(priv.glx.so,
+        "glXGetProcAddressARB");
+
+    glXSwapIntervalEXT = pl_get_dll_proc(priv.glx.so,
+        "glXSwapIntervalEXT");
+
+    return glXCreateContext
+        && glXDestroyContext
+        && glXQueryVersion
+        && glXSwapBuffers
+        && glXQueryExtensionsString
+        && glXChooseFBConfig
+        && glXCreateWindow
+        && glXDestroyWindow
+        && glXGetFBConfigAttrib
+        && glXGetVisualFromFBConfig
+        && glXMakeContextCurrent;
+}
+
+static bool load_glx_lib(void)
+{
+    char const *names[] = {
+        "libGL.so.1",
+        "libGL.so",
+    };
+
+    for (size_t i = 0; i < sizeof(names) / sizeof(*names); i++) {
+        priv.glx.so = pl_open_dll(names[i]);
+
+        if (priv.glx.so) {
+            LIBQU_LOGI("GLX dynamic library opened from %s.\n", names[i]);
+            break;
+        }
+    }
+
+    if (!priv.glx.so) {
+        LIBQU_LOGE("GLX dynamic library not found.\n");
+        return false;
+    }
+
+    if (!load_glx_funcs()) {
+        LIBQU_LOGE("Failed to load GLX functions.\n");
+        return false;
+    }
+
+    return true;
+}
+
+static void *get_glx_proc(char const *name)
+{
+    if (glXGetProcAddress) {
+        return glXGetProcAddress((GLubyte const *) name);
+    }
+
+    if (glXGetProcAddressARB) {
+        return glXGetProcAddressARB((GLubyte const *) name);
+    }
+
+    return pl_get_dll_proc(priv.glx.so, name);
+}
+
 static void check_extras(void)
 {
     Atom type;
@@ -235,28 +407,26 @@ static void setup_atoms_and_protocols(void)
 static void parse_single_glx_extension(char const *ext)
 {
     if (strcmp(ext, "GLX_ARB_create_context") == 0) {
-        priv.glx.extensions |= _ARB_create_context;
-        priv.glx.glXCreateContextAttribsARB = (void *) glXGetProcAddressARB(
-            (GLubyte const *) "glXCreateContextAttribsARB"
-        );
+        priv.glx.ARB_create_context = true;
+        glXCreateContextAttribsARB =
+            get_glx_proc("glXCreateContextAttribsARB");
         return;
     }
 
     if (strcmp(ext, "GLX_ARB_create_context_profile") == 0) {
-        priv.glx.extensions |= _ARB_create_context_profile;
+        priv.glx.ARB_create_context_profile = true;
         return;
     }
 
     if (strcmp(ext, "GLX_EXT_swap_control") == 0) {
-        priv.glx.extensions |= _EXT_swap_control;
-        priv.glx.glXSwapIntervalEXT = (void *) glXGetProcAddressARB(
-            (GLubyte const *) "glXSwapIntervalEXT"
-        );
+        priv.glx.EXT_swap_control = true;
+        glXSwapIntervalEXT =
+            get_glx_proc("glXSwapIntervalEXT");
         return;
     }
 
     if (strcmp(ext, "GLX_EXT_create_context_es2_profile") == 0) {
-        priv.glx.extensions |= _EXT_create_context_es2_profile;
+        priv.glx.EXT_create_context_es2_profile = true;
         return;
     }
 }
@@ -437,22 +607,22 @@ static bool create_modern_glx_context(GLXFBConfig fbc, int version)
         None,
     };
 
-    if (priv.glx.extensions & _ARB_create_context_profile) {
+    if (priv.glx.ARB_create_context_profile) {
         if (version >= 300) {
             attribs[4] = GLX_CONTEXT_PROFILE_MASK_ARB;
             attribs[5] = GLX_CONTEXT_CORE_PROFILE_BIT_ARB;
         }
     }
 
-    priv.glx.context = priv.glx.glXCreateContextAttribsARB(
+    priv.context = glXCreateContextAttribsARB(
         priv.dpy, fbc, NULL, True, attribs
     );
 
-    if (!priv.glx.context) {
+    if (!priv.context) {
         return false;
     }
 
-    priv.glx.version = version;
+    priv.gl_version = version;
     LIBQU_LOGI("Created OpenGL context %d.%d.\n", major, minor);
 
     return true;
@@ -460,13 +630,13 @@ static bool create_modern_glx_context(GLXFBConfig fbc, int version)
 
 static bool create_legacy_glx_context(XVisualInfo *vi)
 {
-    priv.glx.context = glXCreateContext(priv.dpy, vi, NULL, True);
+    priv.context = glXCreateContext(priv.dpy, vi, NULL, True);
 
-    if (!priv.glx.context) {
+    if (!priv.context) {
         return false;
     }
 
-    priv.glx.version = 120;
+    priv.gl_version = 120;
     LIBQU_LOGI("Created legacy OpenGL context.\n");
 
     return true;
@@ -474,7 +644,7 @@ static bool create_legacy_glx_context(XVisualInfo *vi)
 
 static bool create_glx_context(GLXFBConfig fbc, XVisualInfo *vi)
 {
-    if (priv.glx.extensions & _ARB_create_context) {
+    if (priv.glx.ARB_create_context) {
         int versions[] = {
             460, 450, 440, 430, 420, 410, 400,
             330, 320, 310, 300,
@@ -492,15 +662,15 @@ static bool create_glx_context(GLXFBConfig fbc, XVisualInfo *vi)
 
     XFree(vi);
 
-    if (!priv.glx.context) {
+    if (!priv.context) {
         LIBQU_LOGE("Failed to create OpenGL context.\n");
         return false;
     }
 
-    priv.glx.surface = glXCreateWindow(priv.dpy, fbc, priv.window, NULL);
+    priv.surface = glXCreateWindow(priv.dpy, fbc, priv.window, NULL);
 
-    return glXMakeContextCurrent(priv.dpy, priv.glx.surface, priv.glx.surface,
-        priv.glx.context);
+    return glXMakeContextCurrent(priv.dpy, priv.surface, priv.surface,
+        priv.context);
 }
 
 static void handle_key_event(XEvent *ev)
@@ -564,6 +734,10 @@ static bool handle_event(XEvent *ev)
 
 static bool core_x11_check_if_available(void)
 {
+    if (!load_glx_lib()) {
+        return false;
+    }
+
     priv.dpy = XOpenDisplay(NULL);
 
     return priv.dpy != NULL;
@@ -574,6 +748,16 @@ static bool core_x11_initialize(struct libqu_core_params const *params)
     if (!priv.dpy) {
         return false;
     }
+
+    int glx_major, glx_minor;
+
+    if (!glXQueryVersion(priv.dpy, &glx_major, &glx_minor)) {
+        LIBQU_LOGE("Failed to query GLX version.\n");
+        return false;
+    }
+
+    LIBQU_LOGI("GLX version %d.%d\n", glx_major, glx_minor);
+    priv.glx_version = glx_major * 100 + glx_minor * 10;
 
     priv.screen = DefaultScreen(priv.dpy);
     priv.root = DefaultRootWindow(priv.dpy);
@@ -614,8 +798,8 @@ static void core_x11_terminate(void)
     if (priv.dpy) {
         glXMakeContextCurrent(priv.dpy, None, None, None);
         
-        glXDestroyWindow(priv.dpy, priv.glx.surface);
-        glXDestroyContext(priv.dpy, priv.glx.context);
+        glXDestroyWindow(priv.dpy, priv.surface);
+        glXDestroyContext(priv.dpy, priv.context);
 
         LIBQU_LOGI("OpenGL context is destroyed.\n");
 
@@ -625,6 +809,8 @@ static void core_x11_terminate(void)
 
         LIBQU_LOGI("Window is destroyed, display is closed.\n");
     }
+
+    pl_close_dll(priv.glx.so);
 
     memset(&priv, 0, sizeof(priv));
 
@@ -653,7 +839,7 @@ static bool core_x11_process(void)
 
 static void core_x11_swap(void)
 {
-    glXSwapBuffers(priv.dpy, priv.glx.surface);
+    glXSwapBuffers(priv.dpy, priv.surface);
 }
 
 static bool core_x11_set_window_title(char const *title)
@@ -683,7 +869,7 @@ static bool core_x11_set_window_size(qu_vec2i size)
 
 static int core_glx_get_version(void)
 {
-    return priv.glx.version;
+    return priv.gl_version;
 }
 
 static void *core_glx_get_proc_address(char const *name)
