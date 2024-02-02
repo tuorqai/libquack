@@ -8,14 +8,17 @@ on:
 
 jobs:
   build:
-    name: linux-${{ matrix.config.name }}
+    name: linux-${{ matrix.type.name }}-${{ matrix.build.name }}
     runs-on: ubuntu-20.04
 
     strategy:
       matrix:
-        config:
+        type:
         - { name: static, flags: -DBUILD_SHARED_LIBS=0 }
         - { name: shared, flags: -DBUILD_SHARED_LIBS=1 }
+        build:
+        - { name: dbg, flags: -DCMAKE_BUILD_TYPE=Debug }
+        - { name: rel, flags: -DCMAKE_BUILD_TYPE=Release }
 
     steps:
     - name: Checkout
@@ -24,36 +27,28 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install ninja-build libgl-dev xorg-dev libopenal-dev libvorbis-dev
+        sudo apt-get install libgl-dev xorg-dev libopenal-dev libvorbis-dev
 
     - name: Configure
-      run: cmake -B build -G "Ninja Multi-Config" ${{ matrix.config.flags }}
+      run: cmake -B build ${{ matrix.type.flags }} ${{ matrix.build.flags }}
 
-    - name: Build (Debug)
-      run: cmake --build build --config Debug
+    - name: Build
+      run: cmake --build build
 
-    - name: Install (Debug)
-      run: cmake --install build --config Debug --prefix install-debug/libquack
-
-    - name: Build (Release)
-      run: cmake --build build --config Release
-
-    - name: Install (Release)
-      run: cmake --install build --config Release --prefix install/libquack
+    - name: Install
+      run: cmake --install build --prefix tarball/libquack-${{ matrix.type.name }}-${{ matrix.build.name }}
 
     - name: Add extra files
       run: |
-        cp -av LICENSE README.md install-debug/libquack
-        cp -av LICENSE README.md install/libquack
+        cp -av LICENSE README.md tarball
 
-    - name: Create archives
+    - name: Create archive
       run: |
-        tar -C install-debug -vcf libquack-linux-${{ matrix.config.name }}-debug.tar.gz libquack
-        tar -C install -vcf libquack-linux-${{ matrix.config.name }}.tar.gz libquack
+        cd tarball
+        tar -vcf ../libquack-linux-${{ matrix.type.name }}-${{ matrix.build.name }}.tar.gz *
     
     - uses: actions/upload-artifact@v3
       with:
-        name: libquack-linux-${{ matrix.config.name }}
+        name: libquack-linux
         path: |
-          libquack-linux-${{ matrix.config.name }}-debug.tar.gz
-          libquack-linux-${{ matrix.config.name }}.tar.gz
+          libquack-linux-${{ matrix.type.name }}-${{ matrix.build.name }}.tar.gz
