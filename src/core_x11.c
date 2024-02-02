@@ -23,11 +23,7 @@
 //------------------------------------------------------------------------------
 
 #include <string.h>
-#include <GL/glx.h>
-#include <GL/glxext.h>
-#include <X11/Xlib.h>
-#include <X11/XKBlib.h>
-#include "core.h"
+#include "core_x11.h"
 #include "log.h"
 #include "platform.h"
 
@@ -44,66 +40,6 @@ enum
 };
 
 //------------------------------------------------------------------------------
-
-// glXCreateContext() from GLX 1.0
-typedef GLXContext(*PFNGLXCREATECONTEXTPROC)(Display *, XVisualInfo *,
-    GLXContext, Bool);
-
-// glXDestroyContext() from GLX 1.0
-typedef void (*PFNGLXDESTROYCONTEXTPROC)(Display *, GLXContext);
-
-// glXQueryVersion() from GLX 1.0
-typedef Bool (*PFNGLXQUERYVERSION)(Display *, int *, int *);
-
-// glXSwapBuffers() from GLX 1.0
-typedef void (*PFNGLXSWAPBUFFERSPROC)(Display *, GLXDrawable);
-
-// glXQueryExtensionsString() from GLX 1.1
-typedef char const *(*PFNGLXQUERYEXTENSIONSSTRINGPROC)(Display *, int);
-
-//------------------------------------------------------------------------------
-
-struct glx_lib
-{
-    void *so;
-
-    // GLX 1.0+
-
-    PFNGLXCREATECONTEXTPROC             _glXCreateContext;
-    PFNGLXDESTROYCONTEXTPROC            _glXDestroyContext;
-    PFNGLXQUERYVERSION                  _glXQueryVersion;
-    PFNGLXSWAPBUFFERSPROC               _glXSwapBuffers;
-
-    // GLX 1.1+
-
-    PFNGLXQUERYEXTENSIONSSTRINGPROC     _glXQueryExtensionsString;
-
-    // GLX 1.3+
-
-    PFNGLXCHOOSEFBCONFIGPROC            _glXChooseFBConfig;
-    PFNGLXCREATEWINDOWPROC              _glXCreateWindow;
-    PFNGLXDESTROYWINDOWPROC             _glXDestroyWindow;
-    PFNGLXGETFBCONFIGATTRIBPROC         _glXGetFBConfigAttrib;
-    PFNGLXGETVISUALFROMFBCONFIGPROC     _glXGetVisualFromFBConfig;
-    PFNGLXMAKECONTEXTCURRENTPROC        _glXMakeContextCurrent;
-
-    // GLX 1.4+
-
-    PFNGLXGETPROCADDRESSPROC            _glXGetProcAddress;
-
-    // Extensions
-
-    PFNGLXCREATECONTEXTATTRIBSARBPROC   _glXCreateContextAttribsARB;
-    PFNGLXGETPROCADDRESSPROC            _glXGetProcAddressARB;
-    PFNGLXSWAPINTERVALEXTPROC           _glXSwapIntervalEXT;
-
-    // Flags
-
-    bool ARB_create_context;
-    bool ARB_create_context_profile;
-    bool EXT_swap_control;
-    bool EXT_create_context_es2_profile;
-};
 
 static struct
 {
@@ -127,24 +63,6 @@ static struct
     char class_str[256];
     char title_str[256];
 } priv;
-
-//------------------------------------------------------------------------------
-
-#define glXCreateContext                priv.glx._glXCreateContext
-#define glXDestroyContext               priv.glx._glXDestroyContext
-#define glXQueryVersion                 priv.glx._glXQueryVersion
-#define glXSwapBuffers                  priv.glx._glXSwapBuffers
-#define glXQueryExtensionsString        priv.glx._glXQueryExtensionsString
-#define glXChooseFBConfig               priv.glx._glXChooseFBConfig
-#define glXCreateWindow                 priv.glx._glXCreateWindow
-#define glXDestroyWindow                priv.glx._glXDestroyWindow
-#define glXGetFBConfigAttrib            priv.glx._glXGetFBConfigAttrib
-#define glXGetVisualFromFBConfig        priv.glx._glXGetVisualFromFBConfig
-#define glXMakeContextCurrent           priv.glx._glXMakeContextCurrent
-#define glXGetProcAddress               priv.glx._glXGetProcAddress
-#define glXCreateContextAttribsARB      priv.glx._glXCreateContextAttribsARB
-#define glXGetProcAddressARB            priv.glx._glXGetProcAddressARB
-#define glXSwapIntervalEXT              priv.glx._glXSwapIntervalEXT
 
 //------------------------------------------------------------------------------
 
@@ -265,62 +183,26 @@ static qu_key key_conv(KeySym sym)
 
 static bool load_glx_funcs(void)
 {
-    glXCreateContext = pl_get_dll_proc(priv.glx.so,
-        "glXCreateContext");
+    glXCreateContext            = pl_get_dll_proc(priv.glx.so, "glXCreateContext");
+    glXDestroyContext           = pl_get_dll_proc(priv.glx.so, "glXDestroyContext");
+    glXQueryVersion             = pl_get_dll_proc(priv.glx.so, "glXQueryVersion");
+    glXSwapBuffers              = pl_get_dll_proc(priv.glx.so, "glXSwapBuffers");
+    glXQueryExtensionsString    = pl_get_dll_proc(priv.glx.so, "glXQueryExtensionsString");
+    glXChooseFBConfig           = pl_get_dll_proc(priv.glx.so, "glXChooseFBConfig");
+    glXCreateWindow             = pl_get_dll_proc(priv.glx.so, "glXCreateWindow");
+    glXDestroyWindow            = pl_get_dll_proc(priv.glx.so, "glXDestroyWindow");
+    glXGetFBConfigAttrib        = pl_get_dll_proc(priv.glx.so, "glXGetFBConfigAttrib");
+    glXGetVisualFromFBConfig    = pl_get_dll_proc(priv.glx.so, "glXGetVisualFromFBConfig");
+    glXMakeContextCurrent       = pl_get_dll_proc(priv.glx.so, "glXMakeContextCurrent");
+    glXGetProcAddress           = pl_get_dll_proc(priv.glx.so, "glXGetProcAddress");
+    glXCreateContextAttribsARB  = pl_get_dll_proc(priv.glx.so, "glXCreateContextAttribsARB");
+    glXGetProcAddressARB        = pl_get_dll_proc(priv.glx.so, "glXGetProcAddressARB");
+    glXSwapIntervalEXT          = pl_get_dll_proc(priv.glx.so, "glXSwapIntervalEXT");
 
-    glXDestroyContext = pl_get_dll_proc(priv.glx.so,
-        "glXDestroyContext");
-
-    glXQueryVersion = pl_get_dll_proc(priv.glx.so,
-        "glXQueryVersion");
-
-    glXSwapBuffers = pl_get_dll_proc(priv.glx.so,
-        "glXSwapBuffers");
-
-    glXQueryExtensionsString = pl_get_dll_proc(priv.glx.so,
-        "glXQueryExtensionsString");
-
-    glXChooseFBConfig = pl_get_dll_proc(priv.glx.so,
-        "glXChooseFBConfig");
-
-    glXCreateWindow = pl_get_dll_proc(priv.glx.so,
-        "glXCreateWindow");
-
-    glXDestroyWindow = pl_get_dll_proc(priv.glx.so,
-        "glXDestroyWindow");
-
-    glXGetFBConfigAttrib = pl_get_dll_proc(priv.glx.so,
-        "glXGetFBConfigAttrib");
-
-    glXGetVisualFromFBConfig = pl_get_dll_proc(priv.glx.so,
-        "glXGetVisualFromFBConfig");
-
-    glXMakeContextCurrent = pl_get_dll_proc(priv.glx.so,
-        "glXMakeContextCurrent");
-
-    glXGetProcAddress = pl_get_dll_proc(priv.glx.so,
-        "glXGetProcAddress");
-
-    glXCreateContextAttribsARB = pl_get_dll_proc(priv.glx.so,
-        "glXCreateContextAttribsARB");
-
-    glXGetProcAddressARB = pl_get_dll_proc(priv.glx.so,
-        "glXGetProcAddressARB");
-
-    glXSwapIntervalEXT = pl_get_dll_proc(priv.glx.so,
-        "glXSwapIntervalEXT");
-
-    return glXCreateContext
-        && glXDestroyContext
-        && glXQueryVersion
-        && glXSwapBuffers
-        && glXQueryExtensionsString
-        && glXChooseFBConfig
-        && glXCreateWindow
-        && glXDestroyWindow
-        && glXGetFBConfigAttrib
-        && glXGetVisualFromFBConfig
-        && glXMakeContextCurrent;
+    return glXCreateContext && glXDestroyContext && glXQueryVersion
+        && glXSwapBuffers && glXQueryExtensionsString && glXChooseFBConfig
+        && glXCreateWindow && glXDestroyWindow && glXGetFBConfigAttrib
+        && glXGetVisualFromFBConfig && glXMakeContextCurrent;
 }
 
 static bool load_glx_lib(void)
