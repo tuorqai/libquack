@@ -25,9 +25,9 @@ jobs:
       uses: actions/checkout@v3
 
     - name: Set variables
-      id: set-vars
+      id: setvars
       run: |
-        echo "package=libquack-linux-${{ matrix.type.name }}-${{ matrix.build.name }}-$(git rev-parse --short HEAD) >> ${GITHUB_OUTPUT}"
+        echo "pkgname=libquack-linux-${{ matrix.type.name }}-${{ matrix.build.name }}-$(git rev-parse --short HEAD) >> ${GITHUB_OUTPUT}"
 
     - name: Install dependencies
       run: |
@@ -41,19 +41,19 @@ jobs:
       run: cmake --build build
 
     - name: Install
-      run: cmake --install build --prefix tarball/${{ steps.set-vars.outputs.package }}
+      run: cmake --install build --prefix tarball/${{ steps.setvars.outputs.pkgname }}
 
     - name: Add extra files
       run: |
-        cp -av LICENSE README.md tarball/${{ steps.set-vars.outputs.package }}
+        cp -av LICENSE README.md tarball/${{ steps.setvars.outputs.pkgname }}
 
     - name: Create archive
       run: |
         cd tarball
-        tar -vcf ../${{ steps.set-vars.outputs.package }}.tar.gz *
+        tar -vcf ../${{ steps.setvars.outputs.pkgname }}.tar.gz *
     
     - uses: actions/upload-artifact@v3
       with:
         name: libquack-linux
         path: |
-          ${{ steps.set-vars.outputs.package }}.tar.gz
+          ${{ steps.setvars.outputs.pkgname }}.tar.gz
