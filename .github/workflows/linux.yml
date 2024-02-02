@@ -21,6 +21,11 @@ jobs:
         - { name: rel, flags: -DCMAKE_BUILD_TYPE=Release }
 
     steps:
+    - name: Set variables
+      id: set-vars
+      run: |
+        echo "package=libquack-linux-${{ matrix.type.name }}-${{ matrix.build.name }}-$(git rev-parse --short HEAD) >> ${GITHUB_OUTPUT}"
+
     - name: Checkout
       uses: actions/checkout@v3
 
@@ -36,19 +41,19 @@ jobs:
       run: cmake --build build
 
     - name: Install
-      run: cmake --install build --prefix tarball/libquack-${{ matrix.type.name }}-${{ matrix.build.name }}
+      run: cmake --install build --prefix tarball/${{ steps.set-vars.outputs.package }}
 
     - name: Add extra files
       run: |
-        cp -av LICENSE README.md tarball
+        cp -av LICENSE README.md tarball/${{ steps.set-vars.outputs.package }}
 
     - name: Create archive
       run: |
         cd tarball
-        tar -vcf ../libquack-linux-${{ matrix.type.name }}-${{ matrix.build.name }}.tar.gz *
+        tar -vcf ../${{ steps.set-vars.outputs.package }}.tar.gz *
     
     - uses: actions/upload-artifact@v3
       with:
         name: libquack-linux
         path: |
-          libquack-linux-${{ matrix.type.name }}-${{ matrix.build.name }}.tar.gz
+          ${{ steps.set-vars.outputs.package }}.tar.gz
