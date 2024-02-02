@@ -114,9 +114,6 @@ if(QU_USE_OPENAL)
     find_package(OpenAL REQUIRED)
     target_compile_definitions(libquack PRIVATE QU_USE_OPENAL)
     target_include_directories(libquack PRIVATE ${OPENAL_INCLUDE_DIR})
-    target_link_libraries(libquack PRIVATE ${OPENAL_LIBRARY})
-
-    list(APPEND _QU_PC_REQUIRES_PRIVATE "openal")
 endif()
 
 if(QU_USE_VORBIS)

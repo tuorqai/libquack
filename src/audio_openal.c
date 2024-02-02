@@ -22,11 +22,22 @@
 
 //------------------------------------------------------------------------------
 
-#include <al.h>
-#include <alc.h>
 #include <stb_ds.h>
-#include "audio.h"
+#include "audio_openal.h"
 #include "log.h"
+#include "platform.h"
+
+//------------------------------------------------------------------------------
+
+static struct
+{
+    void *lib;
+    struct libqu_openal_func func;
+
+    ALCdevice       *device;
+    ALCcontext      *context;
+    ALuint          *sources;
+} priv;
 
 //------------------------------------------------------------------------------
 
@@ -81,14 +92,213 @@
 
 //------------------------------------------------------------------------------
 
-static struct
+static bool load_openal_library(void)
 {
-    ALCdevice *device;
-    ALCcontext *context;
-    ALuint *sources;
-} priv;
+    char const *names[] = {
+        "libopenal.so.1",
+    };
 
-//------------------------------------------------------------------------------
+    for (size_t i = 0; i < sizeof(names) / sizeof(*names); i++) {
+        priv.lib = pl_open_dll(names[i]);
+
+        if (priv.lib) {
+            break;
+        }
+    }
+
+    if (!priv.lib) {
+        return false;
+    }
+
+    alEnable                = pl_get_dll_proc(priv.lib, "alEnable");
+    alDisable               = pl_get_dll_proc(priv.lib, "alDisable");
+    alIsEnabled             = pl_get_dll_proc(priv.lib, "alIsEnabled");
+    alGetString             = pl_get_dll_proc(priv.lib, "alGetString");
+    alGetBooleanv           = pl_get_dll_proc(priv.lib, "alGetBooleanv");
+    alGetIntegerv           = pl_get_dll_proc(priv.lib, "alGetIntegerv");
+    alGetFloatv             = pl_get_dll_proc(priv.lib, "alGetFloatv");
+    alGetDoublev            = pl_get_dll_proc(priv.lib, "alGetDoublev");
+    alGetBoolean            = pl_get_dll_proc(priv.lib, "alGetBoolean");
+    alGetInteger            = pl_get_dll_proc(priv.lib, "alGetInteger");
+    alGetFloat              = pl_get_dll_proc(priv.lib, "alGetFloat");
+    alGetDouble             = pl_get_dll_proc(priv.lib, "alGetDouble");
+    alGetError              = pl_get_dll_proc(priv.lib, "alGetError");
+    alIsExtensionPresent    = pl_get_dll_proc(priv.lib, "alIsExtensionPresent");
+    alGetProcAddress        = pl_get_dll_proc(priv.lib, "alGetProcAddress");
+    alGetEnumValue          = pl_get_dll_proc(priv.lib, "alGetEnumValue");
+    alListenerf             = pl_get_dll_proc(priv.lib, "alListenerf");
+    alListener3f            = pl_get_dll_proc(priv.lib, "alListener3f");
+    alListenerfv            = pl_get_dll_proc(priv.lib, "alListenerfv");
+    alListeneri             = pl_get_dll_proc(priv.lib, "alListeneri");
+    alListener3i            = pl_get_dll_proc(priv.lib, "alListener3i");
+    alListeneriv            = pl_get_dll_proc(priv.lib, "alListeneriv");
+    alGetListenerf          = pl_get_dll_proc(priv.lib, "alGetListenerf");
+    alGetListener3f         = pl_get_dll_proc(priv.lib, "alGetListener3f");
+    alGetListenerfv         = pl_get_dll_proc(priv.lib, "alGetListenerfv");
+    alGetListeneri          = pl_get_dll_proc(priv.lib, "alGetListeneri");
+    alGetListener3i         = pl_get_dll_proc(priv.lib, "alGetListener3i");
+    alGetListeneriv         = pl_get_dll_proc(priv.lib, "alGetListeneriv");
+    alGenSources            = pl_get_dll_proc(priv.lib, "alGenSources");
+    alDeleteSources         = pl_get_dll_proc(priv.lib, "alDeleteSources");
+    alIsSource              = pl_get_dll_proc(priv.lib, "alIsSource");
+    alSourcef               = pl_get_dll_proc(priv.lib, "alSourcef");
+    alSource3f              = pl_get_dll_proc(priv.lib, "alSource3f");
+    alSourcefv              = pl_get_dll_proc(priv.lib, "alSourcefv");
+    alSourcei               = pl_get_dll_proc(priv.lib, "alSourcei");
+    alSource3i              = pl_get_dll_proc(priv.lib, "alSource3i");
+    alSourceiv              = pl_get_dll_proc(priv.lib, "alSourceiv");
+    alGetSourcef            = pl_get_dll_proc(priv.lib, "alGetSourcef");
+    alGetSource3f           = pl_get_dll_proc(priv.lib, "alGetSource3f");
+    alGetSourcefv           = pl_get_dll_proc(priv.lib, "alGetSourcefv");
+    alGetSourcei            = pl_get_dll_proc(priv.lib, "alGetSourcei");
+    alGetSource3i           = pl_get_dll_proc(priv.lib, "alGetSource3i");
+    alGetSourceiv           = pl_get_dll_proc(priv.lib, "alGetSourceiv");
+    alSourcePlayv           = pl_get_dll_proc(priv.lib, "alSourcePlayv");
+    alSourceStopv           = pl_get_dll_proc(priv.lib, "alSourceStopv");
+    alSourceRewindv         = pl_get_dll_proc(priv.lib, "alSourceRewindv");
+    alSourcePausev          = pl_get_dll_proc(priv.lib, "alSourcePausev");
+    alSourcePlay            = pl_get_dll_proc(priv.lib, "alSourcePlay");
+    alSourceStop            = pl_get_dll_proc(priv.lib, "alSourceStop");
+    alSourceRewind          = pl_get_dll_proc(priv.lib, "alSourceRewind");
+    alSourcePause           = pl_get_dll_proc(priv.lib, "alSourcePause");
+    alSourceQueueBuffers    = pl_get_dll_proc(priv.lib, "alSourceQueueBuffers");
+    alSourceUnqueueBuffers  = pl_get_dll_proc(priv.lib, "alSourceUnqueueBuffers");
+    alGenBuffers            = pl_get_dll_proc(priv.lib, "alGenBuffers");
+    alDeleteBuffers         = pl_get_dll_proc(priv.lib, "alDeleteBuffers");
+    alIsBuffer              = pl_get_dll_proc(priv.lib, "alIsBuffer");
+    alBufferData            = pl_get_dll_proc(priv.lib, "alBufferData");
+    alBufferf               = pl_get_dll_proc(priv.lib, "alBufferf");
+    alBuffer3f              = pl_get_dll_proc(priv.lib, "alBuffer3f");
+    alBufferfv              = pl_get_dll_proc(priv.lib, "alBufferfv");
+    alBufferi               = pl_get_dll_proc(priv.lib, "alBufferi");
+    alBuffer3i              = pl_get_dll_proc(priv.lib, "alBuffer3i");
+    alBufferiv              = pl_get_dll_proc(priv.lib, "alBufferiv");
+    alGetBufferf            = pl_get_dll_proc(priv.lib, "alGetBufferf");
+    alGetBuffer3f           = pl_get_dll_proc(priv.lib, "alGetBuffer3f");
+    alGetBufferfv           = pl_get_dll_proc(priv.lib, "alGetBufferfv");
+    alGetBufferi            = pl_get_dll_proc(priv.lib, "alGetBufferi");
+    alGetBuffer3i           = pl_get_dll_proc(priv.lib, "alGetBuffer3i");
+    alGetBufferiv           = pl_get_dll_proc(priv.lib, "alGetBufferiv");
+    alDopplerFactor         = pl_get_dll_proc(priv.lib, "alDopplerFactor");
+    alDopplerVelocity       = pl_get_dll_proc(priv.lib, "alDopplerVelocity");
+    alSpeedOfSound          = pl_get_dll_proc(priv.lib, "alSpeedOfSound");
+    alDistanceModel         = pl_get_dll_proc(priv.lib, "alDistanceModel");
+
+    alcCreateContext        = pl_get_dll_proc(priv.lib, "alcCreateContext");
+    alcMakeContextCurrent   = pl_get_dll_proc(priv.lib, "alcMakeContextCurrent");
+    alcProcessContext       = pl_get_dll_proc(priv.lib, "alcProcessContext");
+    alcSuspendContext       = pl_get_dll_proc(priv.lib, "alcSuspendContext");
+    alcDestroyContext       = pl_get_dll_proc(priv.lib, "alcDestroyContext");
+    alcGetCurrentContext    = pl_get_dll_proc(priv.lib, "alcGetCurrentContext");
+    alcGetContextsDevice    = pl_get_dll_proc(priv.lib, "alcGetContextsDevice");
+    alcOpenDevice           = pl_get_dll_proc(priv.lib, "alcOpenDevice");
+    alcCloseDevice          = pl_get_dll_proc(priv.lib, "alcCloseDevice");
+    alcGetError             = pl_get_dll_proc(priv.lib, "alcGetError");
+    alcIsExtensionPresent   = pl_get_dll_proc(priv.lib, "alcIsExtensionPresent");
+    alcGetProcAddress       = pl_get_dll_proc(priv.lib, "alcGetProcAddress");
+    alcGetEnumValue         = pl_get_dll_proc(priv.lib, "alcGetEnumValue");
+    alcGetString            = pl_get_dll_proc(priv.lib, "alcGetString");
+    alcGetIntegerv          = pl_get_dll_proc(priv.lib, "alcGetIntegerv");
+    alcCaptureOpenDevice    = pl_get_dll_proc(priv.lib, "alcCaptureOpenDevice");
+    alcCaptureCloseDevice   = pl_get_dll_proc(priv.lib, "alcCaptureCloseDevice");
+    alcCaptureStart         = pl_get_dll_proc(priv.lib, "alcCaptureStart");
+    alcCaptureStop          = pl_get_dll_proc(priv.lib, "alcCaptureStop");
+    alcCaptureSamples       = pl_get_dll_proc(priv.lib, "alcCaptureSamples");
+
+    return alEnable
+        && alDisable
+        && alIsEnabled
+        && alGetString
+        && alGetBooleanv
+        && alGetIntegerv
+        && alGetFloatv
+        && alGetDoublev
+        && alGetBoolean
+        && alGetInteger
+        && alGetFloat
+        && alGetDouble
+        && alGetError
+        && alIsExtensionPresent
+        && alGetProcAddress
+        && alGetEnumValue
+        && alListenerf
+        && alListener3f
+        && alListenerfv
+        && alListeneri
+        && alListener3i
+        && alListeneriv
+        && alGetListenerf
+        && alGetListener3f
+        && alGetListenerfv
+        && alGetListeneri
+        && alGetListener3i
+        && alGetListeneriv
+        && alGenSources
+        && alDeleteSources
+        && alIsSource
+        && alSourcef
+        && alSource3f
+        && alSourcefv
+        && alSourcei
+        && alSource3i
+        && alSourceiv
+        && alGetSourcef
+        && alGetSource3f
+        && alGetSourcefv
+        && alGetSourcei
+        && alGetSource3i
+        && alGetSourceiv
+        && alSourcePlayv
+        && alSourceStopv
+        && alSourceRewindv
+        && alSourcePausev
+        && alSourcePlay
+        && alSourceStop
+        && alSourceRewind
+        && alSourcePause
+        && alSourceQueueBuffers
+        && alSourceUnqueueBuffers
+        && alGenBuffers
+        && alDeleteBuffers
+        && alIsBuffer
+        && alBufferData
+        && alBufferf
+        && alBuffer3f
+        && alBufferfv
+        && alBufferi
+        && alBuffer3i
+        && alBufferiv
+        && alGetBufferf
+        && alGetBuffer3f
+        && alGetBufferfv
+        && alGetBufferi
+        && alGetBuffer3i
+        && alGetBufferiv
+        && alDopplerFactor
+        && alDopplerVelocity
+        && alSpeedOfSound
+        && alDistanceModel
+        && alcCreateContext
+        && alcMakeContextCurrent
+        && alcProcessContext
+        && alcSuspendContext
+        && alcDestroyContext
+        && alcGetCurrentContext
+        && alcGetContextsDevice
+        && alcOpenDevice
+        && alcCloseDevice
+        && alcGetError
+        && alcIsExtensionPresent
+        && alcGetProcAddress
+        && alcGetEnumValue
+        && alcGetString
+        && alcGetIntegerv
+        && alcCaptureOpenDevice
+        && alcCaptureCloseDevice
+        && alcCaptureStart
+        && alcCaptureStop
+        && alcCaptureSamples;
+}
 
 static ALenum choose_format(int channels)
 {
@@ -105,6 +315,10 @@ static ALenum choose_format(int channels)
 
 static bool audio_openal_check_if_available(void)
 {
+    if (!load_openal_library()) {
+        return false;
+    }
+
     priv.device = alcOpenDevice(NULL);
 
     if (!priv.device) {
