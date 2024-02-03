@@ -22,14 +22,10 @@
 
 //------------------------------------------------------------------------------
 
-#include <GL/gl.h>
-#include <GL/glext.h>
 #include <stb_ds.h>
 #include "algebra.h"
-#include "core.h"
-#include "graphics_gl3.h"
-#include "log.h"
-#include "platform.h"
+#include "dyn_gl3.h"
+#include "graphics.h"
 
 //------------------------------------------------------------------------------
 
@@ -151,51 +147,6 @@ static struct program_info const program_info[TOTAL_PROGRAMS] = {
 
 //------------------------------------------------------------------------------
 
-struct gl3_proc
-{
-    PFNGLATTACHSHADERPROC               _glAttachShader;
-    PFNGLBINDATTRIBLOCATIONPROC         _glBindAttribLocation;
-    PFNGLBINDBUFFERPROC                 _glBindBuffer;
-    PFNGLBINDTEXTUREPROC                _glBindTexture;
-    PFNGLBINDVERTEXARRAYPROC            _glBindVertexArray;
-    PFNGLBLENDFUNCPROC                  _glBlendFunc;
-    PFNGLBUFFERDATAPROC                 _glBufferData;
-    PFNGLBUFFERSUBDATAPROC              _glBufferSubData;
-    PFNGLCLEARCOLORPROC                 _glClearColor;
-    PFNGLCLEARPROC                      _glClear;
-    PFNGLCOMPILESHADERPROC              _glCompileShader;
-    PFNGLCREATEPROGRAMPROC              _glCreateProgram;
-    PFNGLCREATESHADERPROC               _glCreateShader;
-    PFNGLDELETEBUFFERSPROC              _glDeleteBuffers;
-    PFNGLDELETEPROGRAMPROC              _glDeleteProgram;
-    PFNGLDELETESHADERPROC               _glDeleteShader;
-    PFNGLDELETETEXTURESPROC             _glDeleteTextures;
-    PFNGLDELETEVERTEXARRAYSPROC         _glDeleteVertexArrays;
-    PFNGLDISABLEVERTEXATTRIBARRAYPROC   _glDisableVertexAttribArray;
-    PFNGLDRAWARRAYSPROC                 _glDrawArrays;
-    PFNGLENABLEPROC                     _glEnable;
-    PFNGLENABLEVERTEXATTRIBARRAYPROC    _glEnableVertexAttribArray;
-    PFNGLGENBUFFERSPROC                 _glGenBuffers;
-    PFNGLGENTEXTURESPROC                _glGenTextures;
-    PFNGLGENVERTEXARRAYSPROC            _glGenVertexArrays;
-    PFNGLGETERRORPROC                   _glGetError;
-    PFNGLGETPROGRAMINFOLOGPROC          _glGetProgramInfoLog;
-    PFNGLGETPROGRAMIVPROC               _glGetProgramiv;
-    PFNGLGETSHADERINFOLOGPROC           _glGetShaderInfoLog;
-    PFNGLGETSHADERIVPROC                _glGetShaderiv;
-    PFNGLGETUNIFORMLOCATIONPROC         _glGetUniformLocation;
-    PFNGLLINKPROGRAMPROC                _glLinkProgram;
-    PFNGLREADPIXELSPROC                 _glReadPixels;
-    PFNGLSHADERSOURCEPROC               _glShaderSource;
-    PFNGLTEXIMAGE2DPROC                 _glTexImage2D;
-    PFNGLTEXPARAMETERIPROC              _glTexParameteri;
-    PFNGLUNIFORM4FVPROC                 _glUniform4fv;
-    PFNGLUNIFORMMATRIX4FVPROC           _glUniformMatrix4fv;
-    PFNGLUSEPROGRAMPROC                 _glUseProgram;
-    PFNGLVERTEXATTRIBPOINTERPROC        _glVertexAttribPointer;
-    PFNGLVIEWPORTPROC                   _glViewport;
-};
-
 static struct
 {
     GLfloat *vertbuf;
@@ -210,8 +161,6 @@ static struct
 
     int current_program;
     struct libqu_texture *current_texture;
-
-    struct gl3_proc gl3;
 } priv;
 
 //------------------------------------------------------------------------------
@@ -337,51 +286,6 @@ static void get_texture_swizzle(struct libqu_texture *texture, GLenum *swizzle)
     default:
         break;
     }
-}
-
-static void load_gl_functions(void)
-{
-    glAttachShader              = libqu_gl_get_proc_address("glAttachShader");
-    glBindAttribLocation        = libqu_gl_get_proc_address("glBindAttribLocation");
-    glBindBuffer                = libqu_gl_get_proc_address("glBindBuffer");
-    glBindTexture               = libqu_gl_get_proc_address("glBindTexture");
-    glBindVertexArray           = libqu_gl_get_proc_address("glBindVertexArray");
-    glBlendFunc                 = libqu_gl_get_proc_address("glBlendFunc");
-    glBufferData                = libqu_gl_get_proc_address("glBufferData");
-    glBufferSubData             = libqu_gl_get_proc_address("glBufferSubData");
-    glClear                     = libqu_gl_get_proc_address("glClear");
-    glClearColor                = libqu_gl_get_proc_address("glClearColor");
-    glCompileShader             = libqu_gl_get_proc_address("glCompileShader");
-    glCreateProgram             = libqu_gl_get_proc_address("glCreateProgram");
-    glCreateShader              = libqu_gl_get_proc_address("glCreateShader");
-    glDeleteBuffers             = libqu_gl_get_proc_address("glDeleteBuffers");
-    glDeleteProgram             = libqu_gl_get_proc_address("glDeleteProgram");
-    glDeleteShader              = libqu_gl_get_proc_address("glDeleteShader");
-    glDeleteTextures            = libqu_gl_get_proc_address("glDeleteTextures");
-    glDeleteVertexArrays        = libqu_gl_get_proc_address("glDeleteVertexArrays");
-    glDisableVertexAttribArray  = libqu_gl_get_proc_address("glDisableVertexAttribArray");
-    glDrawArrays                = libqu_gl_get_proc_address("glDrawArrays");
-    glEnable                    = libqu_gl_get_proc_address("glEnable");
-    glEnableVertexAttribArray   = libqu_gl_get_proc_address("glEnableVertexAttribArray");
-    glGenBuffers                = libqu_gl_get_proc_address("glGenBuffers");
-    glGenTextures               = libqu_gl_get_proc_address("glGenTextures");
-    glGenVertexArrays           = libqu_gl_get_proc_address("glGenVertexArrays");
-    glGetError                  = libqu_gl_get_proc_address("glGetError");
-    glGetProgramInfoLog         = libqu_gl_get_proc_address("glGetProgramInfoLog");
-    glGetProgramiv              = libqu_gl_get_proc_address("glGetProgramiv");
-    glGetShaderInfoLog          = libqu_gl_get_proc_address("glGetShaderInfoLog");
-    glGetShaderiv               = libqu_gl_get_proc_address("glGetShaderiv");
-    glGetUniformLocation        = libqu_gl_get_proc_address("glGetUniformLocation");
-    glLinkProgram               = libqu_gl_get_proc_address("glLinkProgram");
-    glReadPixels                = libqu_gl_get_proc_address("glReadPixels");
-    glShaderSource              = libqu_gl_get_proc_address("glShaderSource");
-    glTexImage2D                = libqu_gl_get_proc_address("glTexImage2D");
-    glTexParameteri             = libqu_gl_get_proc_address("glTexParameteri");
-    glUniform4fv                = libqu_gl_get_proc_address("glUniform4fv");
-    glUniformMatrix4fv          = libqu_gl_get_proc_address("glUniformMatrix4fv");
-    glUseProgram                = libqu_gl_get_proc_address("glUseProgram");
-    glVertexAttribPointer       = libqu_gl_get_proc_address("glVertexAttribPointer");
-    glViewport                  = libqu_gl_get_proc_address("glViewport");
 }
 
 static GLuint compile_shader(char const *src, GLenum type)
@@ -534,13 +438,15 @@ static void push_vertex(size_t index, struct libqu_vertex const *vertex)
 
 static bool graphics_gl3_check_if_available(void)
 {
+    if (dyn_load_gl3() == -1) {
+        return false;
+    }
+
     return libqu_gl_get_version() >= 330;
 }
 
 static bool graphics_gl3_initialize(struct libqu_graphics_params const *params)
 {
-    load_gl_functions();
-
     if (!load_shaders()) {
         LIBQU_LOGE("Failed to compile GLSL shaders.\n");
         return false;
