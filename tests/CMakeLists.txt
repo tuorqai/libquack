@@ -1,7 +1,8 @@
 
 set(EXECUTABLES
     hello
-    keyboard)
+    keyboard
+    utf8-title)
 
 foreach(EXE ${EXECUTABLES})
     add_executable(${EXE} ${EXE}.c)
