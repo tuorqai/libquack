@@ -101,48 +101,26 @@ if(QU_USE_OPENGL)
 
     find_package(OpenGL REQUIRED)
     target_compile_definitions(libquack PRIVATE QU_USE_OPENGL)
-
-    if(TARGET OpenGL::GL)
-        target_link_libraries(libquack PRIVATE OpenGL::GL)
-    else()
-        target_include_directories(libquack PRIVATE ${OPENGL_INCLUDE_DIR})
-        target_link_libraries(libquack PRIVATE ${OPENGL_gl_LIBRARY})
-    endif()
-
-    list(APPEND _QU_PC_REQUIRES_PRIVATE "opengl")
+    target_include_directories(libquack PRIVATE ${OPENGL_INCLUDE_DIR})
 endif()
 
 if(QU_USE_X11)
     find_package(X11 REQUIRED)
     target_compile_definitions(libquack PRIVATE QU_USE_X11)
     target_include_directories(libquack PRIVATE ${X11_INCLUDE_DIR})
-    target_link_libraries(libquack PRIVATE ${X11_LIBRARIES})
-
-    list(APPEND _QU_PC_REQUIRES_PRIVATE "x11")
 endif()
 
 if(QU_USE_OPENAL)
     find_package(OpenAL REQUIRED)
     target_compile_definitions(libquack PRIVATE QU_USE_OPENAL)
     target_include_directories(libquack PRIVATE ${OPENAL_INCLUDE_DIR})
-    target_link_libraries(libquack PRIVATE ${OPENAL_LIBRARY})
-
-    list(APPEND _QU_PC_REQUIRES_PRIVATE "openal")
 endif()
 
 if(QU_USE_VORBIS)
     find_package(Vorbis REQUIRED)
     target_compile_definitions(libquack PRIVATE QU_USE_VORBIS)
     target_link_libraries(libquack PRIVATE Vorbis::vorbisfile)
-
-    get_target_property(_VORBIS_TYPE Vorbis::vorbisfile TYPE)
-
-    if(_VORBIS_TYPE STREQUAL "STATIC_LIBRARY")
-        set(QU_STATIC_VORBIS 1)
-        list(APPEND _QU_PC_REQUIRES_PRIVATE "vorbisfile")
-    else()
-        set(QU_STATIC_VORBIS 0)
-    endif()
+    list(APPEND _QU_PC_REQUIRES_PRIVATE "vorbisfile")
 endif()
 
 #-------------------------------------------------------------------------------

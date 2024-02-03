@@ -23,11 +23,7 @@
 //------------------------------------------------------------------------------
 
 #include <string.h>
-#include <GL/glx.h>
-#include <GL/glxext.h>
-#include <X11/Xlib.h>
-#include <X11/XKBlib.h>
-#include "core.h"
+#include "core_x11.h"
 #include "log.h"
 #include "platform.h"
 
@@ -43,16 +39,13 @@ enum
     TOTAL_ATOMS,
 };
 
-enum
-{
-    _ARB_create_context = (1 << 0),
-    _ARB_create_context_profile = (1 << 1),
-    _EXT_swap_control = (1 << 2),
-    _EXT_create_context_es2_profile = (1 << 3),
-};
+//------------------------------------------------------------------------------
 
 static struct
 {
+    struct xlib xlib;
+    struct glx_lib glx;
+
     Display *dpy;
     int screen;
     Window root;
@@ -62,18 +55,14 @@ static struct
     Colormap colormap;
     Window window;
 
+    GLXContext context;
+    GLXDrawable surface;
+
+    int gl_version;
+    int glx_version;
+
     char class_str[256];
     char title_str[256];
-
-    struct {
-        unsigned int extensions;
-        PFNGLXCREATECONTEXTATTRIBSARBPROC glXCreateContextAttribsARB;
-        PFNGLXSWAPINTERVALEXTPROC glXSwapIntervalEXT;
-
-        int version;
-        GLXContext context;
-        GLXDrawable surface;
-    } glx;
 } priv;
 
 //------------------------------------------------------------------------------
@@ -193,6 +182,133 @@ static qu_key key_conv(KeySym sym)
     return QU_KEY_INVALID;
 }
 
+static bool load_xfuncs(void)
+{
+    XAllocClassHint = pl_get_dll_proc(priv.xlib.so, "XAllocClassHint");
+    XChangeProperty = pl_get_dll_proc(priv.xlib.so, "XChangeProperty");
+    XCheckTypedWindowEvent = pl_get_dll_proc(priv.xlib.so, "XCheckTypedWindowEvent");
+    XCheckWindowEvent = pl_get_dll_proc(priv.xlib.so, "XCheckWindowEvent");
+    XCloseDisplay = pl_get_dll_proc(priv.xlib.so, "XCloseDisplay");
+    XCreateColormap = pl_get_dll_proc(priv.xlib.so, "XCreateColormap");
+    XCreateWindow = pl_get_dll_proc(priv.xlib.so, "XCreateWindow");
+    XDestroyWindow = pl_get_dll_proc(priv.xlib.so, "XDestroyWindow");
+    XFree = pl_get_dll_proc(priv.xlib.so, "XFree");
+    XFreeColormap = pl_get_dll_proc(priv.xlib.so, "XFreeColormap");
+    XGetWindowProperty = pl_get_dll_proc(priv.xlib.so, "XGetWindowProperty");
+    XInternAtoms = pl_get_dll_proc(priv.xlib.so, "XInternAtoms");
+    XLookupKeysym = pl_get_dll_proc(priv.xlib.so, "XLookupKeysym");
+    XMapWindow = pl_get_dll_proc(priv.xlib.so, "XMapWindow");
+    XMoveResizeWindow = pl_get_dll_proc(priv.xlib.so, "XMoveResizeWindow");
+    XOpenDisplay = pl_get_dll_proc(priv.xlib.so, "XOpenDisplay");
+    XSetClassHint = pl_get_dll_proc(priv.xlib.so, "XSetClassHint");
+    XSetWMNormalHints = pl_get_dll_proc(priv.xlib.so, "XSetWMNormalHints");
+    XSetWMProtocols = pl_get_dll_proc(priv.xlib.so, "XSetWMProtocols");
+    XStoreName = pl_get_dll_proc(priv.xlib.so, "XStoreName");
+    XkbSetDetectableAutoRepeat = pl_get_dll_proc(priv.xlib.so, "XkbSetDetectableAutoRepeat");
+
+    return XAllocClassHint && XChangeProperty && XCheckTypedWindowEvent
+        && XCheckWindowEvent && XCloseDisplay && XCreateColormap
+        && XCreateWindow && XDestroyWindow && XFree
+        && XFreeColormap && XGetWindowProperty && XInternAtoms
+        && XLookupKeysym && XMapWindow && XMoveResizeWindow
+        && XOpenDisplay && XSetClassHint && XSetWMNormalHints
+        && XSetWMProtocols && XStoreName && XkbSetDetectableAutoRepeat;
+}
+
+static bool load_xlib(void)
+{
+    char const *names[] = {
+        "libX11.so.6",
+        "libX11.so",
+    };
+
+    for (size_t i = 0; i < sizeof(names) / sizeof(*names); i++) {
+        priv.xlib.so = pl_open_dll("libX11.so.6");
+
+        if (priv.xlib.so) {
+            break;
+        }
+    }
+
+    if (!priv.xlib.so) {
+        return false;
+    }
+
+    LIBQU_LOGI("Loaded X11 library from libX11.so.6.\n");
+
+    if (!load_xfuncs()) {
+        return false;
+    }
+
+    return true;
+}
+
+static bool load_glx_funcs(void)
+{
+    glXCreateContext            = pl_get_dll_proc(priv.glx.so, "glXCreateContext");
+    glXDestroyContext           = pl_get_dll_proc(priv.glx.so, "glXDestroyContext");
+    glXQueryVersion             = pl_get_dll_proc(priv.glx.so, "glXQueryVersion");
+    glXSwapBuffers              = pl_get_dll_proc(priv.glx.so, "glXSwapBuffers");
+    glXQueryExtensionsString    = pl_get_dll_proc(priv.glx.so, "glXQueryExtensionsString");
+    glXChooseFBConfig           = pl_get_dll_proc(priv.glx.so, "glXChooseFBConfig");
+    glXCreateWindow             = pl_get_dll_proc(priv.glx.so, "glXCreateWindow");
+    glXDestroyWindow            = pl_get_dll_proc(priv.glx.so, "glXDestroyWindow");
+    glXGetFBConfigAttrib        = pl_get_dll_proc(priv.glx.so, "glXGetFBConfigAttrib");
+    glXGetVisualFromFBConfig    = pl_get_dll_proc(priv.glx.so, "glXGetVisualFromFBConfig");
+    glXMakeContextCurrent       = pl_get_dll_proc(priv.glx.so, "glXMakeContextCurrent");
+    glXGetProcAddress           = pl_get_dll_proc(priv.glx.so, "glXGetProcAddress");
+    glXCreateContextAttribsARB  = pl_get_dll_proc(priv.glx.so, "glXCreateContextAttribsARB");
+    glXGetProcAddressARB        = pl_get_dll_proc(priv.glx.so, "glXGetProcAddressARB");
+    glXSwapIntervalEXT          = pl_get_dll_proc(priv.glx.so, "glXSwapIntervalEXT");
+
+    return glXCreateContext && glXDestroyContext && glXQueryVersion
+        && glXSwapBuffers && glXQueryExtensionsString && glXChooseFBConfig
+        && glXCreateWindow && glXDestroyWindow && glXGetFBConfigAttrib
+        && glXGetVisualFromFBConfig && glXMakeContextCurrent;
+}
+
+static bool load_glx_lib(void)
+{
+    char const *names[] = {
+        "libGL.so.1",
+        "libGL.so",
+    };
+
+    for (size_t i = 0; i < sizeof(names) / sizeof(*names); i++) {
+        priv.glx.so = pl_open_dll(names[i]);
+
+        if (priv.glx.so) {
+            LIBQU_LOGI("GLX dynamic library opened from %s.\n", names[i]);
+            break;
+        }
+    }
+
+    if (!priv.glx.so) {
+        LIBQU_LOGE("GLX dynamic library not found.\n");
+        return false;
+    }
+
+    if (!load_glx_funcs()) {
+        LIBQU_LOGE("Failed to load GLX functions.\n");
+        return false;
+    }
+
+    return true;
+}
+
+static void *get_glx_proc_address(char const *name)
+{
+    if (glXGetProcAddress) {
+        return glXGetProcAddress((GLubyte const *) name);
+    }
+
+    if (glXGetProcAddressARB) {
+        return glXGetProcAddressARB((GLubyte const *) name);
+    }
+
+    return pl_get_dll_proc(priv.glx.so, name);
+}
+
 static void check_extras(void)
 {
     Atom type;
@@ -235,28 +351,26 @@ static void setup_atoms_and_protocols(void)
 static void parse_single_glx_extension(char const *ext)
 {
     if (strcmp(ext, "GLX_ARB_create_context") == 0) {
-        priv.glx.extensions |= _ARB_create_context;
-        priv.glx.glXCreateContextAttribsARB = (void *) glXGetProcAddressARB(
-            (GLubyte const *) "glXCreateContextAttribsARB"
-        );
+        priv.glx.ARB_create_context = true;
+        glXCreateContextAttribsARB =
+            get_glx_proc_address("glXCreateContextAttribsARB");
         return;
     }
 
     if (strcmp(ext, "GLX_ARB_create_context_profile") == 0) {
-        priv.glx.extensions |= _ARB_create_context_profile;
+        priv.glx.ARB_create_context_profile = true;
         return;
     }
 
     if (strcmp(ext, "GLX_EXT_swap_control") == 0) {
-        priv.glx.extensions |= _EXT_swap_control;
-        priv.glx.glXSwapIntervalEXT = (void *) glXGetProcAddressARB(
-            (GLubyte const *) "glXSwapIntervalEXT"
-        );
+        priv.glx.EXT_swap_control = true;
+        glXSwapIntervalEXT =
+            get_glx_proc_address("glXSwapIntervalEXT");
         return;
     }
 
     if (strcmp(ext, "GLX_EXT_create_context_es2_profile") == 0) {
-        priv.glx.extensions |= _EXT_create_context_es2_profile;
+        priv.glx.EXT_create_context_es2_profile = true;
         return;
     }
 }
@@ -437,22 +551,22 @@ static bool create_modern_glx_context(GLXFBConfig fbc, int version)
         None,
     };
 
-    if (priv.glx.extensions & _ARB_create_context_profile) {
+    if (priv.glx.ARB_create_context_profile) {
         if (version >= 300) {
             attribs[4] = GLX_CONTEXT_PROFILE_MASK_ARB;
             attribs[5] = GLX_CONTEXT_CORE_PROFILE_BIT_ARB;
         }
     }
 
-    priv.glx.context = priv.glx.glXCreateContextAttribsARB(
+    priv.context = glXCreateContextAttribsARB(
         priv.dpy, fbc, NULL, True, attribs
     );
 
-    if (!priv.glx.context) {
+    if (!priv.context) {
         return false;
     }
 
-    priv.glx.version = version;
+    priv.gl_version = version;
     LIBQU_LOGI("Created OpenGL context %d.%d.\n", major, minor);
 
     return true;
@@ -460,13 +574,13 @@ static bool create_modern_glx_context(GLXFBConfig fbc, int version)
 
 static bool create_legacy_glx_context(XVisualInfo *vi)
 {
-    priv.glx.context = glXCreateContext(priv.dpy, vi, NULL, True);
+    priv.context = glXCreateContext(priv.dpy, vi, NULL, True);
 
-    if (!priv.glx.context) {
+    if (!priv.context) {
         return false;
     }
 
-    priv.glx.version = 120;
+    priv.gl_version = 120;
     LIBQU_LOGI("Created legacy OpenGL context.\n");
 
     return true;
@@ -474,7 +588,7 @@ static bool create_legacy_glx_context(XVisualInfo *vi)
 
 static bool create_glx_context(GLXFBConfig fbc, XVisualInfo *vi)
 {
-    if (priv.glx.extensions & _ARB_create_context) {
+    if (priv.glx.ARB_create_context) {
         int versions[] = {
             460, 450, 440, 430, 420, 410, 400,
             330, 320, 310, 300,
@@ -492,15 +606,15 @@ static bool create_glx_context(GLXFBConfig fbc, XVisualInfo *vi)
 
     XFree(vi);
 
-    if (!priv.glx.context) {
+    if (!priv.context) {
         LIBQU_LOGE("Failed to create OpenGL context.\n");
         return false;
     }
 
-    priv.glx.surface = glXCreateWindow(priv.dpy, fbc, priv.window, NULL);
+    priv.surface = glXCreateWindow(priv.dpy, fbc, priv.window, NULL);
 
-    return glXMakeContextCurrent(priv.dpy, priv.glx.surface, priv.glx.surface,
-        priv.glx.context);
+    return glXMakeContextCurrent(priv.dpy, priv.surface, priv.surface,
+        priv.context);
 }
 
 static void handle_key_event(XEvent *ev)
@@ -564,6 +678,14 @@ static bool handle_event(XEvent *ev)
 
 static bool core_x11_check_if_available(void)
 {
+    if (!load_xlib()) {
+        return false;
+    }
+
+    if (!load_glx_lib()) {
+        return false;
+    }
+
     priv.dpy = XOpenDisplay(NULL);
 
     return priv.dpy != NULL;
@@ -574,6 +696,16 @@ static bool core_x11_initialize(struct libqu_core_params const *params)
     if (!priv.dpy) {
         return false;
     }
+
+    int glx_major, glx_minor;
+
+    if (!glXQueryVersion(priv.dpy, &glx_major, &glx_minor)) {
+        LIBQU_LOGE("Failed to query GLX version.\n");
+        return false;
+    }
+
+    LIBQU_LOGI("GLX version %d.%d\n", glx_major, glx_minor);
+    priv.glx_version = glx_major * 100 + glx_minor * 10;
 
     priv.screen = DefaultScreen(priv.dpy);
     priv.root = DefaultRootWindow(priv.dpy);
@@ -614,8 +746,8 @@ static void core_x11_terminate(void)
     if (priv.dpy) {
         glXMakeContextCurrent(priv.dpy, None, None, None);
         
-        glXDestroyWindow(priv.dpy, priv.glx.surface);
-        glXDestroyContext(priv.dpy, priv.glx.context);
+        glXDestroyWindow(priv.dpy, priv.surface);
+        glXDestroyContext(priv.dpy, priv.context);
 
         LIBQU_LOGI("OpenGL context is destroyed.\n");
 
@@ -625,6 +757,8 @@ static void core_x11_terminate(void)
 
         LIBQU_LOGI("Window is destroyed, display is closed.\n");
     }
+
+    pl_close_dll(priv.glx.so);
 
     memset(&priv, 0, sizeof(priv));
 
@@ -653,7 +787,7 @@ static bool core_x11_process(void)
 
 static void core_x11_swap(void)
 {
-    glXSwapBuffers(priv.dpy, priv.glx.surface);
+    glXSwapBuffers(priv.dpy, priv.surface);
 }
 
 static bool core_x11_set_window_title(char const *title)
@@ -683,12 +817,12 @@ static bool core_x11_set_window_size(qu_vec2i size)
 
 static int core_glx_get_version(void)
 {
-    return priv.glx.version;
+    return priv.gl_version;
 }
 
 static void *core_glx_get_proc_address(char const *name)
 {
-    return glXGetProcAddress((GLubyte const *) name);
+    return get_glx_proc_address(name);
 }
 
 //------------------------------------------------------------------------------

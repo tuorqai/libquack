@@ -22,11 +22,11 @@
 
 //------------------------------------------------------------------------------
 
-#include <al.h>
-#include <alc.h>
 #include <stb_ds.h>
 #include "audio.h"
+#include "dyn_openal.h"
 #include "log.h"
+#include "platform.h"
 
 //------------------------------------------------------------------------------
 
@@ -83,9 +83,10 @@
 
 static struct
 {
-    ALCdevice *device;
-    ALCcontext *context;
-    ALuint *sources;
+    void        *dll;
+    ALCdevice   *device;
+    ALCcontext  *context;
+    ALuint      *sources;
 } priv;
 
 //------------------------------------------------------------------------------
@@ -105,6 +106,12 @@ static ALenum choose_format(int channels)
 
 static bool audio_openal_check_if_available(void)
 {
+    priv.dll = dyn_load_openal();
+    
+    if (!priv.dll) {
+        return false;
+    }
+
     priv.device = alcOpenDevice(NULL);
 
     if (!priv.device) {
@@ -149,6 +156,8 @@ static void audio_openal_terminate(void)
     _AL(alDeleteSources(64, priv.sources));
     alcDestroyContext(priv.context);
     alcCloseDevice(priv.device);
+
+    pl_close_dll(priv.dll);
 
     LIBQU_LOGI("Terminated.\n");
 }
