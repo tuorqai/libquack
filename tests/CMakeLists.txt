@@ -2,6 +2,8 @@
 set(EXECUTABLES
     hello
     keyboard
+    primitives
+    textures
     utf8-title)
 
 foreach(EXE ${EXECUTABLES})
