@@ -13,7 +13,7 @@ include(GNUInstallDirs)
 #-------------------------------------------------------------------------------
 
 option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
-option(QU_BUILD_EXAMPLES "Build examples" ON)
+option(QU_BUILD_TESTS "Build tests" ON)
 option(QU_USE_OPENGL "Use OpenGL" ON)
 cmake_dependent_option(QU_USE_X11 "Use X11" ON "UNIX;NOT APPLE" OFF)
 option(QU_USE_OPENAL "Use OpenAL" ON)
@@ -164,10 +164,10 @@ configure_file(
     @ONLY)
 
 #-------------------------------------------------------------------------------
-# Examples
+# Tests
 
-if(QU_BUILD_EXAMPLES)
-    add_subdirectory(examples)
+if(QU_BUILD_TESTS)
+    add_subdirectory(tests)
 endif()
 
 #-------------------------------------------------------------------------------
