@@ -43,8 +43,8 @@ add_library(libquack::libquack ALIAS libquack)
 
 target_include_directories(libquack
     PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
-        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+        $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include/libquack>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/libquack>
     PRIVATE
         ${CMAKE_SOURCE_DIR}/third-party)
 
@@ -173,7 +173,7 @@ endif()
 #-------------------------------------------------------------------------------
 # Installation
 
-install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/libqu"
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/libquack"
     DESTINATION ${QU_INCLUDE_PATH})
 
 install(TARGETS libquack
