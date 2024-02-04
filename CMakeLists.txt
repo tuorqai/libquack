@@ -1,6 +1,26 @@
 
 cmake_minimum_required(VERSION 3.5)
-project(libquack)
+
+#-------------------------------------------------------------------------------
+
+set(QU_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/include/libquack/libquack.h")
+
+set(QU_VERSION_MAJOR_REGEX "#define[ \t]+QU_VERSION_MAJOR[ \t]+([0-9]+)")
+set(QU_VERSION_MINOR_REGEX "#define[ \t]+QU_VERSION_MINOR[ \t]+([0-9]+)")
+set(QU_VERSION_PATCH_REGEX "#define[ \t]+QU_VERSION_PATCH[ \t]+([0-9]+)")
+
+file(STRINGS ${QU_HEADER} QU_VERSION_MAJOR REGEX ${QU_VERSION_MAJOR_REGEX})
+file(STRINGS ${QU_HEADER} QU_VERSION_MINOR REGEX ${QU_VERSION_MINOR_REGEX})
+file(STRINGS ${QU_HEADER} QU_VERSION_PATCH REGEX ${QU_VERSION_PATCH_REGEX})
+
+string(REGEX REPLACE ${QU_VERSION_MAJOR_REGEX} "\\1" QU_VERSION_MAJOR ${QU_VERSION_MAJOR})
+string(REGEX REPLACE ${QU_VERSION_MINOR_REGEX} "\\1" QU_VERSION_MINOR ${QU_VERSION_MINOR})
+string(REGEX REPLACE ${QU_VERSION_PATCH_REGEX} "\\1" QU_VERSION_PATCH ${QU_VERSION_PATCH})
+
+#-------------------------------------------------------------------------------
+
+project(libquack
+    VERSION "${QU_VERSION_MAJOR}.${QU_VERSION_MINOR}.${QU_VERSION_PATCH}")
 
 #-------------------------------------------------------------------------------
 
@@ -148,7 +168,7 @@ configure_package_config_file(
 
 write_basic_package_version_file(
     "${CMAKE_CURRENT_BINARY_DIR}/libquack-config-version.cmake"
-    VERSION 0.1.0
+    VERSION ${PROJECT_VERSION}
     COMPATIBILITY SameMajorVersion)
 
 #-------------------------------------------------------------------------------
