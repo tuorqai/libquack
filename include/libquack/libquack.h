@@ -29,6 +29,12 @@
 
 //------------------------------------------------------------------------------
 
+#define QU_VERSION_MAJOR        0
+#define QU_VERSION_MINOR        1
+#define QU_VERSION_PATCH        0
+
+//------------------------------------------------------------------------------
+
 #ifdef QU_SHARED
     #ifdef _WIN32
         #ifdef QU_BUILD
@@ -270,6 +276,8 @@ typedef struct qu_voice
 } qu_voice;
 
 //------------------------------------------------------------------------------
+
+QU_API char const * QU_CALL qu_get_version(void);
 
 QU_API void QU_CALL qu_initialize(void);
 QU_API void QU_CALL qu_terminate(void);

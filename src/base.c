@@ -28,6 +28,14 @@
 
 //------------------------------------------------------------------------------
 
+#define EXPAND_VERSION_STRING(major, minor, patch) \
+    #major "." #minor "." #patch
+
+#define VERSION_STRING(major, minor, patch) \
+    EXPAND_VERSION_STRING(major, minor, patch)
+
+//------------------------------------------------------------------------------
+
 enum
 {
     EXTRA_MODULE_AUDIO = (1 << 0),
@@ -85,12 +93,19 @@ static void initialize_audio(void)
 
 //------------------------------------------------------------------------------
 
+char const *qu_get_version(void)
+{
+    return VERSION_STRING(QU_VERSION_MAJOR, QU_VERSION_MINOR, QU_VERSION_PATCH);
+}
+
 void qu_initialize(void)
 {
     if (++priv.refcount != 1) {
         LIBQU_LOGW("Already initialized.\n");
         return;
     }
+
+    LIBQU_LOGI("libquack version %s\n", qu_get_version());
 
     priv.start_ticks_mediump = pl_get_ticks_mediump();
     priv.start_ticks_highp = pl_get_ticks_highp();
