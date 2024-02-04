@@ -20,7 +20,7 @@
 
 #include <math.h>
 #include <stdio.h>
-#include <libqu/libqu.h>
+#include <libquack.h>
 
 //------------------------------------------------------------------------------
 
