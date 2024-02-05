@@ -1,5 +1,6 @@
 
-## Hello, world!
+Hello, world!
+-------------
 
 ```c
 #include <libqu.h>
@@ -20,35 +21,27 @@ int main(int argc, char *argv[])
 }
 ```
 
-## Basic functions
+Basic functions
+---------------
 
-### `qu_get_version`
-
-#### Signature
+## `qu_get_version`
 
 ```c
 const char *qu_get_version(void);
 ```
 
-#### Return value
-
-Version string, e.g. `"0.1.0"`.
-
-#### Description
+- Return value:
+    - version string, e.g. `"0.1.0"`.
 
 This function may be useful to query version of `libquack` if it's dynamically linked.
 
 The returned value is a static string, so there is no need to `free()` it.
 
-### `qu_initialize`
-
-#### Signature
+## `qu_initialize`
 
 ```c
 void qu_initialize(void);
 ```
-
-#### Description
 
 Initialize the `libquack` library.
 
@@ -56,120 +49,86 @@ Call to this function will trigger initialization of the two most important modu
 
 *If an error occurs, the library will call `abort()` under the hood and the entire program will be terminated.*
 
-### `qu_terminate`
-
-#### Signature
+## `qu_terminate`
 
 ```c
 void qu_terminate(void);
 ```
 
-#### Description
-
 The library is shut down and all resources are freed when this function is called.
 
 It's highly recommended to call this function before the program exits.
 
-### `qu_process`
-
-#### Signature
+## `qu_process`
 
 ```c
 bool qu_process(void);
 ```
 
-#### Return value
-
-* `false`: program should exit
-* `true`: program can keep running
-
-#### Description
+- Return value:
+    - `true`: program can keep running
+    - `false`: program should exit
 
 This function processes user input (e.g. key presses) and it's recommended to call it every frame. Normally it returns `true`, but if user wants to exit from the program, this function will return `false`. When that happens, the program should close as soon as possible.
 
 Recommended way to use this function is to put it as a condition in the main `while` loop.
 
-### `qu_present`
-
-#### Signature
+## `qu_present`
 
 ```c
 void qu_present(void);
 ```
 
-#### Description
+Render everything on screen. This function should be called every frame, otherwise nothing will be drawn.
 
-Render everything on screen.
+Time-related functions
+----------------------
 
-## Time-related functions
-
-### `qu_get_ticks_msec`
-
-#### Signature
+## `qu_get_ticks_msec`
 
 ```c
 uint32_t qu_get_ticks_msec(void);
 ```
 
-#### Return value
-
-Amount of milliseconds since library initialized.
-
-#### Description
+- Return value:
+    - amount of milliseconds since library initialized.
 
 This function returns how many milliseconds passed since call to `qu_initialize()`.
 
-### `qu_get_ticks_nsec`
-
-#### Signature
+## `qu_get_ticks_nsec`
 
 ```c
 uint64_t qu_get_ticks_nsec(void);
 ```
 
-#### Return value
-
-Amount of nanoseconds since library initialized.
-
-#### Description
+- Return value:
+    - amount of nanoseconds since library initialized.
 
 This function returns how many nanoseconds passed since call to `qu_initialize()`.
 
-### `qu_get_time_mediump`
-
-#### Signature
+## `qu_get_time_mediump`
 
 ```c
 float qu_get_time_mediump(void);
 ```
 
-#### Return value
-
-Amount of seconds since library initialized (medium precision).
-
-#### Description
+- Return value:
+    - amount of seconds since library initialized (medium precision).
 
 This function returns how many seconds passed since call to `qu_initialize()`. The value is millisecond precise.
 
-### `qu_get_time_highp`
-
-#### Signature
+## `qu_get_time_highp`
 
 ```c
 double qu_get_time_highp(void);
 ```
 
-#### Return value
-
-Amount of seconds since library initialized (high precision).
-
-#### Description
+- Return value:
+    - amount of seconds since library initialized (high precision).
 
 This function returns how many seconds passed since call to `qu_initialize()`. The value is at least microsecond precise.
 
-### `qu_get_date_time`
-
-#### Signature
+## `qu_get_date_time`
 
 ```c
 typedef struct
@@ -187,22 +146,22 @@ typedef struct
 qu_date_time qu_get_date_time(void);
 ```
 
-#### Return value
-
-Current system date and time.
-
-#### Description
+- Return value:
+    - current system date and time.
 
 Use this function to retrieve local date and time.
 
-## Core
+Core
+----
 
-[here](./core/)
+[see here](./core/)
 
-## Graphics
+Graphics
+--------
 
-[here](./graphics/)
+[see here](./graphics/)
 
-## Audio
+Audio
+-----
 
-[here](./audio/)
+[see here](./audio/)
