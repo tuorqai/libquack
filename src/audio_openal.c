@@ -210,23 +210,43 @@ static void audio_openal_destroy_sound(struct libqu_sound *sound)
     _AL(alDeleteBuffers(1, &buffer));
 }
 
+static qu_playback_state audio_openal_get_sound_state(struct libqu_sound *sound)
+{
+    ALuint source = sound->priv[0];
+
+    ALint state;
+    _AL(alGetSourcei(source, AL_SOURCE_STATE, &state));
+
+    switch (state) {
+    case AL_INITIAL:
+    case AL_STOPPED:
+        return QU_PLAYBACK_STOPPED;
+    case AL_PLAYING:
+        return QU_PLAYBACK_PLAYING;
+    case AL_PAUSED:
+        return QU_PLAYBACK_PAUSED;
+    }
+
+    return QU_PLAYBACK_INVALID;
+}
+
 static void audio_openal_set_sound_loop(struct libqu_sound *sound, int loop)
 {
     ALint value = (loop == -1) ? AL_TRUE : AL_FALSE;
     _AL(alSourcei((ALuint) sound->priv[0], AL_LOOPING, value));
 }
 
-static void audio_openal_set_sound_state(struct libqu_sound *sound, qu_sound_state state)
+static void audio_openal_set_sound_state(struct libqu_sound *sound, qu_playback_state state)
 {
     switch (state) {
-    case QU_SOUND_PLAYING:
+    case QU_PLAYBACK_STOPPED:
+        _AL(alSourceStop((ALuint) sound->priv[0]));
+        break;
+    case QU_PLAYBACK_PLAYING:
         _AL(alSourcePlay((ALuint) sound->priv[0]));
         break;
-    case QU_SOUND_PAUSED:
+    case QU_PLAYBACK_PAUSED:
         _AL(alSourcePause((ALuint) sound->priv[0]));
-        break;
-    case QU_SOUND_STOPPED:
-        _AL(alSourceStop((ALuint) sound->priv[0]));
         break;
     default:
         break;
@@ -242,6 +262,7 @@ struct libqu_audio_impl const libqu_audio_openal_impl = {
     audio_openal_set_master_volume,
     audio_openal_load_sound,
     audio_openal_destroy_sound,
+    audio_openal_get_sound_state,
     audio_openal_set_sound_loop,
     audio_openal_set_sound_state,
 };

@@ -111,12 +111,17 @@ void libqu_audio_destroy_sound(struct libqu_sound *sound)
     LIBQU_LOGD("object destroyed at %p [sound]\n", sound);
 }
 
+qu_playback_state libqu_audio_get_sound_state(struct libqu_sound *sound)
+{
+    return priv.impl->get_sound_state(sound);
+}
+
 void libqu_audio_set_sound_loop(struct libqu_sound *sound, int loop)
 {
     priv.impl->set_sound_loop(sound, loop);
 }
 
-void libqu_audio_set_sound_state(struct libqu_sound *sound, qu_sound_state state)
+void libqu_audio_set_sound_state(struct libqu_sound *sound, qu_playback_state state)
 {
     priv.impl->set_sound_state(sound, state);
 }

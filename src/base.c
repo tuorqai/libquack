@@ -746,6 +746,21 @@ void qu_destroy_sound(qu_sound handle)
     }
 }
 
+qu_playback_state qu_get_sound_state(qu_sound handle)
+{
+    if (priv.extra & EXTRA_MODULE_AUDIO) {
+        struct libqu_sound *sound = libqu_handle_get(LIBQU_HANDLE_SOUND, handle.id);
+
+        if (!sound) {
+            return QU_PLAYBACK_INVALID;
+        }
+
+        return libqu_audio_get_sound_state(sound);
+    }
+
+    return QU_PLAYBACK_INVALID;
+}
+
 void qu_set_sound_loop(qu_sound handle, int loop)
 {
     if (priv.extra & EXTRA_MODULE_AUDIO) {
@@ -768,7 +783,7 @@ void qu_play_sound(qu_sound handle)
             return;
         }
 
-        libqu_audio_set_sound_state(sound, QU_SOUND_PLAYING);
+        libqu_audio_set_sound_state(sound, QU_PLAYBACK_PLAYING);
     }
 }
 
@@ -781,7 +796,7 @@ void qu_pause_sound(qu_sound handle)
             return;
         }
 
-        libqu_audio_set_sound_state(sound, QU_SOUND_PAUSED);
+        libqu_audio_set_sound_state(sound, QU_PLAYBACK_PAUSED);
     }
 }
 
@@ -794,6 +809,6 @@ void qu_stop_sound(qu_sound handle)
             return;
         }
 
-        libqu_audio_set_sound_state(sound, QU_SOUND_STOPPED);
+        libqu_audio_set_sound_state(sound, QU_PLAYBACK_STOPPED);
     }
 }

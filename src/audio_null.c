@@ -53,11 +53,16 @@ static void audio_null_destroy_sound(struct libqu_sound *sound)
 {
 }
 
+static qu_playback_state audio_null_get_sound_state(struct libqu_sound *sound)
+{
+    return QU_PLAYBACK_STOPPED;
+}
+
 static void audio_null_set_sound_loop(struct libqu_sound *sound, int loop)
 {
 }
 
-static void audio_null_set_sound_state(struct libqu_sound *sound, qu_sound_state state)
+static void audio_null_set_sound_state(struct libqu_sound *sound, qu_playback_state state)
 {
 }
 
@@ -70,6 +75,7 @@ struct libqu_audio_impl const libqu_audio_null_impl = {
     audio_null_set_master_volume,
     audio_null_load_sound,
     audio_null_destroy_sound,
+    audio_null_get_sound_state,
     audio_null_set_sound_loop,
     audio_null_set_sound_state,
 };

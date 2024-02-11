@@ -75,8 +75,9 @@ struct libqu_audio_impl
     void (*set_master_volume)(float volume);
     int (*load_sound)(struct libqu_sound *sound);
     void (*destroy_sound)(struct libqu_sound *sound);
+    qu_playback_state (*get_sound_state)(struct libqu_sound *sound);
     void (*set_sound_loop)(struct libqu_sound *sound, int loop);
-    void (*set_sound_state)(struct libqu_sound *sound, qu_sound_state state);
+    void (*set_sound_state)(struct libqu_sound *sound, qu_playback_state state);
 };
 
 //------------------------------------------------------------------------------
@@ -95,8 +96,9 @@ void libqu_audio_terminate(void);
 void libqu_audio_set_master_volume(float volume);
 struct libqu_sound *libqu_audio_load_sound(struct libqu_wave *wave);
 void libqu_audio_destroy_sound(struct libqu_sound *sound);
+qu_playback_state libqu_audio_get_sound_state(struct libqu_sound *sound);
 void libqu_audio_set_sound_loop(struct libqu_sound *sound, int loop);
-void libqu_audio_set_sound_state(struct libqu_sound *sound, qu_sound_state state);
+void libqu_audio_set_sound_state(struct libqu_sound *sound, qu_playback_state state);
 
 struct libqu_wave *libqu_wave_create(int16_t channels, int64_t samples, int64_t sample_rate);
 struct libqu_wave *libqu_wave_load(struct libqu_file *file);
