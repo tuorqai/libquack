@@ -27,15 +27,6 @@
 
 //------------------------------------------------------------------------------
 
-enum libqu_voice_state
-{
-    LIBQU_VOICE_INVALID = -1,
-    LIBQU_VOICE_INITIAL,
-    LIBQU_VOICE_PLAYING,
-    LIBQU_VOICE_PAUSED,
-    LIBQU_VOICE_STOPPED,
-};
-
 struct libqu_wave
 {
     int refcount;
@@ -58,7 +49,6 @@ struct libqu_sndfile
 struct libqu_sound
 {
     struct libqu_wave *wave;
-    qu_handle buffer_id;
     intptr_t priv[4];
 };
 
