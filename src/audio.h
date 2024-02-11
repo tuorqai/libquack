@@ -27,29 +27,45 @@
 
 //------------------------------------------------------------------------------
 
+//
+// Audio format
+//
+struct libqu_audio_format
+{
+    int channels;                       // number of channels (1 or 2)
+    int rate;                           // sample rate (e.g. 44100)
+};
+
+//
+// Wave object, stores static sample data
+//
 struct libqu_wave
 {
-    int refcount;
-    int16_t *samples;
-    int16_t channel_count;
-    int64_t sample_count;
-    int64_t sample_rate;
+    int refcount;                       // reference count
+    struct libqu_audio_format format;   // audio format
+    int16_t *buffer;                    // sample data
+    size_t size;                        // total number of samples
 };
 
+//
+// Sound file object, used to dynamically read from audio file
+//
 struct libqu_sndfile
 {
-    int format;
-    struct libqu_file *file;
-    void *context;
-    int16_t channel_count;
-    int64_t sample_count;
-    int64_t sample_rate;
+    int type;                           // type index
+    struct libqu_file *file;            // file handle
+    struct libqu_audio_format format;   // audio format
+    unsigned long samples_per_channel;  // number of samples per channel
+    void *context;                      // arbitrary context information
 };
 
+//
+// Sound object
+//
 struct libqu_sound
 {
-    struct libqu_wave *wave;
-    intptr_t priv[4];
+    struct libqu_wave *wave;            // wave handle
+    intptr_t priv[4];                   // arbitrary private information
 };
 
 struct libqu_audio_params

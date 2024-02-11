@@ -91,11 +91,11 @@ static struct
 
 //------------------------------------------------------------------------------
 
-static ALenum choose_format(int channels)
+static ALenum choose_format(struct libqu_audio_format const *format)
 {
-    if (channels == 1) {
+    if (format->channels == 1) {
         return AL_FORMAT_MONO16;
-    } else if (channels == 2) {
+    } else if (format->channels == 2) {
         return AL_FORMAT_STEREO16;
     }
 
@@ -169,7 +169,7 @@ static void audio_openal_set_master_volume(float volume)
 
 static int audio_openal_load_sound(struct libqu_sound *sound)
 {
-    ALenum format = choose_format(sound->wave->channel_count);
+    ALenum format = choose_format(&sound->wave->format);
 
     if (format == AL_INVALID_ENUM) {
         return -1;
@@ -188,9 +188,9 @@ static int audio_openal_load_sound(struct libqu_sound *sound)
         return -1;
     }
 
-    ALvoid *data = sound->wave->samples;
-    ALsizei size = sound->wave->sample_count * sizeof(*sound->wave->samples);
-    ALsizei freq = sound->wave->sample_rate;
+    ALvoid *data = sound->wave->buffer;
+    ALsizei size = sound->wave->size * sizeof(*sound->wave->buffer);
+    ALsizei freq = sound->wave->format.rate;
 
     _AL(alBufferData(buffer, format, data, size, freq));
     _AL(alSourcei(source, AL_BUFFER, buffer));

@@ -131,18 +131,24 @@ void libqu_audio_set_sound_state(struct libqu_sound *sound, qu_playback_state st
 struct libqu_wave *libqu_wave_create(int16_t channels, int64_t samples, int64_t sample_rate)
 {
     struct libqu_wave *wave = pl_calloc(1, sizeof(*wave));
+    int16_t *buffer = pl_malloc(sizeof(*buffer) * channels * samples);
 
-    if (wave) {
+    if (wave && buffer) {
         wave->refcount = 1;
-        wave->samples = pl_malloc(sizeof(*wave->samples) * channels * samples);
-        wave->channel_count = channels;
-        wave->sample_count = samples;
-        wave->sample_rate = sample_rate;
+        wave->format.channels = channels;
+        wave->format.rate = sample_rate;
+        wave->buffer = buffer;
+        wave->size = channels * samples;
 
         LIBQU_LOGD("object created at %p [wave]\n", wave);
+
+        return wave;
     }
 
-    return wave;
+    pl_free(buffer);
+    pl_free(wave);
+
+    return NULL;
 }
 
 struct libqu_wave *libqu_wave_load(struct libqu_file *file)
@@ -152,13 +158,13 @@ struct libqu_wave *libqu_wave_load(struct libqu_file *file)
 
     if (sndfile) {
         wave = libqu_wave_create(
-            sndfile->channel_count,
-            sndfile->sample_count,
-            sndfile->sample_rate
+            sndfile->format.channels,
+            sndfile->samples_per_channel,
+            sndfile->format.rate
         );
 
         if (wave) {
-            libqu_sndfile_read(sndfile, wave->samples, wave->sample_count);
+            libqu_sndfile_read(sndfile, wave->buffer, sndfile->samples_per_channel);
         }
 
         libqu_sndfile_close(sndfile);
@@ -173,7 +179,7 @@ void libqu_wave_destroy(struct libqu_wave *wave)
         return;
     }
 
-    pl_free(wave->samples);
+    pl_free(wave->buffer);
     pl_free(wave);
 
     LIBQU_LOGD("object destroyed at %p [wave]\n", wave);
@@ -253,12 +259,13 @@ static int _wav_open(struct libqu_sndfile *sndfile)
                 return -1;
             }
 
-            sndfile->channel_count = info->num_channels;
-            sndfile->sample_rate = info->sample_rate;
+            sndfile->format.channels = info->num_channels;
+            sndfile->format.rate = info->sample_rate;
 
             state |= 0x01;
         } else if (memcmp("data", sub.id, 4) == 0) {
-            sndfile->sample_count = sub.size / (info->bits_per_sample / 8);
+            sndfile->samples_per_channel
+                = sub.size / info->num_channels / (info->bits_per_sample / 8);
             
             info->data_start = libqu_ftell(sndfile->file);
             info->data_end = info->data_start + sub.size;
@@ -431,9 +438,9 @@ static int _vorbis_open(struct libqu_sndfile *sndfile)
     vorbis_info *info = ov_info(vf, -1);
     ogg_int64_t samples_per_channel = ov_pcm_total(vf, -1);
 
-    sndfile->channel_count = info->channels;
-    sndfile->sample_count = samples_per_channel * info->channels;
-    sndfile->sample_rate = info->rate;
+    sndfile->format.channels = info->channels;
+    sndfile->format.rate = info->rate;
+    sndfile->samples_per_channel = samples_per_channel;
 
     return 0;
 }
@@ -481,7 +488,7 @@ static int64_t _vorbis_seek(struct libqu_sndfile *sndfile, int64_t sample_offset
 {
     OggVorbis_File *vf = sndfile->context;
 
-    return ov_pcm_seek(vf, sample_offset / sndfile->channel_count);
+    return ov_pcm_seek(vf, sample_offset / sndfile->format.channels);
 }
 
 #endif // QU_USE_VORBIS
@@ -534,12 +541,12 @@ static char const * const sndfile_format_names[] = {
 
 struct libqu_sndfile *libqu_sndfile_open(struct libqu_file *file)
 {
-    int format = -1;
+    int type = -1;
     void *context = NULL;
 
-    for (format = 0; format < TOTAL_SNDFILE_FORMATS; format++) {
+    for (type = 0; type < TOTAL_SNDFILE_FORMATS; type++) {
         libqu_fseek(file, 0, SEEK_SET);
-        context = sndfile_callbacks[format].test(file);
+        context = sndfile_callbacks[type].test(file);
 
         if (context) {
             break;
@@ -557,37 +564,37 @@ struct libqu_sndfile *libqu_sndfile_open(struct libqu_file *file)
         return NULL;
     }
 
-    sndfile->format = format;
+    sndfile->type = type;
     sndfile->file = file;
     sndfile->context = context;
 
-    int status = sndfile_callbacks[format].open(sndfile);
+    int status = sndfile_callbacks[type].open(sndfile);
 
     if (status == -1) {
-        sndfile_callbacks[format].close(sndfile);
+        sndfile_callbacks[type].close(sndfile);
         pl_free(sndfile);
 
         return NULL;
     }
 
     LIBQU_LOGI("File \"%s\" is recognized as %s.\n",
-        file->name, sndfile_format_names[format]);
+        file->name, sndfile_format_names[type]);
 
     return sndfile;
 }
 
 void libqu_sndfile_close(struct libqu_sndfile *sndfile)
 {
-    sndfile_callbacks[sndfile->format].close(sndfile);
+    sndfile_callbacks[sndfile->type].close(sndfile);
     pl_free(sndfile);
 }
 
 int64_t libqu_sndfile_read(struct libqu_sndfile *sndfile, int16_t *samples, int64_t max_samples)
 {
-    return sndfile_callbacks[sndfile->format].read(sndfile, samples, max_samples);
+    return sndfile_callbacks[sndfile->type].read(sndfile, samples, max_samples);
 }
 
 int64_t libqu_sndfile_seek(struct libqu_sndfile *sndfile, int64_t sample_offset)
 {
-    return sndfile_callbacks[sndfile->format].seek(sndfile, sample_offset);
+    return sndfile_callbacks[sndfile->type].seek(sndfile, sample_offset);
 }

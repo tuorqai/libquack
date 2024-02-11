@@ -635,7 +635,7 @@ int16_t qu_get_wave_channel_count(qu_wave wave)
     struct libqu_wave *wave_p = libqu_handle_get(LIBQU_HANDLE_WAVE, wave.id);
 
     if (wave_p) {
-        return wave_p->channel_count;
+        return wave_p->format.channels;
     }
 
     return 0;
@@ -646,7 +646,7 @@ int64_t qu_get_wave_sample_count(qu_wave wave)
     struct libqu_wave *wave_p = libqu_handle_get(LIBQU_HANDLE_WAVE, wave.id);
 
     if (wave_p) {
-        return wave_p->sample_count;
+        return wave_p->size / wave_p->format.channels;
     }
 
     return 0;
@@ -657,7 +657,7 @@ int64_t qu_get_wave_sample_rate(qu_wave wave)
     struct libqu_wave *wave_p = libqu_handle_get(LIBQU_HANDLE_WAVE, wave.id);
 
     if (wave_p) {
-        return wave_p->sample_rate;
+        return wave_p->format.rate;
     }
 
     return 0;
@@ -668,7 +668,7 @@ int16_t *qu_get_wave_samples(qu_wave wave)
     struct libqu_wave *wave_p = libqu_handle_get(LIBQU_HANDLE_WAVE, wave.id);
 
     if (wave_p) {
-        return wave_p->samples;
+        return wave_p->buffer;
     }
 
     return 0;
