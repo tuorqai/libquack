@@ -38,6 +38,7 @@ enum libqu_voice_state
 
 struct libqu_wave
 {
+    int refcount;
     int16_t *samples;
     int16_t channel_count;
     int64_t sample_count;
@@ -58,6 +59,7 @@ struct libqu_sound
 {
     struct libqu_wave *wave;
     qu_handle buffer_id;
+    intptr_t priv[4];
 };
 
 struct libqu_audio_params
@@ -71,13 +73,10 @@ struct libqu_audio_impl
     bool (*initialize)(struct libqu_audio_params const *params);
     void (*terminate)(void);
     void (*set_master_volume)(float volume);
-    qu_handle (*load_buffer)(struct libqu_wave *wave);
-    void (*unload_buffer)(qu_handle buffer_id);
-    enum libqu_voice_state (*get_voice_state)(qu_handle voice_id);
-    qu_handle (*get_voice_buffer)(qu_handle voice_id);
-    void (*set_voice_buffer)(qu_handle voice_id, qu_handle buffer_id, int loop);
-    int (*start_voice)(qu_handle voice_id);
-    int (*stop_voice)(qu_handle voice_id);
+    int (*load_sound)(struct libqu_sound *sound);
+    void (*destroy_sound)(struct libqu_sound *sound);
+    void (*set_sound_loop)(struct libqu_sound *sound, int loop);
+    void (*set_sound_state)(struct libqu_sound *sound, qu_sound_state state);
 };
 
 //------------------------------------------------------------------------------
@@ -95,11 +94,9 @@ void libqu_audio_terminate(void);
 
 void libqu_audio_set_master_volume(float volume);
 struct libqu_sound *libqu_audio_load_sound(struct libqu_wave *wave);
-void libqu_audio_delete_sound(struct libqu_sound *sound);
-qu_handle libqu_audio_play_sound(struct libqu_sound *sound, int loop);
-void libqu_audio_pause_voice(qu_handle voice_id);
-void libqu_audio_unpause_voice(qu_handle voice_id);
-void libqu_audio_stop_voice(qu_handle voice_id);
+void libqu_audio_destroy_sound(struct libqu_sound *sound);
+void libqu_audio_set_sound_loop(struct libqu_sound *sound, int loop);
+void libqu_audio_set_sound_state(struct libqu_sound *sound, qu_sound_state state);
 
 struct libqu_wave *libqu_wave_create(int16_t channels, int64_t samples, int64_t sample_rate);
 struct libqu_wave *libqu_wave_load(struct libqu_file *file);

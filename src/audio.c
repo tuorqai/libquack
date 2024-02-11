@@ -56,19 +56,6 @@ static struct libqu_audio_impl const *choose_impl(void)
     abort();
 }
 
-static qu_handle choose_voice(void)
-{
-    for (int i = 0; i < 64; i++) {
-        enum libqu_voice_state state = priv.impl->get_voice_state(i);
-
-        if (state == LIBQU_VOICE_INITIAL || state == LIBQU_VOICE_STOPPED) {
-            return i;
-        }
-    }
-
-    return -1;
-}
-
 //------------------------------------------------------------------------------
 
 void libqu_audio_initialize(struct libqu_audio_params const *params)
@@ -99,89 +86,39 @@ struct libqu_sound *libqu_audio_load_sound(struct libqu_wave *wave)
 {
     struct libqu_sound *sound = pl_calloc(1, sizeof(*sound));
 
-    sound->wave = wave;
-    sound->buffer_id = priv.impl->load_buffer(wave);
+    if (sound) {
+        sound->wave = wave;
 
-    if (sound->buffer_id == -1) {
-        libqu_wave_destroy(sound->wave);
+        if (priv.impl->load_sound(sound) != -1) {
+            LIBQU_LOGD("object created at %p [sound]\n", sound);
+            return sound;
+        }
+
         pl_free(sound);
-
-        return NULL;
     }
 
-    return sound;
+    libqu_wave_destroy(wave);
+
+    return NULL;
 }
 
-void libqu_audio_delete_sound(struct libqu_sound *sound)
+void libqu_audio_destroy_sound(struct libqu_sound *sound)
 {
-    for (int i = 0; i < 64; i++) {
-        if (priv.impl->get_voice_buffer(i) == sound->buffer_id) {
-            if (priv.impl->get_voice_state(i) == LIBQU_VOICE_PLAYING) {
-                priv.impl->stop_voice(i);
-            }
-
-            priv.impl->set_voice_buffer(i, -1, 0);
-        }
-    }
-
-    priv.impl->unload_buffer(sound->buffer_id);
+    priv.impl->destroy_sound(sound);
     libqu_wave_destroy(sound->wave);
     pl_free(sound);
+
+    LIBQU_LOGD("object destroyed at %p [sound]\n", sound);
 }
 
-qu_handle libqu_audio_play_sound(struct libqu_sound *sound, int loop)
+void libqu_audio_set_sound_loop(struct libqu_sound *sound, int loop)
 {
-    qu_handle voice_id = choose_voice();
-
-    if (voice_id == -1) {
-        return -1;
-    }
-
-    priv.impl->set_voice_buffer(voice_id, sound->buffer_id, loop);
-    
-    if (priv.impl->start_voice(voice_id) == -1) {
-        return -1;
-    }
-
-    return voice_id;
+    priv.impl->set_sound_loop(sound, loop);
 }
 
-void libqu_audio_pause_voice(qu_handle voice_id)
+void libqu_audio_set_sound_state(struct libqu_sound *sound, qu_sound_state state)
 {
-    enum libqu_voice_state state = priv.impl->get_voice_state(voice_id);
-
-    if (state != LIBQU_VOICE_PLAYING) {
-        LIBQU_LOGW("Voice 0x%04x is not playing, can't pause.\n", voice_id);
-        return;
-    }
-
-    priv.impl->stop_voice(voice_id);
-}
-
-void libqu_audio_unpause_voice(qu_handle voice_id)
-{
-    enum libqu_voice_state state = priv.impl->get_voice_state(voice_id);
-
-    if (state != LIBQU_VOICE_PAUSED) {
-        LIBQU_LOGW("Voice 0x%04x is not paused, can't resume.\n", voice_id);
-        return;
-    }
-
-    priv.impl->start_voice(voice_id);
-}
-
-void libqu_audio_stop_voice(qu_handle voice_id)
-{
-    enum libqu_voice_state state = priv.impl->get_voice_state(voice_id);
-
-    if (state != LIBQU_VOICE_PLAYING && state != LIBQU_VOICE_PAUSED) {
-        LIBQU_LOGW("Voice 0x%04x is neither playing nor paused, can't stop.\n",
-            voice_id);
-        return;
-    }
-
-    priv.impl->stop_voice(voice_id);
-    priv.impl->set_voice_buffer(voice_id, -1, 0);
+    priv.impl->set_sound_state(sound, state);
 }
 
 //------------------------------------------------------------------------------
@@ -191,10 +128,13 @@ struct libqu_wave *libqu_wave_create(int16_t channels, int64_t samples, int64_t 
     struct libqu_wave *wave = pl_calloc(1, sizeof(*wave));
 
     if (wave) {
+        wave->refcount = 1;
         wave->samples = pl_malloc(sizeof(*wave->samples) * channels * samples);
         wave->channel_count = channels;
         wave->sample_count = samples;
         wave->sample_rate = sample_rate;
+
+        LIBQU_LOGD("object created at %p [wave]\n", wave);
     }
 
     return wave;
@@ -224,8 +164,14 @@ struct libqu_wave *libqu_wave_load(struct libqu_file *file)
 
 void libqu_wave_destroy(struct libqu_wave *wave)
 {
+    if (--wave->refcount > 0) {
+        return;
+    }
+
     pl_free(wave->samples);
     pl_free(wave);
+
+    LIBQU_LOGD("object destroyed at %p [wave]\n", wave);
 }
 
 //------------------------------------------------------------------------------

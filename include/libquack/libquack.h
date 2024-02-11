@@ -210,6 +210,14 @@ typedef enum qu_texture_flags
     QU_TEXTURE_REPEAT = (1 << 1),
 } qu_texture_flags;
 
+typedef enum qu_sound_state
+{
+    QU_SOUND_INITIAL,
+    QU_SOUND_PLAYING,
+    QU_SOUND_PAUSED,
+    QU_SOUND_STOPPED,
+} qu_sound_state;
+
 typedef struct qu_vec2i
 {
     int x;
@@ -347,12 +355,11 @@ QU_API int16_t * QU_CALL qu_get_wave_samples(qu_wave wave);
 QU_API void QU_CALL qu_set_master_volume(float volume);
 QU_API qu_sound QU_CALL qu_load_sound_from_file(char const *path);
 QU_API qu_sound QU_CALL qu_load_sound_from_wave(qu_wave wave);
-QU_API void QU_CALL qu_delete_sound(qu_sound sound);
-QU_API qu_voice QU_CALL qu_play_sound(qu_sound sound);
-QU_API qu_voice QU_CALL qu_loop_sound(qu_sound sound);
-QU_API void QU_CALL qu_pause_voice(qu_voice voice);
-QU_API void QU_CALL qu_unpause_voice(qu_voice voice);
-QU_API void QU_CALL qu_stop_voice(qu_voice voice);
+QU_API void QU_CALL qu_destroy_sound(qu_sound sound);
+QU_API void QU_CALL qu_set_sound_loop(qu_sound sound, int loop);
+QU_API void QU_CALL qu_play_sound(qu_sound sound);
+QU_API void QU_CALL qu_pause_sound(qu_sound sound);
+QU_API void QU_CALL qu_stop_sound(qu_sound sound);
 
 //------------------------------------------------------------------------------
 
