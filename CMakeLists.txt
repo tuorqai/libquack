@@ -131,9 +131,8 @@ if(QU_USE_X11)
 endif()
 
 if(QU_USE_OPENAL)
-    find_package(OpenAL REQUIRED)
     target_compile_definitions(libquack PRIVATE QU_USE_OPENAL)
-    target_include_directories(libquack PRIVATE ${OPENAL_INCLUDE_DIR})
+    target_include_directories(libquack PRIVATE "third-party/al")
 endif()
 
 if(QU_USE_VORBIS)
