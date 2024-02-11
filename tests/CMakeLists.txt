@@ -4,7 +4,8 @@ set(EXECUTABLES
     keyboard
     primitives
     textures
-    utf8-title)
+    utf8-title
+    sounds)
 
 foreach(EXE ${EXECUTABLES})
     add_executable(${EXE} ${EXE}.c)
