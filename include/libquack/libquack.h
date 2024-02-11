@@ -278,11 +278,6 @@ typedef struct qu_sound
     qu_handle id;
 } qu_sound;
 
-typedef struct qu_voice
-{
-    qu_handle id;
-} qu_voice;
-
 //------------------------------------------------------------------------------
 
 QU_API char const * QU_CALL qu_get_version(void);
