@@ -52,7 +52,7 @@ static void dtor(enum libqu_handle_type type, void *data)
         libqu_wave_destroy(data);
         break;
     case LIBQU_HANDLE_SOUND:
-        libqu_audio_delete_sound(data);
+        libqu_audio_destroy_sound(data);
         break;
     default:
         break;

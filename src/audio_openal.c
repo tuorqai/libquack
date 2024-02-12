@@ -91,11 +91,11 @@ static struct
 
 //------------------------------------------------------------------------------
 
-static ALenum choose_format(int channels)
+static ALenum choose_format(struct libqu_audio_format const *format)
 {
-    if (channels == 1) {
+    if (format->channels == 1) {
         return AL_FORMAT_MONO16;
-    } else if (channels == 2) {
+    } else if (format->channels == 2) {
         return AL_FORMAT_STEREO16;
     }
 
@@ -167,126 +167,90 @@ static void audio_openal_set_master_volume(float volume)
     _AL(alListenerf(AL_GAIN, volume));
 }
 
-static qu_handle audio_openal_load_buffer(struct libqu_wave *wave)
+static int audio_openal_load_sound(struct libqu_sound *sound)
 {
-    ALenum format = choose_format(wave->channel_count);
+    ALenum format = choose_format(&sound->wave->format);
 
     if (format == AL_INVALID_ENUM) {
-        LIBQU_LOGE("load_buffer(): invalid format (channels=%d)\n",
-            wave->channel_count);
         return -1;
     }
 
+    ALuint source;
     ALuint buffer;
+
+    _AL(alGenSources(1, &source));
     _AL(alGenBuffers(1, &buffer));
 
-    if (buffer == 0) {
-        LIBQU_LOGE("load_buffer(): buffer == 0\n");
+    if (!source || !buffer) {
+        _AL(alDeleteSources(1, &source));
+        _AL(alDeleteBuffers(1, &buffer));
+
         return -1;
     }
 
-    ALvoid *data = wave->samples;
-    ALsizei size = wave->sample_count * sizeof(*wave->samples);
-    ALsizei freq = wave->sample_rate;
+    ALvoid *data = sound->wave->buffer;
+    ALsizei size = sound->wave->size * sizeof(*sound->wave->buffer);
+    ALsizei freq = sound->wave->format.rate;
 
     _AL(alBufferData(buffer, format, data, size, freq));
+    _AL(alSourcei(source, AL_BUFFER, buffer));
 
-    return (qu_handle) buffer;
+    sound->priv[0] = source;
+    sound->priv[1] = buffer;
+
+    return 0;
 }
 
-static void audio_openal_unload_buffer(qu_handle buffer_id)
+static void audio_openal_destroy_sound(struct libqu_sound *sound)
 {
-    _AL(alDeleteBuffers(1, (ALuint *) &buffer_id));
+    ALuint source = sound->priv[0];
+    ALuint buffer = sound->priv[1];
+
+    _AL(alDeleteSources(1, &source));
+    _AL(alDeleteBuffers(1, &buffer));
 }
 
-enum libqu_voice_state audio_openal_get_voice_state(qu_handle voice_id)
+static qu_playback_state audio_openal_get_sound_state(struct libqu_sound *sound)
 {
-    if (voice_id < 0 || voice_id >= arrlen(priv.sources)) {
-        LIBQU_LOGE("get_voice_state(): out of bounds\n");
-        return LIBQU_VOICE_INVALID;
-    }
-
-    ALint state;
-    _AL(alGetSourcei(priv.sources[voice_id], AL_SOURCE_STATE, &state));
-
-    switch (state) {
-    case AL_INITIAL:
-        return LIBQU_VOICE_INITIAL;
-    case AL_PLAYING:
-        return LIBQU_VOICE_PLAYING;
-    case AL_PAUSED:
-        return LIBQU_VOICE_PAUSED;
-    case AL_STOPPED:
-        return LIBQU_VOICE_STOPPED;
-    }
-
-    return LIBQU_VOICE_INVALID;
-}
-
-static qu_handle audio_openal_get_voice_buffer(qu_handle voice_id)
-{
-    if (voice_id < 0 || voice_id >= arrlen(priv.sources)) {
-        LIBQU_LOGE("get_voice_buffer(): out of bounds\n");
-        return -1;
-    }
-
-    ALuint source = priv.sources[voice_id];
-
-    ALint buffer;
-    _AL(alGetSourcei(source, AL_BUFFER, &buffer));
-
-    return (qu_handle) buffer;
-}
-
-static void audio_openal_set_voice_buffer(qu_handle voice_id, qu_handle buffer_id, int loop)
-{
-    if (voice_id < 0 || voice_id >= arrlen(priv.sources)) {
-        LIBQU_LOGE("set_voice_buffer(): out of bounds\n");
-        return;
-    }
-
-    ALuint source = priv.sources[voice_id];
-    ALuint buffer = (buffer_id == -1) ? 0 : (ALuint) buffer_id;
+    ALuint source = sound->priv[0];
 
     ALint state;
     _AL(alGetSourcei(source, AL_SOURCE_STATE, &state));
 
-    if (state == AL_PAUSED) {
-        _AL(alSourceStop(source));
+    switch (state) {
+    case AL_INITIAL:
+    case AL_STOPPED:
+        return QU_PLAYBACK_STOPPED;
+    case AL_PLAYING:
+        return QU_PLAYBACK_PLAYING;
+    case AL_PAUSED:
+        return QU_PLAYBACK_PAUSED;
     }
 
-    _AL(alSourcei(source, AL_BUFFER, buffer));
-    _AL(alSourcei(source, AL_LOOPING, (loop == -1) ? AL_TRUE : AL_FALSE));
+    return QU_PLAYBACK_INVALID;
 }
 
-static int audio_openal_start_voice(qu_handle voice_id)
+static void audio_openal_set_sound_loop(struct libqu_sound *sound, int loop)
 {
-    if (voice_id < 0 || voice_id >= arrlen(priv.sources)) {
-        LIBQU_LOGE("start_voice(): out of bounds\n");
-        return -1;
-    }
-
-    _AL(alSourcePlay(priv.sources[voice_id]));
-
-    ALint state;
-    _AL(alGetSourcei(priv.sources[voice_id], AL_SOURCE_STATE, &state));
-
-    return (state == AL_PLAYING) ? 0 : -1;
+    ALint value = (loop == -1) ? AL_TRUE : AL_FALSE;
+    _AL(alSourcei((ALuint) sound->priv[0], AL_LOOPING, value));
 }
 
-static int audio_openal_stop_voice(qu_handle voice_id)
+static void audio_openal_set_sound_state(struct libqu_sound *sound, qu_playback_state state)
 {
-    if (voice_id < 0 || voice_id >= arrlen(priv.sources)) {
-        LIBQU_LOGE("stop_voice(): out of bounds\n");
-        return -1;
+    switch (state) {
+    case QU_PLAYBACK_STOPPED:
+        _AL(alSourceStop((ALuint) sound->priv[0]));
+        break;
+    case QU_PLAYBACK_PLAYING:
+        _AL(alSourcePlay((ALuint) sound->priv[0]));
+        break;
+    case QU_PLAYBACK_PAUSED:
+        _AL(alSourcePause((ALuint) sound->priv[0]));
+        break;
+    default:
+        break;
     }
-
-    _AL(alSourcePause(priv.sources[voice_id]));
-
-    ALint state;
-    _AL(alGetSourcei(priv.sources[voice_id], AL_SOURCE_STATE, &state));
-
-    return (state == AL_PAUSED) ? 0 : -1;
 }
 
 //------------------------------------------------------------------------------
@@ -296,13 +260,11 @@ struct libqu_audio_impl const libqu_audio_openal_impl = {
     audio_openal_initialize,
     audio_openal_terminate,
     audio_openal_set_master_volume,
-    audio_openal_load_buffer,
-    audio_openal_unload_buffer,
-    audio_openal_get_voice_state,
-    audio_openal_get_voice_buffer,
-    audio_openal_set_voice_buffer,
-    audio_openal_start_voice,
-    audio_openal_stop_voice,
+    audio_openal_load_sound,
+    audio_openal_destroy_sound,
+    audio_openal_get_sound_state,
+    audio_openal_set_sound_loop,
+    audio_openal_set_sound_state,
 };
 
 //------------------------------------------------------------------------------

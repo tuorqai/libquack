@@ -44,37 +44,26 @@ static void audio_null_set_master_volume(float volume)
 {
 }
 
-static qu_handle audio_null_load_buffer(struct libqu_wave *wave)
+static int audio_null_load_sound(struct libqu_sound *sound)
 {
     return 0;
 }
 
-static void audio_null_unload_buffer(qu_handle buffer_id)
+static void audio_null_destroy_sound(struct libqu_sound *sound)
 {
 }
 
-static enum libqu_voice_state audio_null_get_voice_state(qu_handle voice_id)
+static qu_playback_state audio_null_get_sound_state(struct libqu_sound *sound)
 {
-    return LIBQU_VOICE_INITIAL;
+    return QU_PLAYBACK_STOPPED;
 }
 
-static qu_handle audio_null_get_voice_buffer(qu_handle voice_id)
-{
-    return 0;
-}
-
-static void audio_null_set_voice_buffer(qu_handle voice_id, qu_handle buffer_id, int loop)
+static void audio_null_set_sound_loop(struct libqu_sound *sound, int loop)
 {
 }
 
-static int audio_null_start_voice(qu_handle voice_id)
+static void audio_null_set_sound_state(struct libqu_sound *sound, qu_playback_state state)
 {
-    return 0;
-}
-
-static int audio_null_stop_voice(qu_handle voice_id)
-{
-    return 0;
 }
 
 //------------------------------------------------------------------------------
@@ -84,11 +73,9 @@ struct libqu_audio_impl const libqu_audio_null_impl = {
     audio_null_initialize,
     audio_null_terminate,
     audio_null_set_master_volume,
-    audio_null_load_buffer,
-    audio_null_unload_buffer,
-    audio_null_get_voice_state,
-    audio_null_get_voice_buffer,
-    audio_null_set_voice_buffer,
-    audio_null_start_voice,
-    audio_null_stop_voice,
+    audio_null_load_sound,
+    audio_null_destroy_sound,
+    audio_null_get_sound_state,
+    audio_null_set_sound_loop,
+    audio_null_set_sound_state,
 };
