@@ -523,6 +523,11 @@ PROC_LIST
 
 //------------------------------------------------------------------------------
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4706)
+#endif
+
 #define PROC(type, name) \
     if (!(dyn_##name = (type) libqu_gl_get_proc_address(#name))) { \
         LIBQU_LOGE("Failed to load function: %s.\n", #name); \
@@ -537,6 +542,10 @@ static int dyn_load_gl3(void)
 }
 
 #undef PROC
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 //------------------------------------------------------------------------------
 
