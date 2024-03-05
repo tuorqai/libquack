@@ -49,6 +49,7 @@ add_library(libquack
     src/base.c
     src/core.c
     src/core_null.c
+    src/core_win32.c
     src/core_x11.c
     src/fs.c
     src/graphics.c
@@ -141,6 +142,11 @@ if(QU_USE_VORBIS)
     target_compile_definitions(libquack PRIVATE QU_USE_VORBIS)
     target_link_libraries(libquack PRIVATE Vorbis::vorbisfile)
     list(APPEND _QU_PC_REQUIRES_PRIVATE "vorbisfile")
+endif()
+
+if(WIN32)
+    target_link_libraries(libquack PRIVATE shlwapi)
+    list(APPEND _QU_PC_LIBS_PRIVATE "-lshlwapi")
 endif()
 
 #-------------------------------------------------------------------------------

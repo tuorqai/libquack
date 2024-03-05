@@ -25,6 +25,10 @@
 //------------------------------------------------------------------------------
 
 static struct libqu_core_impl const *impl_list[] = {
+#ifdef _WIN32
+    &libqu_core_win32_impl,
+#endif
+
 #ifdef QU_USE_X11
     &libqu_core_x11_impl,
 #endif
