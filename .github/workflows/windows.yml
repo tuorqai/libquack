@@ -25,7 +25,7 @@ jobs:
       uses: actions/checkout@v3
 
     - name: Configure
-      run: cmake -B build ${{ matrix.type.flags }} ${{ matrix.arch.flags }}
+      run: cmake -B build ${{ matrix.type.flags }} ${{ matrix.arch.flags }} -DQU_USE_VORBIS=0
 
     - name: Build (Debug)
       run: cmake --build build --config Debug
