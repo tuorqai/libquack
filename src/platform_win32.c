@@ -190,7 +190,7 @@ void *pl_wait_thread(pl_thread *thread)
 
     if (thread->flags & THREAD_FLAG_DETACHED) {
         LeaveCriticalSection(&thread->cs);
-        return -1;
+        return NULL;
     }
 
     thread->flags |= THREAD_FLAG_WAIT;
@@ -202,7 +202,7 @@ void *pl_wait_thread(pl_thread *thread)
     void *retval = thread->retval;
 
     thread->flags &= ~THREAD_FLAG_WAIT;
-    thread_end(thread);
+    thread_end(thread, NULL);
 
     return retval;
 }
@@ -238,7 +238,6 @@ void pl_unlock_mutex(pl_mutex *mutex)
 
 void pl_sleep(uint32_t milliseconds)
 {
-    DWORD milliseconds = (DWORD) (seconds * 1000);
     Sleep(milliseconds);
 }
 
