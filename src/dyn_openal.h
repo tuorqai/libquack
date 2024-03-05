@@ -140,6 +140,11 @@ PROC_LIST
 
 //------------------------------------------------------------------------------
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4706)
+#endif
+
 #define PROC(type, name) \
     if (!(dyn_##name = pl_get_dll_proc(dll, #name))) { \
         LIBQU_LOGE("Failed to load function: %s.\n", #name); \
@@ -176,6 +181,10 @@ static void *dyn_load_openal(void)
 }
 
 #undef PROC
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 //------------------------------------------------------------------------------
 

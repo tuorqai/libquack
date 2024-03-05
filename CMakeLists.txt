@@ -83,7 +83,7 @@ endif()
 
 if(MSVC)
     target_compile_definitions(libquack PRIVATE _CRT_SECURE_NO_WARNINGS)
-    target_compile_options(libquack PRIVATE /W4)
+    target_compile_options(libquack PRIVATE /W4 /wd4100)
 else()
     target_compile_options(libquack PRIVATE -Wall -Wextra
         -Wno-type-limits -Wno-unused-parameter)
