@@ -192,7 +192,7 @@ double qu_get_time_highp(void)
     return qu_get_ticks_nsec() / 1000000000.0;
 }
 
-qu_date_time qu_get_datetime(void)
+qu_date_time qu_get_date_time(void)
 {
     pl_date_time pdt;
     qu_date_time qdt;
