@@ -86,7 +86,7 @@ static struct
 static void LogWin32Error(void)
 {
     DWORD dwError = GetLastError();
-    LPVOID lpBuffer;
+    LPSTR lpBuffer;
 
     FormatMessageA(
         FORMAT_MESSAGE_ALLOCATE_BUFFER |
@@ -95,7 +95,7 @@ static void LogWin32Error(void)
         NULL,
         dwError,
         MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        &lpBuffer,
+        (LPSTR) &lpBuffer,
         0, NULL);
 
     LIBQU_LOGE("GetLastError() -> 0x%04x: %s\n", dwError, lpBuffer);
