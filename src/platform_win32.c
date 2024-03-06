@@ -76,6 +76,15 @@ void *pl_calloc(size_t count, size_t size)
 
 void *pl_realloc(void *data, size_t size)
 {
+    if (!data && size > 0) {
+        return HeapAlloc(GetProcessHeap(), 0, size);
+    }
+
+    if (!size) {
+        HeapFree(GetProcessHeap(), 0, data);
+        return NULL;
+    }
+
     return HeapReAlloc(GetProcessHeap(), 0, data, size);
 }
 
