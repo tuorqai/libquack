@@ -593,6 +593,11 @@ qu_image qu_capture_screen(void)
     return image_h;
 }
 
+void qu_set_blend_mode(qu_blend_mode mode)
+{
+    libqu_graphics_set_blend_mode(mode);
+}
+
 //------------------------------------------------------------------------------
 
 qu_wave qu_create_wave(int16_t channels, int64_t samples, int64_t sample_rate)

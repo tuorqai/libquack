@@ -60,6 +60,23 @@
 
 //------------------------------------------------------------------------------
 
+/**
+ * C++ lacks C99's compound literals. However, since C++11, plain structures
+ * can be initialized with slightly different syntax:
+ * `xyz_person { "John", "Doe" }`
+ *
+ * The same thing, but without parentheses. Sadly, this doesn't support
+ * designated initializers.
+ */
+
+#ifdef __cplusplus
+    #define QU_COMPOUND(type)       type
+#else
+    #define QU_COMPOUND(type)       (type)
+#endif
+
+//------------------------------------------------------------------------------
+
 #if defined(__cplusplus)
 extern "C" {
 #endif
@@ -72,6 +89,42 @@ extern "C" {
 #define QU_EXTRACT_GREEN(color)     (((color) >> 16) & 255)
 #define QU_EXTRACT_BLUE(color)      (((color) >> 8) & 255)
 #define QU_EXTRACT_ALPHA(color)     ((color) & 255)
+
+#define QU_BLEND_MODE_NONE \
+    QU_COMPOUND(qu_blend_mode) { \
+        QU_BLEND_ONE, QU_BLEND_ZERO, QU_BLEND_ADD, \
+        QU_BLEND_ONE, QU_BLEND_ZERO, QU_BLEND_ADD, \
+    }
+
+#define QU_BLEND_MODE_ALPHA \
+    QU_COMPOUND(qu_blend_mode) { \
+        QU_BLEND_SRC_ALPHA, QU_BLEND_ONE_MINUS_SRC_ALPHA, QU_BLEND_ADD, \
+        QU_BLEND_SRC_ALPHA, QU_BLEND_ONE_MINUS_SRC_ALPHA, QU_BLEND_ADD, \
+    }
+
+#define QU_BLEND_MODE_ADD \
+    QU_COMPOUND(qu_blend_mode) { \
+        QU_BLEND_SRC_ALPHA, QU_BLEND_ONE, QU_BLEND_ADD, \
+        QU_BLEND_SRC_ALPHA, QU_BLEND_ONE, QU_BLEND_ADD, \
+    }
+
+#define QU_BLEND_MODE_MUL \
+    QU_COMPOUND(qu_blend_mode) { \
+        QU_BLEND_ZERO, QU_BLEND_SRC_COLOR, QU_BLEND_ADD, \
+        QU_BLEND_ZERO, QU_BLEND_SRC_ALPHA, QU_BLEND_ADD, \
+    }
+
+#define QU_DEFINE_BLEND_MODE(src_factor, dst_factor) \
+    QU_COMPOUND(qu_blend_mode) { \
+        (src_factor), (dst_factor), QU_BLEND_ADD, \
+        (src_factor), (dst_factor), QU_BLEND_ADD, \
+    }
+
+#define QU_DEFINE_BLEND_MODE_EX(src_factor, dst_factor, equation) \
+    QU_COMPOUND(qu_blend_mode) { \
+        (src_factor), (dst_factor), (equation), \
+        (src_factor), (dst_factor), (equation), \
+    }
 
 //------------------------------------------------------------------------------
 
@@ -210,6 +263,27 @@ typedef enum qu_texture_flags
     QU_TEXTURE_REPEAT = (1 << 1),
 } qu_texture_flags;
 
+typedef enum qu_blend_factor
+{
+    QU_BLEND_ZERO,
+    QU_BLEND_ONE,
+    QU_BLEND_SRC_COLOR,
+    QU_BLEND_ONE_MINUS_SRC_COLOR,
+    QU_BLEND_DST_COLOR,
+    QU_BLEND_ONE_MINUS_DST_COLOR,
+    QU_BLEND_SRC_ALPHA,
+    QU_BLEND_ONE_MINUS_SRC_ALPHA,
+    QU_BLEND_DST_ALPHA,
+    QU_BLEND_ONE_MINUS_DST_ALPHA,
+} qu_blend_factor;
+
+typedef enum qu_blend_equation
+{
+    QU_BLEND_ADD,
+    QU_BLEND_SUB,
+    QU_BLEND_REV_SUB,
+} qu_blend_equation;
+
 typedef enum qu_playback_state
 {
     QU_PLAYBACK_INVALID = -1,
@@ -267,6 +341,17 @@ typedef struct qu_texture
 {
     qu_handle id;
 } qu_texture;
+
+typedef struct qu_blend_mode
+{
+    qu_blend_factor color_src_factor;
+    qu_blend_factor color_dst_factor;
+    qu_blend_equation color_equation;
+
+    qu_blend_factor alpha_src_factor;
+    qu_blend_factor alpha_dst_factor;
+    qu_blend_equation alpha_equation;
+} qu_blend_mode;
 
 typedef struct qu_wave
 {
@@ -338,6 +423,8 @@ QU_API void QU_CALL qu_draw_subtexture(qu_texture texture, float x, float y, flo
 QU_API void QU_CALL qu_draw_subtexture_r(qu_texture texture, qu_rectf rect, qu_rectf sub);
 
 QU_API qu_image QU_CALL qu_capture_screen(void);
+
+QU_API void QU_CALL qu_set_blend_mode(qu_blend_mode mode);
 
 QU_API qu_wave QU_CALL qu_create_wave(int16_t channels, int64_t samples, int64_t sample_rate);
 QU_API qu_wave QU_CALL qu_load_wave(char const *path);
