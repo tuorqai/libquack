@@ -444,6 +444,107 @@ static int InitWGL(HWND hWnd)
     return -1;
 }
 
+static qu_key ConvertKey(WPARAM wParam, LPARAM lParam)
+{
+    UINT nVirtualKey = (UINT) wParam;
+    UINT nScancode = (lParam & (0xff << 16)) >> 16;
+    BOOL fExtended = (lParam & (0x01 << 24));
+
+    if (nVirtualKey >= 'A' && nVirtualKey <= 'Z') {
+        return QU_KEY_A + (nVirtualKey - 'A');
+    }
+
+    if (nVirtualKey >= '0' && nVirtualKey <= '9') {
+        return QU_KEY_0 + (nVirtualKey - '0');
+    }
+
+    if (nVirtualKey >= VK_F1 && nVirtualKey <= VK_F12) {
+        return QU_KEY_F1 + (nVirtualKey - VK_F1);
+    }
+
+    if (nVirtualKey >= VK_NUMPAD0 && nVirtualKey <= VK_NUMPAD9) {
+        return QU_KEY_KP_0 + (nVirtualKey - VK_NUMPAD0);
+    }
+
+    if (nVirtualKey == VK_RETURN) {
+        if (fExtended) {
+            return QU_KEY_KP_ENTER;
+        }
+
+        return QU_KEY_ENTER;
+    }
+
+    if (nVirtualKey == VK_SHIFT) {
+        UINT nExtendedKey = MapVirtualKey(nScancode, MAPVK_VSC_TO_VK_EX);
+
+        if (nExtendedKey == VK_LSHIFT) {
+            return QU_KEY_LSHIFT;
+        } else if (nExtendedKey == VK_RSHIFT) {
+            return QU_KEY_RSHIFT;
+        }
+    }
+
+    if (nVirtualKey == VK_CONTROL) {
+        if (fExtended) {
+            return QU_KEY_RCTRL;
+        }
+
+        return QU_KEY_LCTRL;
+    }
+
+    if (nVirtualKey == VK_MENU) {
+        if (fExtended) {
+            return QU_KEY_RALT;
+        }
+
+        return QU_KEY_LALT;
+    }
+
+    switch (nVirtualKey) {
+    case VK_BACK:               return QU_KEY_BACKSPACE;
+    case VK_TAB:                return QU_KEY_TAB;
+    case VK_PAUSE:              return QU_KEY_PAUSE;
+    case VK_CAPITAL:            return QU_KEY_CAPSLOCK;
+    case VK_ESCAPE:             return QU_KEY_ESCAPE;
+    case VK_SPACE:              return QU_KEY_SPACE;
+    case VK_PRIOR:              return QU_KEY_PGUP;
+    case VK_NEXT:               return QU_KEY_PGDN;
+    case VK_END:                return QU_KEY_END;
+    case VK_HOME:               return QU_KEY_HOME;
+    case VK_LEFT:               return QU_KEY_LEFT;
+    case VK_UP:                 return QU_KEY_UP;
+    case VK_RIGHT:              return QU_KEY_RIGHT;
+    case VK_DOWN:               return QU_KEY_DOWN;
+    case VK_PRINT:              return QU_KEY_PRINTSCREEN;
+    case VK_INSERT:             return QU_KEY_INSERT;
+    case VK_DELETE:             return QU_KEY_DELETE;
+    case VK_LWIN:               return QU_KEY_LSUPER;
+    case VK_RWIN:               return QU_KEY_RSUPER;
+    case VK_MULTIPLY:           return QU_KEY_KP_MUL;
+    case VK_ADD:                return QU_KEY_KP_ADD;
+    case VK_SUBTRACT:           return QU_KEY_KP_SUB;
+    case VK_DECIMAL:            return QU_KEY_KP_POINT;
+    case VK_DIVIDE:             return QU_KEY_KP_DIV;
+    case VK_NUMLOCK:            return QU_KEY_NUMLOCK;
+    case VK_SCROLL:             return QU_KEY_SCROLLLOCK;
+    case VK_LMENU:              return QU_KEY_MENU;
+    case VK_RMENU:              return QU_KEY_MENU;
+    case VK_OEM_1:              return QU_KEY_SEMICOLON;
+    case VK_OEM_PLUS:           return QU_KEY_EQUAL;
+    case VK_OEM_COMMA:          return QU_KEY_COMMA;
+    case VK_OEM_MINUS:          return QU_KEY_MINUS;
+    case VK_OEM_PERIOD:         return QU_KEY_PERIOD;
+    case VK_OEM_2:              return QU_KEY_SLASH;
+    case VK_OEM_3:              return QU_KEY_GRAVE;
+    case VK_OEM_4:              return QU_KEY_LBRACKET;
+    case VK_OEM_6:              return QU_KEY_RBRACKET;
+    case VK_OEM_5:              return QU_KEY_BACKSLASH;
+    case VK_OEM_7:              return QU_KEY_APOSTROPHE;
+    }
+
+    return QU_KEY_INVALID;
+}
+
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     switch (msg) {
@@ -453,6 +554,34 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
         return 0;
     case WM_CLOSE:
         PostQuitMessage(0);
+        return 0;
+    case WM_ACTIVATE:
+        {
+            struct libqu_event event = {
+                .type = (LOWORD(wParam) == WA_INACTIVE)
+                    ? LIBQU_EVENT_DEACTIVATE
+                    : LIBQU_EVENT_ACTIVATE,
+            };
+
+            libqu_core_enqueue_event(&event);
+        }
+        return 0;
+    case WM_KEYDOWN:
+    case WM_KEYUP:
+    case WM_SYSKEYDOWN:
+    case WM_SYSKEYUP:
+        {
+            struct libqu_event event = {
+                .type = (msg == WM_KEYUP || msg == WM_SYSKEYUP)
+                    ? LIBQU_EVENT_KEY_RELEASED
+                    : LIBQU_EVENT_KEY_PRESSED,
+                .data = {
+                    .key = ConvertKey(wParam, lParam),
+                },
+            };
+
+            libqu_core_enqueue_event(&event);
+        }
         return 0;
     }
 
