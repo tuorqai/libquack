@@ -1,0 +1,50 @@
+name: Windows
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    name: windows-${{ matrix.type.name }}-${{ matrix.arch.name }}
+    runs-on: windows-latest
+
+    strategy:
+      matrix:
+        type:
+        - { name: static, flags: -DBUILD_SHARED_LIBS=0 }
+        - { name: shared, flags: -DBUILD_SHARED_LIBS=1 }
+        arch:
+        - { name: x86, flags: -A Win32 }
+        - { name: x64, flags: -A x64 }
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Configure
+      run: cmake -B build ${{ matrix.type.flags }} ${{ matrix.arch.flags }} -DQU_USE_VORBIS=0
+
+    - name: Build (Debug)
+      run: cmake --build build --config Debug
+
+    - name: Build (Release)
+      run: cmake --build build --config Release
+
+    - name: Install (Debug)
+      run: cmake --install build --config Debug --prefix install/debug/libquack
+
+    - name: Install (Release)
+      run: cmake --install build --config Release --prefix install/release/libquack
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: libquack-windows-${{ matrix.type.name }}-${{ matrix.arch.name }}-${{ github.sha }}-debug
+        path: install/debug/*
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: libquack-windows-${{ matrix.type.name }}-${{ matrix.arch.name }}-${{ github.sha }}-release
+        path: install/release/*

@@ -140,6 +140,11 @@ PROC_LIST
 
 //------------------------------------------------------------------------------
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4706)
+#endif
+
 #define PROC(type, name) \
     if (!(dyn_##name = pl_get_dll_proc(dll, #name))) { \
         LIBQU_LOGE("Failed to load function: %s.\n", #name); \
@@ -150,8 +155,12 @@ PROC_LIST
 static void *dyn_load_openal(void)
 {
     char const *names[] = {
+#ifdef _WIN32
+        "openal32.dll",
+#else
         "libopenal.so.1",
         "libopenal.so",
+#endif
     };
 
     void *dll = NULL;
@@ -176,6 +185,10 @@ static void *dyn_load_openal(void)
 }
 
 #undef PROC
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 //------------------------------------------------------------------------------
 

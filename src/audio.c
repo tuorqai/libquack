@@ -19,7 +19,11 @@
 //------------------------------------------------------------------------------
 
 #include <string.h>
-#include <vorbis/vorbisfile.h>
+
+#ifdef QU_USE_VORBIS
+    #include <vorbis/vorbisfile.h>
+#endif
+
 #include "audio.h"
 #include "log.h"
 #include "platform.h"

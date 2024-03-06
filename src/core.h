@@ -71,6 +71,10 @@ struct libqu_event
 
 extern struct libqu_core_impl const libqu_core_null_impl;
 
+#ifdef _WIN32
+extern struct libqu_core_impl const libqu_core_win32_impl;
+#endif
+
 #ifdef QU_USE_X11
 extern struct libqu_core_impl const libqu_core_x11_impl;
 #endif

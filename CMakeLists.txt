@@ -49,6 +49,7 @@ add_library(libquack
     src/base.c
     src/core.c
     src/core_null.c
+    src/core_win32.c
     src/core_x11.c
     src/fs.c
     src/graphics.c
@@ -57,6 +58,7 @@ add_library(libquack
     src/handle.c
     src/log.c
     src/platform_posix.c
+    src/platform_win32.c
     src/util.c)
 
 add_library(libquack::libquack ALIAS libquack)
@@ -82,7 +84,7 @@ endif()
 
 if(MSVC)
     target_compile_definitions(libquack PRIVATE _CRT_SECURE_NO_WARNINGS)
-    target_compile_options(libquack PRIVATE /W4)
+    target_compile_options(libquack PRIVATE /W4 /wd4100 /wd4152 /wd4206)
 else()
     target_compile_options(libquack PRIVATE -Wall -Wextra
         -Wno-type-limits -Wno-unused-parameter)
@@ -142,6 +144,11 @@ if(QU_USE_VORBIS)
     list(APPEND _QU_PC_REQUIRES_PRIVATE "vorbisfile")
 endif()
 
+if(WIN32)
+    target_link_libraries(libquack PRIVATE shlwapi)
+    list(APPEND _QU_PC_LIBS_PRIVATE "-lshlwapi")
+endif()
+
 #-------------------------------------------------------------------------------
 # Set installation paths
 
@@ -156,6 +163,9 @@ set(QU_RUNTIME_PATH "${CMAKE_INSTALL_BINDIR}"
 
 set(QU_CONFIG_PATH "${CMAKE_INSTALL_LIBDIR}/cmake/libquack"
     CACHE PATH "Location of CMake configuration files")
+
+set(QU_TEST_PATH "${CMAKE_INSTALL_LIBEXECDIR}/libquack"
+    CACHE PATH "Location of libquack test executable files")
 
 #-------------------------------------------------------------------------------
 # Generate CMake config files
