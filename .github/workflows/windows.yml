@@ -32,3 +32,19 @@ jobs:
 
     - name: Build (Release)
       run: cmake --build build --config Release
+
+    - name: Install (Debug)
+      run: cmake --build install/debug/libquack --config Debug
+
+    - name: Install (Release)
+      run: cmake --build install/release/libquack --config Release
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: libquack-windows-${{ matrix.type.name }}-${{ matrix.arch.name }}-${{ github.sha }}-debug
+        path: install/debug/*
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: libquack-windows-${{ matrix.type.name }}-${{ matrix.arch.name }}-${{ github.sha }}-debug
+        path: install/release/*
