@@ -22,6 +22,7 @@
 
 //------------------------------------------------------------------------------
 
+#include <assert.h>
 #include <stb_ds.h>
 #include "algebra.h"
 #include "dyn_gl3.h"
@@ -434,6 +435,51 @@ static void push_vertex(size_t index, struct libqu_vertex const *vertex)
     *d++ = 1.f - vertex->texcoord.y;
 }
 
+static void convert_blend_mode(qu_blend_mode const *mode,
+    GLenum *csf, GLenum *cdf, GLenum *asf, GLenum *adf,
+    GLenum *ceq, GLenum *aeq)
+{
+    GLenum factor_map[] = {
+        GL_ZERO,
+        GL_ONE,
+        GL_SRC_COLOR,
+        GL_ONE_MINUS_SRC_COLOR,
+        GL_DST_COLOR,
+        GL_ONE_MINUS_DST_COLOR,
+        GL_SRC_ALPHA,
+        GL_ONE_MINUS_SRC_ALPHA,
+        GL_DST_ALPHA,
+        GL_ONE_MINUS_DST_ALPHA,
+    };
+
+    GLenum equation_map[] = {
+        GL_FUNC_ADD,
+        GL_FUNC_SUBTRACT,
+        GL_FUNC_REVERSE_SUBTRACT,
+    };
+
+    assert(mode->color_src_factor >= 0);
+    assert(mode->color_src_factor < sizeof(factor_map) / sizeof(*factor_map));
+    assert(mode->color_dst_factor >= 0);
+    assert(mode->color_dst_factor < sizeof(factor_map) / sizeof(*factor_map));
+    assert(mode->color_equation >= 0);
+    assert(mode->color_equation < sizeof(equation_map) / sizeof(*equation_map));
+
+    assert(mode->alpha_src_factor >= 0);
+    assert(mode->alpha_src_factor < sizeof(factor_map) / sizeof(*factor_map));
+    assert(mode->alpha_dst_factor >= 0);
+    assert(mode->alpha_dst_factor < sizeof(factor_map) / sizeof(*factor_map));
+    assert(mode->alpha_equation >= 0);
+    assert(mode->alpha_equation < sizeof(equation_map) / sizeof(*equation_map));
+
+    *csf = factor_map[mode->color_src_factor];
+    *cdf = factor_map[mode->color_dst_factor];
+    *asf = factor_map[mode->alpha_src_factor];
+    *adf = factor_map[mode->alpha_dst_factor];
+    *ceq = equation_map[mode->color_equation];
+    *aeq = equation_map[mode->alpha_equation];
+}
+
 //------------------------------------------------------------------------------
 
 static bool graphics_gl3_check_if_available(void)
@@ -589,6 +635,15 @@ static void graphics_gl3_apply_texture(struct libqu_texture *texture)
     apply_texture(texture);
 }
 
+static void graphics_gl3_apply_blend_mode(qu_blend_mode const *mode)
+{
+    GLenum csf, cdf, asf, adf, ceq, aeq;
+    convert_blend_mode(mode, &csf, &cdf, &asf, &adf, &ceq, &aeq);
+
+    _GL(glBlendFuncSeparate(csf, cdf, asf, adf));
+    _GL(glBlendEquationSeparate(ceq, aeq));
+}
+
 static int graphics_gl3_capture_screen(struct libqu_image *image)
 {
     _GL(glReadPixels(0, 0, image->size.x, image->size.y,
@@ -612,6 +667,7 @@ struct libqu_graphics_impl const libqu_graphics_gl3_impl = {
     graphics_gl3_destroy_texture,
     graphics_gl3_update_texture_flags,
     graphics_gl3_apply_texture,
+    graphics_gl3_apply_blend_mode,
     graphics_gl3_capture_screen,
 };
 

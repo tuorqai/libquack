@@ -40,6 +40,7 @@ enum renderop
 {
     RENDEROP_CLEAR,
     RENDEROP_DRAW,
+    RENDEROP_SET_BLEND_MODE,
 };
 
 struct rendercmd
@@ -57,6 +58,10 @@ struct rendercmd
             size_t count;
             struct libqu_texture *texture;
         } draw;
+
+        struct {
+            qu_blend_mode mode;
+        } set_blend_mode;
     } args;
 };
 
@@ -93,6 +98,9 @@ static void exec_cmd(struct rendercmd const *cmd)
     case RENDEROP_DRAW:
         priv.impl->apply_texture(cmd->args.draw.texture);
         priv.impl->draw(cmd->args.draw.mode, cmd->args.draw.vertex, cmd->args.draw.count);
+        break;
+    case RENDEROP_SET_BLEND_MODE:
+        priv.impl->apply_blend_mode(&cmd->args.set_blend_mode.mode);
         break;
     default:
         break;
@@ -584,4 +592,18 @@ struct libqu_image *libqu_graphics_capture_screen(void)
     }
 
     return image;
+}
+
+void libqu_graphics_set_blend_mode(qu_blend_mode mode)
+{
+    struct rendercmd cmd = {
+        .op = RENDEROP_SET_BLEND_MODE,
+        .args = {
+            .set_blend_mode = {
+                .mode = mode,
+            },
+        },
+    };
+
+    arrput(priv.rendercmds, cmd);
 }

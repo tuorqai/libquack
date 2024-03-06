@@ -595,7 +595,7 @@ qu_image qu_capture_screen(void)
 
 void qu_set_blend_mode(qu_blend_mode mode)
 {
-
+    libqu_graphics_set_blend_mode(mode);
 }
 
 //------------------------------------------------------------------------------
