@@ -164,6 +164,9 @@ set(QU_RUNTIME_PATH "${CMAKE_INSTALL_BINDIR}"
 set(QU_CONFIG_PATH "${CMAKE_INSTALL_LIBDIR}/cmake/libquack"
     CACHE PATH "Location of CMake configuration files")
 
+set(QU_TEST_PATH "${CMAKE_INSTALL_LIBEXECDIR}/libquack"
+    CACHE PATH "Location of libquack test executable files")
+
 #-------------------------------------------------------------------------------
 # Generate CMake config files
 
