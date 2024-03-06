@@ -155,8 +155,12 @@ PROC_LIST
 static void *dyn_load_openal(void)
 {
     char const *names[] = {
+#ifdef _WIN32
+        "openal32.dll",
+#else
         "libopenal.so.1",
         "libopenal.so",
+#endif
     };
 
     void *dll = NULL;
