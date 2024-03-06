@@ -34,10 +34,10 @@ jobs:
       run: cmake --build build --config Release
 
     - name: Install (Debug)
-      run: cmake --build install/debug/libquack --config Debug
+      run: cmake --install build --config Debug --prefix install/debug/libquack
 
     - name: Install (Release)
-      run: cmake --build install/release/libquack --config Release
+      run: cmake --install build --config Release --prefix install/release/libquack
 
     - uses: actions/upload-artifact@v3
       with:
