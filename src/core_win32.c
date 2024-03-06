@@ -553,11 +553,13 @@ static int InitWindow(int width, int height)
         return -1;
     }
 
-    priv.dwStyle = WS_CAPTION
-        | WS_SYSMENU
-        | WS_MAXIMIZEBOX
-        | WS_MINIMIZEBOX
-        | WS_SIZEBOX;
+    BOOL fResizable = FALSE; // TODO: later
+
+    priv.dwStyle = WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX;
+
+    if (fResizable) {
+        priv.dwStyle |= WS_MAXIMIZEBOX | WS_SIZEBOX;
+    }
 
     priv.hWnd = CreateWindowW(
         priv.szTitle,       // class name
