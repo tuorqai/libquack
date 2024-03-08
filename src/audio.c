@@ -130,6 +130,31 @@ void libqu_audio_set_sound_state(struct libqu_sound *sound, qu_playback_state st
     priv.impl->set_sound_state(sound, state);
 }
 
+struct libqu_music *libqu_audio_open_music(struct libqu_file *file)
+{
+    return NULL;
+}
+
+void libqu_audio_close_music(struct libqu_music *music)
+{
+    libqu_fclose(music->file);
+}
+
+qu_playback_state libqu_audio_get_music_state(struct libqu_music *music)
+{
+    return QU_PLAYBACK_STOPPED;
+}
+
+void libqu_audio_set_music_loop(struct libqu_music *music, int loop)
+{
+    
+}
+
+void libqu_audio_set_music_state(struct libqu_music *music, qu_playback_state state)
+{
+    
+}
+
 //------------------------------------------------------------------------------
 
 struct libqu_wave *libqu_wave_create(int16_t channels, int64_t samples, int64_t sample_rate)

@@ -68,6 +68,15 @@ struct libqu_sound
     intptr_t priv[4];                   // arbitrary private information
 };
 
+//
+// Music object
+//
+struct libqu_music
+{
+    struct libqu_file *file;            // file object
+    intptr_t priv[4];                   // arbitrary private information
+};
+
 struct libqu_audio_params
 {
     int unused;
@@ -100,11 +109,18 @@ void libqu_audio_initialize(struct libqu_audio_params const *params);
 void libqu_audio_terminate(void);
 
 void libqu_audio_set_master_volume(float volume);
+
 struct libqu_sound *libqu_audio_load_sound(struct libqu_wave *wave);
 void libqu_audio_destroy_sound(struct libqu_sound *sound);
 qu_playback_state libqu_audio_get_sound_state(struct libqu_sound *sound);
 void libqu_audio_set_sound_loop(struct libqu_sound *sound, int loop);
 void libqu_audio_set_sound_state(struct libqu_sound *sound, qu_playback_state state);
+
+struct libqu_music *libqu_audio_open_music(struct libqu_file *file);
+void libqu_audio_close_music(struct libqu_music *music);
+qu_playback_state libqu_audio_get_music_state(struct libqu_music *music);
+void libqu_audio_set_music_loop(struct libqu_music *music, int loop);
+void libqu_audio_set_music_state(struct libqu_music *music, qu_playback_state state);
 
 struct libqu_wave *libqu_wave_create(int16_t channels, int64_t samples, int64_t sample_rate);
 struct libqu_wave *libqu_wave_load(struct libqu_file *file);

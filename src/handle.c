@@ -54,6 +54,9 @@ static void dtor(enum libqu_handle_type type, void *data)
     case LIBQU_HANDLE_SOUND:
         libqu_audio_destroy_sound(data);
         break;
+    case LIBQU_HANDLE_MUSIC:
+        libqu_audio_close_music(data);
+        break;
     default:
         break;
     }
