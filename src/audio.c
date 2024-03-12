@@ -60,6 +60,133 @@ static struct libqu_audio_impl const *choose_impl(void)
     abort();
 }
 
+static int preload_music(struct libqu_music *music)
+{
+    for (int i = 0; i < LIBQU_MUSIC_BUFFERS; i++) {
+        music->buffers[i] =
+            pl_malloc(sizeof(*music->buffers[i]) * LIBQU_MUSIC_BUFFER_LENGTH);
+
+        if (!music->buffers[i]) {
+            return -1;
+        }
+    }
+
+    libqu_sndfile_seek(music->sndfile, 0);
+
+    for (int i = 0; i < LIBQU_MUSIC_BUFFERS; i++) {
+        int64_t samples = libqu_sndfile_read(music->sndfile,
+            music->buffers[i], LIBQU_MUSIC_BUFFER_LENGTH);
+        
+        // Music track is too short, but still can be played.
+        if (samples == 0) {
+            return 0;
+        }
+
+        // Failed to queue the buffer, something went wrong.
+        if (priv.impl->enqueue_music_buffer(music, music->buffers[i], samples) == -1) {
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+static int music_loop(struct libqu_music *music)
+{
+    pl_lock_mutex(music->mutex);
+    qu_playback_state state = priv.impl->get_music_state(music);
+    pl_unlock_mutex(music->mutex);
+
+    if (state == QU_PLAYBACK_STOPPED || state == QU_PLAYBACK_INVALID) {
+        return -1;
+    }
+
+    if (state == QU_PLAYBACK_PAUSED) {
+        pl_sleep(10);
+        return 0;
+    }
+
+    // Remove played pieces from the queue.
+    int dequeued = priv.impl->dequeue_played_music_buffers(music);
+
+    for (int i = 0; i < dequeued; i++) {
+        int16_t *buffer = music->buffers[music->current_buffer];
+
+        int64_t samples = libqu_sndfile_read(music->sndfile,
+            buffer, LIBQU_MUSIC_BUFFER_LENGTH);
+
+        // End of file.
+        // Rewind and play again until loop count drops to 0.
+        if (samples == 0) {
+            if (music->loop == 0) {
+                LIBQU_LOGD("music: end of file reached.\n");
+                return -1;
+            }
+
+            if (music->loop >= 1) {
+                music->loop--;
+                LIBQU_LOGD("music: loop is %d\n", music->loop);
+            }
+
+            libqu_sndfile_seek(music->sndfile, 0);
+            continue;
+        }
+
+        // Enqueue refilled buffer.
+        if (priv.impl->enqueue_music_buffer(music, buffer, samples) == -1) {
+            LIBQU_LOGE("music: impl::enqueue_music_buffer() failed.\n");
+            return -1;
+        }
+
+        // Move on to the next buffer.
+        music->current_buffer = (music->current_buffer + 1) % LIBQU_MUSIC_BUFFERS;
+    }
+
+    pl_sleep(250);
+    return 0;
+}
+
+static void music_thread(struct libqu_music *music)
+{
+    // This will both allocate and fill the buffers upfront.
+    if (preload_music(music) == -1) {
+        LIBQU_LOGE("Failed to preload music track.\n");
+        return;
+    }
+
+    // Start playing.
+    priv.impl->set_music_state(music, QU_PLAYBACK_PLAYING);
+
+    while (true) {
+        if (music_loop(music) == -1) {
+            break;
+        }
+    }
+
+    priv.impl->dequeue_played_music_buffers(music);
+}
+
+static void *music_main(void *data)
+{
+    struct libqu_music *music = data;
+
+    LIBQU_LOGD("music thread started [%s].\n", music->file->name);
+
+    if (priv.impl == &libqu_audio_null_impl) {
+        pl_sleep(1000);
+    } else {
+        music_thread(music);
+    }
+
+    pl_lock_mutex(music->mutex);
+    music->thread = NULL;
+    pl_unlock_mutex(music->mutex);
+
+    LIBQU_LOGD("music thread ended [%s].\n", music->file->name);
+
+    return NULL;
+}
+
 //------------------------------------------------------------------------------
 
 void libqu_audio_initialize(struct libqu_audio_params const *params)
@@ -93,7 +220,7 @@ struct libqu_sound *libqu_audio_load_sound(struct libqu_wave *wave)
     if (sound) {
         sound->wave = wave;
 
-        if (priv.impl->load_sound(sound) != -1) {
+        if (priv.impl->create_sound(sound) != -1) {
             LIBQU_LOGD("object created at %p [sound]\n", sound);
             return sound;
         }
@@ -132,27 +259,84 @@ void libqu_audio_set_sound_state(struct libqu_sound *sound, qu_playback_state st
 
 struct libqu_music *libqu_audio_open_music(struct libqu_file *file)
 {
+    struct libqu_sndfile *sndfile = libqu_sndfile_open(file);
+
+    if (sndfile) {
+        struct libqu_music *music = pl_calloc(1, sizeof(*music));
+
+        if (music) {
+            music->file = file;
+            music->sndfile = sndfile;
+
+            if (priv.impl->create_music(music) == 0) {
+                music->mutex = pl_create_mutex();
+
+                if (music->mutex) {
+                    return music;
+                } else {
+                    LIBQU_LOGE("open_music: create_mutex() failed.\n");
+                }
+
+                priv.impl->destroy_music(music);
+            } else {
+                LIBQU_LOGE("open_music: impl::create_music() failed.\n");
+            }
+
+            pl_free(music);
+        } else {
+            LIBQU_LOGE("open_music: calloc() failed.\n");
+        }
+
+        libqu_sndfile_close(sndfile);
+    } else {
+        LIBQU_LOGE("open_music: sndfile_open() failed.\n");
+    }
+
     return NULL;
 }
 
 void libqu_audio_close_music(struct libqu_music *music)
 {
+    if (music->thread) {
+        pl_lock_mutex(music->mutex);
+        priv.impl->set_music_state(music, QU_PLAYBACK_STOPPED);
+        pl_unlock_mutex(music->mutex);
+    }
+
+    pl_wait_thread(music->thread);
+    pl_destroy_mutex(music->mutex);
+
+    priv.impl->destroy_music(music);
+
+    libqu_sndfile_close(music->sndfile);
     libqu_fclose(music->file);
+
+    pl_free(music);
 }
 
 qu_playback_state libqu_audio_get_music_state(struct libqu_music *music)
 {
-    return QU_PLAYBACK_STOPPED;
+    return priv.impl->get_music_state(music);
 }
 
 void libqu_audio_set_music_loop(struct libqu_music *music, int loop)
 {
-    
+    pl_lock_mutex(music->mutex);
+    music->loop = loop;
+    pl_unlock_mutex(music->mutex);
 }
 
 void libqu_audio_set_music_state(struct libqu_music *music, qu_playback_state state)
 {
-    
+    if (music->thread) {
+        pl_lock_mutex(music->mutex);
+        priv.impl->set_music_state(music, state);
+        pl_unlock_mutex(music->mutex);
+    } else {
+        if (state == QU_PLAYBACK_PLAYING) {
+            music->thread = pl_create_thread("bgm", music_main, music);
+        }
+    }
 }
 
 //------------------------------------------------------------------------------

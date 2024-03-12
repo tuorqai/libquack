@@ -167,7 +167,7 @@ static void audio_openal_set_master_volume(float volume)
     _AL(alListenerf(AL_GAIN, volume));
 }
 
-static int audio_openal_load_sound(struct libqu_sound *sound)
+static int audio_openal_create_sound(struct libqu_sound *sound)
 {
     ALenum format = choose_format(&sound->wave->format);
 
@@ -253,6 +253,123 @@ static void audio_openal_set_sound_state(struct libqu_sound *sound, qu_playback_
     }
 }
 
+static int audio_openal_create_music(struct libqu_music *music)
+{
+    ALenum format = choose_format(&music->sndfile->format);
+
+    if (format == AL_INVALID_ENUM) {
+        LIBQU_LOGE("init_source: invalid format (%d channels, %d rate)\n",
+            music->sndfile->format.channels,
+            music->sndfile->format.rate);
+        return -1;
+    }
+
+    ALuint source;
+    _AL(alGenSources(1, &source));
+
+    if (source == 0) {
+        LIBQU_LOGE("create_music: alGenSources() failed\n");
+        return -1;
+    }
+
+    _AL(alSourcei(source, AL_LOOPING, AL_FALSE));
+    _AL(alSourcei(source, AL_BUFFER, 0));
+
+    music->priv[0] = (intptr_t) source;
+    music->priv[1] = (intptr_t) format;
+
+    return 0;
+}
+
+static void audio_openal_destroy_music(struct libqu_music *music)
+{
+    ALuint source = (ALuint) music->priv[0];
+    _AL(alDeleteSources(1, &source));
+}
+
+static int audio_openal_enqueue_music_buffer(struct libqu_music *music, int16_t const *buffer, size_t samples)
+{
+    ALuint source = (ALuint) music->priv[0];
+    ALenum format = (ALenum) music->priv[1];
+
+    ALuint al_buffer;
+    _AL(alGenBuffers(1, &al_buffer));
+
+    if (al_buffer == 0) {
+        LIBQU_LOGE("enqueue_music_buffer: alGenBuffers() failed\n");
+        return -1;
+    }
+
+    _AL(alBufferData(al_buffer, format, buffer, sizeof(*buffer) * samples,
+        music->sndfile->format.rate));
+
+    _AL(alSourceQueueBuffers(source, 1, &al_buffer));
+
+    return 0;
+}
+
+static int audio_openal_dequeue_played_music_buffers(struct libqu_music *music)
+{
+    ALuint source = (ALuint) music->priv[0];
+
+    ALint processed;
+    _AL(alGetSourcei(source, AL_BUFFERS_PROCESSED, &processed));
+
+    if (processed == 0) {
+        return 0;
+    }
+
+    ALuint buffers[LIBQU_MUSIC_BUFFERS];
+
+    // Remove processed buffers from the queue.
+    _AL(alSourceUnqueueBuffers(source, processed, buffers));
+
+    // Delete those buffer altogether.
+    _AL(alDeleteBuffers(processed, buffers));
+
+    // Return the number of buffers that were removed from the queue.
+    return processed;
+}
+
+static qu_playback_state audio_openal_get_music_state(struct libqu_music *music)
+{
+    ALuint source = (ALuint) music->priv[0];
+
+    ALint state;
+    _AL(alGetSourcei(source, AL_SOURCE_STATE, &state));
+
+    switch (state) {
+    case AL_INITIAL:
+    case AL_STOPPED:
+        return QU_PLAYBACK_STOPPED;
+    case AL_PLAYING:
+        return QU_PLAYBACK_PLAYING;
+    case AL_PAUSED:
+        return QU_PLAYBACK_PAUSED;
+    }
+
+    return QU_PLAYBACK_INVALID;
+}
+
+static void audio_openal_set_music_state(struct libqu_music *music, qu_playback_state state)
+{
+    ALuint source = (ALuint) music->priv[0];
+
+    switch (state) {
+    case QU_PLAYBACK_STOPPED:
+        _AL(alSourceStop(source));
+        break;
+    case QU_PLAYBACK_PLAYING:
+        _AL(alSourcePlay(source));
+        break;
+    case QU_PLAYBACK_PAUSED:
+        _AL(alSourcePause(source));
+        break;
+    default:
+        break;
+    }
+}
+
 //------------------------------------------------------------------------------
 
 struct libqu_audio_impl const libqu_audio_openal_impl = {
@@ -260,11 +377,17 @@ struct libqu_audio_impl const libqu_audio_openal_impl = {
     audio_openal_initialize,
     audio_openal_terminate,
     audio_openal_set_master_volume,
-    audio_openal_load_sound,
+    audio_openal_create_sound,
     audio_openal_destroy_sound,
     audio_openal_get_sound_state,
     audio_openal_set_sound_loop,
     audio_openal_set_sound_state,
+    audio_openal_create_music,
+    audio_openal_destroy_music,
+    audio_openal_enqueue_music_buffer,
+    audio_openal_dequeue_played_music_buffers,
+    audio_openal_get_music_state,
+    audio_openal_set_music_state,
 };
 
 //------------------------------------------------------------------------------

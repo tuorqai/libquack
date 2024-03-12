@@ -710,6 +710,7 @@ qu_sound qu_load_sound_from_file(char const *path)
         struct libqu_sound *sound = libqu_audio_load_sound(wave);
 
         if (!sound) {
+            libqu_wave_destroy(wave);
             return QU_SOUND_NONE;
         }
 
@@ -735,6 +736,7 @@ qu_sound qu_load_sound_from_wave(qu_wave handle)
         struct libqu_sound *sound = libqu_audio_load_sound(wave);
 
         if (!sound) {
+            wave->refcount--;
             return QU_SOUND_NONE;
         }
 

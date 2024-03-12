@@ -44,7 +44,7 @@ static void audio_null_set_master_volume(float volume)
 {
 }
 
-static int audio_null_load_sound(struct libqu_sound *sound)
+static int audio_null_create_sound(struct libqu_sound *sound)
 {
     return 0;
 }
@@ -66,6 +66,34 @@ static void audio_null_set_sound_state(struct libqu_sound *sound, qu_playback_st
 {
 }
 
+static int audio_null_create_music(struct libqu_music *music)
+{
+    return 0;
+}
+
+static void audio_null_destroy_music(struct libqu_music *music)
+{
+}
+
+static int audio_null_enqueue_music_buffer(struct libqu_music *music, int16_t const *buffer, size_t samples)
+{
+    return 0;
+}
+
+static int audio_null_dequeue_played_music_buffers(struct libqu_music *music)
+{
+    return 0;
+}
+
+static qu_playback_state audio_null_get_music_state(struct libqu_music *music)
+{
+    return QU_PLAYBACK_STOPPED;
+}
+
+static void audio_null_set_music_state(struct libqu_music *music, qu_playback_state state)
+{
+}
+
 //------------------------------------------------------------------------------
 
 struct libqu_audio_impl const libqu_audio_null_impl = {
@@ -73,9 +101,15 @@ struct libqu_audio_impl const libqu_audio_null_impl = {
     audio_null_initialize,
     audio_null_terminate,
     audio_null_set_master_volume,
-    audio_null_load_sound,
+    audio_null_create_sound,
     audio_null_destroy_sound,
     audio_null_get_sound_state,
     audio_null_set_sound_loop,
     audio_null_set_sound_state,
+    audio_null_create_music,
+    audio_null_destroy_music,
+    audio_null_enqueue_music_buffer,
+    audio_null_dequeue_played_music_buffers,
+    audio_null_get_music_state,
+    audio_null_set_music_state,
 };

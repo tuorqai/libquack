@@ -24,6 +24,12 @@
 //------------------------------------------------------------------------------
 
 #include "fs.h"
+#include "platform.h"
+
+//------------------------------------------------------------------------------
+
+#define LIBQU_MUSIC_BUFFERS             8
+#define LIBQU_MUSIC_BUFFER_LENGTH       4096
 
 //------------------------------------------------------------------------------
 
@@ -73,7 +79,13 @@ struct libqu_sound
 //
 struct libqu_music
 {
-    struct libqu_file *file;            // file object
+    struct libqu_file *file;            // file handle
+    struct libqu_sndfile *sndfile;      // sound file reader
+    pl_thread *thread;                  // music thread
+    pl_mutex *mutex;                    // critical section
+    int16_t *buffers[LIBQU_MUSIC_BUFFERS]; // sample buffers
+    int current_buffer;                 // buffer index to be processed
+    int loop;                           // loop value
     intptr_t priv[4];                   // arbitrary private information
 };
 
@@ -88,11 +100,19 @@ struct libqu_audio_impl
     bool (*initialize)(struct libqu_audio_params const *params);
     void (*terminate)(void);
     void (*set_master_volume)(float volume);
-    int (*load_sound)(struct libqu_sound *sound);
+
+    int (*create_sound)(struct libqu_sound *sound);
     void (*destroy_sound)(struct libqu_sound *sound);
     qu_playback_state (*get_sound_state)(struct libqu_sound *sound);
     void (*set_sound_loop)(struct libqu_sound *sound, int loop);
     void (*set_sound_state)(struct libqu_sound *sound, qu_playback_state state);
+
+    int (*create_music)(struct libqu_music *music);
+    void (*destroy_music)(struct libqu_music *music);
+    int (*enqueue_music_buffer)(struct libqu_music *music, int16_t const *buffer, size_t samples);
+    int (*dequeue_played_music_buffers)(struct libqu_music *music);
+    qu_playback_state (*get_music_state)(struct libqu_music *music);
+    void (*set_music_state)(struct libqu_music *music, qu_playback_state state);
 };
 
 //------------------------------------------------------------------------------
