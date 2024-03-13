@@ -118,6 +118,8 @@ static int music_loop(struct libqu_music *music)
         // End of file.
         // Rewind and play again until loop count drops to 0.
         if (samples == 0) {
+            LIBQU_LOGD("loop=%d\n", music->loop);
+
             if (music->loop == 0) {
                 LIBQU_LOGD("music: end of file reached.\n");
                 return -1;
@@ -164,6 +166,10 @@ static void music_thread(struct libqu_music *music)
     }
 
     priv.impl->dequeue_played_music_buffers(music);
+
+    for (int i = 0; i < LIBQU_MUSIC_BUFFERS; i++) {
+        pl_free(music->buffers[i]);
+    }
 }
 
 static void *music_main(void *data)
@@ -177,10 +183,6 @@ static void *music_main(void *data)
     } else {
         music_thread(music);
     }
-
-    pl_lock_mutex(music->mutex);
-    music->thread = NULL;
-    pl_unlock_mutex(music->mutex);
 
     LIBQU_LOGD("music thread ended [%s].\n", music->file->name);
 
@@ -297,13 +299,20 @@ struct libqu_music *libqu_audio_open_music(struct libqu_file *file)
 
 void libqu_audio_close_music(struct libqu_music *music)
 {
-    if (music->thread) {
-        pl_lock_mutex(music->mutex);
+    pl_lock_mutex(music->mutex);
+
+    qu_playback_state state = priv.impl->get_music_state(music);
+
+    if (state == QU_PLAYBACK_PLAYING || state == QU_PLAYBACK_PAUSED) {
         priv.impl->set_music_state(music, QU_PLAYBACK_STOPPED);
-        pl_unlock_mutex(music->mutex);
     }
 
-    pl_wait_thread(music->thread);
+    pl_unlock_mutex(music->mutex);
+
+    if (music->thread) {
+        pl_wait_thread(music->thread);
+    }
+
     pl_destroy_mutex(music->mutex);
 
     priv.impl->destroy_music(music);
@@ -328,14 +337,38 @@ void libqu_audio_set_music_loop(struct libqu_music *music, int loop)
 
 void libqu_audio_set_music_state(struct libqu_music *music, qu_playback_state state)
 {
-    if (music->thread) {
-        pl_lock_mutex(music->mutex);
-        priv.impl->set_music_state(music, state);
-        pl_unlock_mutex(music->mutex);
-    } else {
-        if (state == QU_PLAYBACK_PLAYING) {
+    switch (state) {
+    case QU_PLAYBACK_STOPPED:
+        if (music->thread) {
+            pl_lock_mutex(music->mutex);
+            priv.impl->set_music_state(music, QU_PLAYBACK_STOPPED);
+            pl_unlock_mutex(music->mutex);
+            pl_wait_thread(music->thread);
+            music->thread = NULL;
+        } else {
+            LIBQU_LOGW("Music track is already stopped.\n");
+        }
+        break;
+    case QU_PLAYBACK_PLAYING:
+        if (music->thread) {
+            pl_lock_mutex(music->mutex);
+            priv.impl->set_music_state(music, QU_PLAYBACK_PLAYING);
+            pl_unlock_mutex(music->mutex);
+        } else {
             music->thread = pl_create_thread("bgm", music_main, music);
         }
+        break;
+    case QU_PLAYBACK_PAUSED:
+        if (music->thread) {
+            pl_lock_mutex(music->mutex);
+            priv.impl->set_music_state(music, QU_PLAYBACK_PAUSED);
+            pl_unlock_mutex(music->mutex);
+        } else {
+            LIBQU_LOGW("Music track is stopped, can't pause.\n");
+        }
+        break;
+    default:
+        break;
     }
 }
 
@@ -683,10 +716,8 @@ static int64_t _vorbis_read(struct libqu_sndfile *sndfile, int16_t *samples, int
         // Couldn't care less if it still reports some errors.
         // I'll just ignore them.
         if (bytes_read < 0) {
-#if 0
             LIBQU_LOGE("Failed to read Ogg Vorbis from file %s. Reason: %s\n",
                 sndfile->file->name, _vorbis_err_str(bytes_read));
-#endif
             break;
         }
 
