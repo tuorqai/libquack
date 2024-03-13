@@ -38,6 +38,9 @@ option(QU_USE_OPENGL "Use OpenGL" ON)
 cmake_dependent_option(QU_USE_X11 "Use X11" ON "UNIX;NOT APPLE" OFF)
 option(QU_USE_OPENAL "Use OpenAL" ON)
 option(QU_USE_VORBIS "Use Vorbis" ON)
+option(QU_USE_ASAN "Use AddressSanitizer" OFF)
+option(QU_USE_UBSAN "Use UndefinedBehaviorSanitizer" OFF)
+option(QU_USE_TSAN "Use ThreadSanitizer" OFF)
 
 #-------------------------------------------------------------------------------
 
@@ -85,9 +88,32 @@ endif()
 if(MSVC)
     target_compile_definitions(libquack PRIVATE _CRT_SECURE_NO_WARNINGS)
     target_compile_options(libquack PRIVATE /W4 /wd4100 /wd4152 /wd4206)
+
+    if(QU_USE_ASAN)
+        target_compile_options(libquack PUBLIC $<$<CONFIG:Debug>:/fsanitize=address>)
+    endif()
+
+    if(QU_USE_UBSAN OR QU_USE_TSAN)
+        message(WARNING "UBSan and TSan are not available for MSVC.")
+    endif()
 else()
     target_compile_options(libquack PRIVATE -Wall -Wextra
         -Wno-type-limits -Wno-unused-parameter)
+
+    if(QU_USE_ASAN)
+        target_compile_options(libquack PUBLIC $<$<CONFIG:Debug>:-fsanitize=address>)
+        target_link_options(libquack PUBLIC $<$<CONFIG:Debug>:-fsanitize=address>)
+    endif()
+
+    if(QU_USE_UBSAN)
+        target_compile_options(libquack PUBLIC $<$<CONFIG:Debug>:-fsanitize=undefined>)
+        target_link_options(libquack PUBLIC $<$<CONFIG:Debug>:-fsanitize=undefined>)
+    endif()
+
+    if(QU_USE_TSAN)
+        target_compile_options(libquack PUBLIC $<$<CONFIG:Debug>:-fsanitize=thread>)
+        target_link_options(libquack PUBLIC $<$<CONFIG:Debug>:-fsanitize=thread>)
+    endif()
 endif()
 
 #-------------------------------------------------------------------------------
