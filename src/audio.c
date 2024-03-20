@@ -131,7 +131,15 @@ static int music_loop(struct libqu_music *music)
             }
 
             libqu_sndfile_seek(music->sndfile, 0);
-            continue;
+
+            samples = libqu_sndfile_read(music->sndfile,
+                buffer, LIBQU_MUSIC_BUFFER_LENGTH);
+            
+            // Still zero?
+            if (samples == 0) {
+                LIBQU_LOGE("music: failed to loop.\n");
+                return -1;
+            }
         }
 
         // Enqueue refilled buffer.
