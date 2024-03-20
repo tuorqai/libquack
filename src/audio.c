@@ -700,10 +700,10 @@ static void _vorbis_close(struct libqu_sndfile *sndfile)
 static int64_t _vorbis_read(struct libqu_sndfile *sndfile, int16_t *samples, int64_t max_samples)
 {
     OggVorbis_File *vf = sndfile->context;
-    long samples_read = 0;
+    long total_samples = 0;
 
-    while (samples_read < max_samples) {
-        int bytes_left = (max_samples - samples_read) / sizeof(int16_t);
+    while (total_samples < max_samples) {
+        int bytes_left = (max_samples - total_samples) * sizeof(int16_t);
         long bytes_read = ov_read(vf, (char *) samples, bytes_left, 0, 2, 1, NULL);
 
         // End of file.
@@ -712,20 +712,19 @@ static int64_t _vorbis_read(struct libqu_sndfile *sndfile, int16_t *samples, int
         }
 
         // Some error occured.
-        // ...but it still works as intended, right?
-        // Couldn't care less if it still reports some errors.
-        // I'll just ignore them.
         if (bytes_read < 0) {
             LIBQU_LOGE("Failed to read Ogg Vorbis from file %s. Reason: %s\n",
                 sndfile->file->name, _vorbis_err_str(bytes_read));
             break;
         }
 
-        samples_read += bytes_read / sizeof(int16_t);
-        samples += bytes_read / sizeof(int16_t);
+        int samples_read = bytes_read / sizeof(int16_t);
+
+        total_samples += samples_read;
+        samples += samples_read;
     }
 
-    return samples_read;
+    return total_samples;
 }
 
 static int64_t _vorbis_seek(struct libqu_sndfile *sndfile, int64_t sample_offset)
