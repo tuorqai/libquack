@@ -363,6 +363,11 @@ typedef struct qu_sound
     qu_handle id;
 } qu_sound;
 
+typedef struct qu_music
+{
+    qu_handle id;
+} qu_music;
+
 //------------------------------------------------------------------------------
 
 QU_API char const * QU_CALL qu_get_version(void);
@@ -435,6 +440,7 @@ QU_API int64_t QU_CALL qu_get_wave_sample_rate(qu_wave wave);
 QU_API int16_t * QU_CALL qu_get_wave_samples(qu_wave wave);
 
 QU_API void QU_CALL qu_set_master_volume(float volume);
+
 QU_API qu_sound QU_CALL qu_load_sound_from_file(char const *path);
 QU_API qu_sound QU_CALL qu_load_sound_from_wave(qu_wave wave);
 QU_API void QU_CALL qu_destroy_sound(qu_sound sound);
@@ -443,6 +449,22 @@ QU_API void QU_CALL qu_set_sound_loop(qu_sound sound, int loop);
 QU_API void QU_CALL qu_play_sound(qu_sound sound);
 QU_API void QU_CALL qu_pause_sound(qu_sound sound);
 QU_API void QU_CALL qu_stop_sound(qu_sound sound);
+
+QU_API qu_music QU_CALL qu_open_music_from_file(char const *path);
+QU_API qu_music QU_CALL qu_open_music_from_buffer(void *buffer, size_t size);
+QU_API void QU_CALL qu_close_music(qu_music music);
+QU_API int16_t QU_CALL qu_get_music_channel_count(qu_music music);
+QU_API int64_t QU_CALL qu_get_music_sample_count(qu_music music);
+QU_API int64_t QU_CALL qu_get_music_sample_rate(qu_music music);
+QU_API qu_playback_state QU_CALL qu_get_music_state(qu_music music);
+QU_API void QU_CALL qu_set_music_loop(qu_music music, int loop);
+QU_API void QU_CALL qu_play_music(qu_music music);
+QU_API void QU_CALL qu_pause_music(qu_music music);
+QU_API void QU_CALL qu_stop_music(qu_music music);
+
+QU_API double QU_CALL qu_get_music_duration(qu_music music);
+QU_API double QU_CALL qu_get_music_position(qu_music music);
+QU_API void QU_CALL qu_seek_music(qu_music music, double sec);
 
 //------------------------------------------------------------------------------
 

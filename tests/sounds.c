@@ -41,20 +41,20 @@ int main(int argc, char *argv[])
     qu_sound sine = qu_load_sound_from_file("assets/sounds/sine1000.wav");
     qu_sound square = qu_load_sound_from_file("assets/sounds/square250.wav");
     qu_sound noise = qu_load_sound_from_file("assets/sounds/noise.wav");
-    qu_sound dungeon = qu_load_sound_from_file("assets/sounds/dungeon.ogg");
+    qu_music dungeon = qu_open_music_from_file("assets/sounds/dungeon.ogg");
 
     printf("sine -> %d\n", sine.id);
     printf("square -> %d\n", square.id);
     printf("noise -> %d\n", noise.id);
     printf("dungeon -> %d\n", dungeon.id);
 
-    qu_set_sound_loop(dungeon, -1);
+    qu_set_music_loop(dungeon, -1);
 
     while (qu_process()) {
         qu_playback_state sine_state = qu_get_sound_state(sine);
         qu_playback_state square_state = qu_get_sound_state(square);
         qu_playback_state noise_state = qu_get_sound_state(noise);
-        qu_playback_state dungeon_state = qu_get_sound_state(dungeon);
+        qu_playback_state dungeon_state = qu_get_music_state(dungeon);
 
         if (qu_is_key_pressed(QU_KEY_1)) {
             if (sine_state != QU_PLAYBACK_PLAYING) {
@@ -76,13 +76,13 @@ int main(int argc, char *argv[])
 
         if (qu_is_key_pressed(QU_KEY_SPACE)) {
             if (dungeon_state == QU_PLAYBACK_STOPPED) {
-                qu_play_sound(dungeon);
+                qu_play_music(dungeon);
             }
         }
 
         if (qu_is_key_pressed(QU_KEY_BACKSPACE)) {
             if (dungeon_state == QU_PLAYBACK_PLAYING) {
-                qu_stop_sound(dungeon);
+                qu_stop_music(dungeon);
             }
         }
 

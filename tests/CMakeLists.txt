@@ -6,7 +6,8 @@ set(EXECUTABLES
     textures
     utf8-title
     sounds
-    blend-modes)
+    blend-modes
+    music)
 
 foreach(EXE ${EXECUTABLES})
     add_executable(${EXE} ${EXE}.c)
