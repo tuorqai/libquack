@@ -331,29 +331,47 @@ static int audio_openal_dequeue_played_music_buffers(struct libqu_music *music)
     return processed;
 }
 
+static void audio_openal_dequeue_all_music_buffers(struct libqu_music *music)
+{
+    ALuint source = (ALuint) music->priv[0];
+
+    ALint queued;
+    _AL(alGetSourcei(source, AL_BUFFERS_QUEUED, &queued));
+
+    ALuint buffers[LIBQU_MUSIC_BUFFERS];
+
+    _AL(alSourceUnqueueBuffers(source, queued, buffers));
+    _AL(alDeleteBuffers(queued, buffers));
+}
+
 static qu_playback_state audio_openal_get_music_state(struct libqu_music *music)
 {
     ALuint source = (ALuint) music->priv[0];
+
+    if (source == 0) {
+        return QU_PLAYBACK_STOPPED;
+    }
 
     ALint state;
     _AL(alGetSourcei(source, AL_SOURCE_STATE, &state));
 
     switch (state) {
-    case AL_INITIAL:
-    case AL_STOPPED:
+    default:
         return QU_PLAYBACK_STOPPED;
     case AL_PLAYING:
         return QU_PLAYBACK_PLAYING;
     case AL_PAUSED:
         return QU_PLAYBACK_PAUSED;
     }
-
-    return QU_PLAYBACK_INVALID;
 }
 
 static void audio_openal_set_music_state(struct libqu_music *music, qu_playback_state state)
 {
     ALuint source = (ALuint) music->priv[0];
+
+    if (source == 0) {
+        return;
+    }
 
     switch (state) {
     case QU_PLAYBACK_STOPPED:
@@ -386,6 +404,7 @@ struct libqu_audio_impl const libqu_audio_openal_impl = {
     audio_openal_destroy_music,
     audio_openal_enqueue_music_buffer,
     audio_openal_dequeue_played_music_buffers,
+    audio_openal_dequeue_all_music_buffers,
     audio_openal_get_music_state,
     audio_openal_set_music_state,
 };

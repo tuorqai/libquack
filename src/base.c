@@ -869,6 +869,39 @@ void qu_close_music(qu_music handle)
     libqu_handle_destroy(LIBQU_HANDLE_MUSIC, handle.id);
 }
 
+int16_t qu_get_music_channel_count(qu_music music)
+{
+    struct libqu_music *object = libqu_handle_get(LIBQU_HANDLE_MUSIC, music.id);
+
+    if (!object || !object->sndfile) {
+        return 0;
+    }
+
+    return object->sndfile->format.channels;
+}
+
+int64_t qu_get_music_sample_count(qu_music music)
+{
+    struct libqu_music *object = libqu_handle_get(LIBQU_HANDLE_MUSIC, music.id);
+
+    if (!object || !object->sndfile) {
+        return 0;
+    }
+
+    return object->sndfile->samples_per_channel;
+}
+
+int64_t qu_get_music_sample_rate(qu_music music)
+{
+    struct libqu_music *object = libqu_handle_get(LIBQU_HANDLE_MUSIC, music.id);
+
+    if (!object || !object->sndfile) {
+        return 0;
+    }
+
+    return object->sndfile->format.rate;
+}
+
 qu_playback_state qu_get_music_state(qu_music handle)
 {
     struct libqu_music *music = libqu_handle_get(LIBQU_HANDLE_MUSIC, handle.id);
@@ -922,4 +955,37 @@ void qu_stop_music(qu_music handle)
     }
 
     libqu_audio_set_music_state(music, QU_PLAYBACK_STOPPED);
+}
+
+double qu_get_music_duration(qu_music music)
+{
+    struct libqu_music *object = libqu_handle_get(LIBQU_HANDLE_MUSIC, music.id);
+
+    if (!object) {
+        return -1.0;
+    }
+
+    return libqu_audio_get_music_duration(object);
+}
+
+double qu_get_music_position(qu_music music)
+{
+    struct libqu_music *object = libqu_handle_get(LIBQU_HANDLE_MUSIC, music.id);
+
+    if (!object) {
+        return -1.0;
+    }
+
+    return libqu_audio_get_music_position(object);
+}
+
+void qu_seek_music(qu_music music, double sec)
+{
+    struct libqu_music *object = libqu_handle_get(LIBQU_HANDLE_MUSIC, music.id);
+
+    if (!object) {
+        return;
+    }
+
+    libqu_audio_seek_music(object, sec);
 }

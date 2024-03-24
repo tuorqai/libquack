@@ -85,6 +85,10 @@ static int audio_null_dequeue_played_music_buffers(struct libqu_music *music)
     return 0;
 }
 
+static void audio_null_dequeue_all_music_buffers(struct libqu_music *music)
+{
+}
+
 static qu_playback_state audio_null_get_music_state(struct libqu_music *music)
 {
     return QU_PLAYBACK_STOPPED;
@@ -110,6 +114,7 @@ struct libqu_audio_impl const libqu_audio_null_impl = {
     audio_null_destroy_music,
     audio_null_enqueue_music_buffer,
     audio_null_dequeue_played_music_buffers,
+    audio_null_dequeue_all_music_buffers,
     audio_null_get_music_state,
     audio_null_set_music_state,
 };

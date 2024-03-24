@@ -86,6 +86,8 @@ struct libqu_music
     int16_t *buffers[LIBQU_MUSIC_BUFFERS]; // sample buffers
     int current_buffer;                 // buffer index to be processed
     int loop;                           // loop value
+    int released;                       // thread is stopped
+    int seek;                           // need to rewind
     intptr_t priv[4];                   // arbitrary private information
 };
 
@@ -111,6 +113,7 @@ struct libqu_audio_impl
     void (*destroy_music)(struct libqu_music *music);
     int (*enqueue_music_buffer)(struct libqu_music *music, int16_t const *buffer, size_t samples);
     int (*dequeue_played_music_buffers)(struct libqu_music *music);
+    void (*dequeue_all_music_buffers)(struct libqu_music *music);
     qu_playback_state (*get_music_state)(struct libqu_music *music);
     void (*set_music_state)(struct libqu_music *music, qu_playback_state state);
 };
@@ -141,6 +144,9 @@ void libqu_audio_close_music(struct libqu_music *music);
 qu_playback_state libqu_audio_get_music_state(struct libqu_music *music);
 void libqu_audio_set_music_loop(struct libqu_music *music, int loop);
 void libqu_audio_set_music_state(struct libqu_music *music, qu_playback_state state);
+double libqu_audio_get_music_duration(struct libqu_music *music);
+double libqu_audio_get_music_position(struct libqu_music *music);
+void libqu_audio_seek_music(struct libqu_music *music, double sec);
 
 struct libqu_wave *libqu_wave_create(int16_t channels, int64_t samples, int64_t sample_rate);
 struct libqu_wave *libqu_wave_load(struct libqu_file *file);
@@ -150,6 +156,7 @@ struct libqu_sndfile *libqu_sndfile_open(struct libqu_file *file);
 void libqu_sndfile_close(struct libqu_sndfile *sndfile);
 int64_t libqu_sndfile_read(struct libqu_sndfile *sndfile, int16_t *samples, int64_t max_samples);
 int64_t libqu_sndfile_seek(struct libqu_sndfile *sndfile, int64_t sample_offset);
+int64_t libqu_sndfile_tell(struct libqu_sndfile *sndfile);
 
 //------------------------------------------------------------------------------
 
