@@ -611,6 +611,10 @@ static int graphics_gl3_load_texture(struct libqu_texture *texture)
 
     texture->priv[0] = (uintptr_t) id;
 
+	if (priv.current_program != PROGRAM_TEXTURED) {
+		apply_program(PROGRAM_TEXTURED);
+	}
+
     return 0;
 }
 
