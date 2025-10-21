@@ -65,10 +65,10 @@ add_library(libquack::libquack ALIAS libquack)
 
 target_include_directories(libquack
     PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include/libquack>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/libquack>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/libquack>
     PRIVATE
-        ${CMAKE_SOURCE_DIR}/third-party)
+        ${CMAKE_CURRENT_SOURCE_DIR}/third-party)
 
 set_target_properties(libquack
     PROPERTIES
