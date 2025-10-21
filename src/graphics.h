@@ -77,7 +77,7 @@ struct libqu_graphics_impl
     void (*destroy_texture)(struct libqu_texture *texture);
     void (*update_texture_flags)(struct libqu_texture *texture);
     void (*apply_texture)(struct libqu_texture *texture);
-    void (*apply_blend_mode)(qu_blend_mode *mode);
+    void (*apply_blend_mode)(qu_blend_mode const *mode);
     int (*capture_screen)(struct libqu_image *image);
 };
 
