@@ -52,6 +52,8 @@ cmake_dependent_option(QU_USE_X11 "Use X11" ON "UNIX;NOT APPLE" OFF)
 option(QU_USE_OPENAL "Use OpenAL" ON)
 option(QU_USE_VORBIS "Use Vorbis" ON)
 
+option(QU_USE_SYSTEM_VORBIS "Use system Vorbis instead of vendored" OFF)
+
 #-------------------------------------------------------------------------------
 
 add_library(libquack
@@ -107,6 +109,8 @@ endif()
 #-------------------------------------------------------------------------------
 # Dependencies
 
+include(FetchContent)
+
 set(_QU_PC_LIBS "-lquack")
 set(_QU_PC_LIBS_PRIVATE "")
 set(_QU_PC_REQUIRES_PRIVATE "")
@@ -151,11 +155,30 @@ if(QU_USE_OPENAL)
     target_include_directories(libquack PRIVATE "third-party/al")
 endif()
 
+#
+# xiph/vorbis
+#
 if(QU_USE_VORBIS)
-    find_package(Vorbis REQUIRED)
+    if(QU_USE_SYSTEM_VORBIS)
+        find_package(Vorbis REQUIRED)
+        list(APPEND _QU_PC_REQUIRES_PRIVATE "vorbisfile")
+    endif()
+
+    if(NOT VORBIS_FOUND)
+        set(VORBIS_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third-party/vorbis")
+
+        if(EXISTS "${VORBIS_SOURCE_DIR}/CMakeLists.txt")
+            add_subdirectory(${VORBIS_SOURCE_DIR} EXCLUDE_FROM_ALL)
+        else()
+            FetchContent_Declare(vorbis
+                GIT_REPOSITORY https://github.com/xiph/vorbis.git
+                GIT_TAG v1.3.7)
+            FetchContent_MakeAvailable(vorbis)
+        endif()
+    endif()
+
     target_compile_definitions(libquack PRIVATE QU_USE_VORBIS)
-    target_link_libraries(libquack PRIVATE Vorbis::vorbisfile)
-    list(APPEND _QU_PC_REQUIRES_PRIVATE "vorbisfile")
+    target_link_libraries(libquack PRIVATE vorbisfile)
 endif()
 
 if(WIN32)

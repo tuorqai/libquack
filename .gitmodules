@@ -1,0 +1,3 @@
+[submodule "third-party/vorbis"]
+	path = third-party/vorbis
+	url = https://github.com/xiph/vorbis.git
