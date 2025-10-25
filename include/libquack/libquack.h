@@ -27,11 +27,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-//------------------------------------------------------------------------------
-
-#define QU_VERSION_MAJOR        0
-#define QU_VERSION_MINOR        1
-#define QU_VERSION_PATCH        0
+#include <libquack-version.h>
 
 //------------------------------------------------------------------------------
 

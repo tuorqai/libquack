@@ -28,12 +28,6 @@
 
 //------------------------------------------------------------------------------
 
-#define EXPAND_VERSION_STRING(major, minor, patch) \
-    #major "." #minor "." #patch
-
-#define VERSION_STRING(major, minor, patch) \
-    EXPAND_VERSION_STRING(major, minor, patch)
-
 #define QU_SOUND_NONE \
     (qu_sound) { .id = 0 }
 
@@ -117,7 +111,7 @@ static void initialize_extra(unsigned int extra)
 
 char const *qu_get_version(void)
 {
-    return VERSION_STRING(QU_VERSION_MAJOR, QU_VERSION_MINOR, QU_VERSION_PATCH);
+    return QU_VERBOSE_VERSION;
 }
 
 void qu_initialize(void)
