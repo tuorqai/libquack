@@ -26,6 +26,10 @@
 
 //------------------------------------------------------------------------------
 
+#define MAX_MATRICES            256
+
+//------------------------------------------------------------------------------
+
 static struct libqu_graphics_impl const *impl_list[] = {
 #ifdef QU_USE_OPENGL
     &libqu_graphics_gl3_impl,
@@ -40,7 +44,19 @@ enum renderop
 {
     RENDEROP_CLEAR,
     RENDEROP_DRAW,
+    RENDEROP_SET_PROJECTION,
+    RENDEROP_MATRIX,
     RENDEROP_SET_BLEND_MODE,
+};
+
+enum matrixop
+{
+    MATRIXOP_PUSH,
+    MATRIXOP_POP,
+    MATRIXOP_ORIGIN,
+    MATRIXOP_TRANSLATE,
+    MATRIXOP_SCALE,
+    MATRIXOP_ROTATE,
 };
 
 struct rendercmd
@@ -60,6 +76,19 @@ struct rendercmd
         } draw;
 
         struct {
+            int matrixop;
+            float x;
+            float y;
+        } matrix;
+
+        struct {
+            float l;
+            float r;
+            float b;
+            float t;
+        } set_projection;
+
+        struct {
             qu_blend_mode mode;
         } set_blend_mode;
     } args;
@@ -70,6 +99,8 @@ static struct
     struct libqu_graphics_impl const *impl;
     struct libqu_vertex *vertbuf;
     struct rendercmd *rendercmds;
+    mat4_t matrices[MAX_MATRICES];
+    size_t current_matrix;
     unsigned int default_texture_flags;
     qu_vec2i window_size;
 } priv;
@@ -89,6 +120,47 @@ static struct libqu_graphics_impl const *choose_impl(void)
     abort();
 }
 
+static void exec_renderop_matrix(int matrixop, float x, float y)
+{
+    switch (matrixop) {
+    case MATRIXOP_PUSH:
+        if (priv.current_matrix < MAX_MATRICES - 1) {
+            priv.current_matrix++;
+            mat4_copy(
+                &priv.matrices[priv.current_matrix],
+                &priv.matrices[priv.current_matrix - 1]
+            );
+        } else {
+            LIBQU_LOGW("matrix stack overflow!\n");
+        }
+        break;
+    case MATRIXOP_POP:
+        if (priv.current_matrix > 0) {
+            priv.current_matrix--;
+            priv.impl->set_transform(&priv.matrices[priv.current_matrix]);
+        } else {
+            LIBQU_LOGW("matrix stack underflow!\n");
+        }
+        break;
+    case MATRIXOP_ORIGIN:
+        mat4_identity(&priv.matrices[priv.current_matrix]);
+        priv.impl->set_transform(&priv.matrices[priv.current_matrix]);
+        break;
+    case MATRIXOP_TRANSLATE:
+        mat4_translate(&priv.matrices[priv.current_matrix], x, y, 0.f);
+        priv.impl->set_transform(&priv.matrices[priv.current_matrix]);
+        break;
+    case MATRIXOP_SCALE:
+        mat4_scale(&priv.matrices[priv.current_matrix], x, y, 1.f);
+        priv.impl->set_transform(&priv.matrices[priv.current_matrix]);
+        break;
+    case MATRIXOP_ROTATE:
+        mat4_rotate(&priv.matrices[priv.current_matrix], x, 0.f, 0.f, 1.f);
+        priv.impl->set_transform(&priv.matrices[priv.current_matrix]);
+        break;
+    }
+}
+
 static void exec_cmd(struct rendercmd const *cmd)
 {
     switch (cmd->op) {
@@ -98,6 +170,18 @@ static void exec_cmd(struct rendercmd const *cmd)
     case RENDEROP_DRAW:
         priv.impl->apply_texture(cmd->args.draw.texture);
         priv.impl->draw(cmd->args.draw.mode, cmd->args.draw.vertex, cmd->args.draw.count);
+        break;
+    case RENDEROP_SET_PROJECTION:
+        priv.impl->apply_ortho_proj(
+            cmd->args.set_projection.l,
+            cmd->args.set_projection.r,
+            cmd->args.set_projection.b,
+            cmd->args.set_projection.t
+        );
+        break;
+    case RENDEROP_MATRIX:
+        exec_renderop_matrix(cmd->args.matrix.matrixop,
+            cmd->args.matrix.x, cmd->args.matrix.y);
         break;
     case RENDEROP_SET_BLEND_MODE:
         priv.impl->apply_blend_mode(&cmd->args.set_blend_mode.mode);
@@ -153,6 +237,10 @@ void libqu_graphics_flush(void)
 
     arrsetlen(priv.vertbuf, 0);
     arrsetlen(priv.rendercmds, 0);
+
+    priv.current_matrix = 0;
+    mat4_identity(&priv.matrices[0]);
+    priv.impl->set_transform(&priv.matrices[0]);
 }
 
 void libqu_graphics_clear(qu_color color)
@@ -305,6 +393,126 @@ void libqu_graphics_draw_rectangle(qu_vec2f pos, qu_vec2f size, qu_color outline
 
         arrput(priv.rendercmds, cmd);
     }
+}
+
+qu_view libqu_graphics_get_default_view(void)
+{
+    return (qu_view) {
+        .center = {
+            .x = (float) priv.window_size.x / 2.f,
+            .y = (float) priv.window_size.y / 2.f,
+        },
+        .size = {
+            .x = (float) priv.window_size.x,
+            .y = (float) priv.window_size.y,
+        },
+    };
+}
+
+void libqu_graphics_set_view(qu_view view)
+{
+    struct rendercmd cmd = {
+        .op = RENDEROP_SET_PROJECTION,
+        .args = {
+            .set_projection = {
+                .l = view.center.x - view.size.x / 2.f,
+                .r = view.center.x + view.size.x / 2.f,
+                .b = view.center.y + view.size.y / 2.f,
+                .t = view.center.y - view.size.y / 2.f,
+            },
+        },
+    };
+
+    arrput(priv.rendercmds, cmd);
+}
+
+void libqu_graphics_push(void)
+{
+    struct rendercmd cmd = {
+        .op = RENDEROP_MATRIX,
+        .args = {
+            .matrix = {
+                .matrixop = MATRIXOP_PUSH,
+            },
+        },
+    };
+
+    arrput(priv.rendercmds, cmd);
+}
+
+void libqu_graphics_pop(void)
+{
+    struct rendercmd cmd = {
+        .op = RENDEROP_MATRIX,
+        .args = {
+            .matrix = {
+                .matrixop = MATRIXOP_POP,
+            },
+        },
+    };
+
+    arrput(priv.rendercmds, cmd);
+}
+
+void libqu_graphics_origin(void)
+{
+    struct rendercmd cmd = {
+        .op = RENDEROP_MATRIX,
+        .args = {
+            .matrix = {
+                .matrixop = MATRIXOP_ORIGIN,
+            },
+        },
+    };
+
+    arrput(priv.rendercmds, cmd);
+}
+
+void libqu_graphics_translate(qu_vec2f v)
+{
+    struct rendercmd cmd = {
+        .op = RENDEROP_MATRIX,
+        .args = {
+            .matrix = {
+                .matrixop = MATRIXOP_TRANSLATE,
+                .x = v.x,
+                .y = v.y,
+            },
+        },
+    };
+
+    arrput(priv.rendercmds, cmd);
+}
+
+void libqu_graphics_scale(qu_vec2f s)
+{
+    struct rendercmd cmd = {
+        .op = RENDEROP_MATRIX,
+        .args = {
+            .matrix = {
+                .matrixop = MATRIXOP_SCALE,
+                .x = s.x,
+                .y = s.y,
+            },
+        },
+    };
+
+    arrput(priv.rendercmds, cmd);
+}
+
+void libqu_graphics_rotate(float degrees)
+{
+    struct rendercmd cmd = {
+        .op = RENDEROP_MATRIX,
+        .args = {
+            .matrix = {
+                .matrixop = MATRIXOP_ROTATE,
+                .x = QU_DEG2RAD(degrees),
+            },
+        },
+    };
+
+    arrput(priv.rendercmds, cmd);
 }
 
 //------------------------------------------------------------------------------
