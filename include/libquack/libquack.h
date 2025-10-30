@@ -424,19 +424,60 @@ QU_API qu_vec2i QU_CALL qu_get_image_size(qu_image image);
 QU_API qu_pixel_format QU_CALL qu_get_image_format(qu_image image);
 QU_API unsigned char * QU_CALL qu_get_image_pixels(qu_image image);
 
+//------------------------------------------------------------------------------
+// Graphics: Textures
+
+/**
+ * Set options for textures that are going to be loaded next.
+ */
 QU_API void QU_CALL qu_set_default_texture_flags(unsigned int flags);
+
+/**
+ * Open an image from file and load it into a texture.
+ */
 QU_API qu_texture QU_CALL qu_load_texture_from_file(char const *path);
+
+/**
+ * Open an image from memory buffer and load it into a texture.
+ */
 QU_API qu_texture QU_CALL qu_load_texture_from_buffer(void *buffer, size_t size);
+
+/**
+ * Load texture from an existing image object.
+ */
 QU_API qu_texture QU_CALL qu_load_texture_from_image(qu_image image);
+
+/**
+ * Destroy texture object freeing its resources.
+ */
 QU_API void QU_CALL qu_destroy_texture(qu_texture texture);
+
+/**
+ * Get size of a texture in pixels.
+ */
 QU_API qu_vec2i QU_CALL qu_get_texture_size(qu_texture texture);
+
+/**
+ * Get pixel format (effectively the number of channels) of a texture.
+ */
 QU_API qu_pixel_format QU_CALL qu_get_texture_format(qu_texture texture);
+
+/**
+ * Get which options a texture currently has.
+ */
 QU_API unsigned int QU_CALL qu_get_texture_flags(qu_texture texture);
+
+/**
+ * Set texture options.
+ */
 QU_API void QU_CALL qu_set_texture_flags(qu_texture texture, unsigned int flags);
+
 QU_API void QU_CALL qu_draw_texture(qu_texture texture, float x, float y, float w, float h);
 QU_API void QU_CALL qu_draw_texture_r(qu_texture texture, qu_rectf rect);
 QU_API void QU_CALL qu_draw_subtexture(qu_texture texture, float x, float y, float w, float h, float s, float t, float u, float v);
 QU_API void QU_CALL qu_draw_subtexture_r(qu_texture texture, qu_rectf rect, qu_rectf sub);
+
+//------------------------------------------------------------------------------
 
 QU_API qu_image QU_CALL qu_capture_screen(void);
 
