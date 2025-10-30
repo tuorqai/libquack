@@ -472,10 +472,20 @@ QU_API unsigned int QU_CALL qu_get_texture_flags(qu_texture texture);
  */
 QU_API void QU_CALL qu_set_texture_flags(qu_texture texture, unsigned int flags);
 
-QU_API void QU_CALL qu_draw_texture(qu_texture texture, float x, float y, float w, float h);
-QU_API void QU_CALL qu_draw_texture_r(qu_texture texture, qu_rectf rect);
-QU_API void QU_CALL qu_draw_subtexture(qu_texture texture, float x, float y, float w, float h, float s, float t, float u, float v);
-QU_API void QU_CALL qu_draw_subtexture_r(qu_texture texture, qu_rectf rect, qu_rectf sub);
+/**
+ * Draw texture in given position.
+ */
+QU_API void QU_CALL qu_draw_texture(qu_texture texture, float x, float y);
+
+/**
+ * Draw texture in given position, stretching to a given size.
+ */
+QU_API void QU_CALL qu_draw_texture_ex(qu_texture texture, float x, float y, float w, float h);
+
+/**
+ * Draw portion of a texture inside a given rectangle.
+ */
+QU_API void QU_CALL qu_draw_texture_pro(qu_texture texture, qu_rectf src, qu_rectf dst);
 
 //------------------------------------------------------------------------------
 

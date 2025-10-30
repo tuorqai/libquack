@@ -100,15 +100,15 @@ static void update(double dt)
 static void draw_layer(int texture, float w, float h, float f)
 {
     float x = fmodf(x_camera / f, w);
-    qu_draw_texture(textures[texture], -x, 0.f, w, h);
-    qu_draw_texture(textures[texture], w - x, 0.f, w, h);
+    qu_draw_texture_ex(textures[texture], -x, 0.f, w, h);
+    qu_draw_texture_ex(textures[texture], w - x, 0.f, w, h);
 }
 
 static void draw(void)
 {
     qu_clear(0x202020FF);
 
-    qu_draw_texture(textures[TEXTURE_SKY], -48.f, 0.f, 816.f, 480.f);
+    qu_draw_texture_ex(textures[TEXTURE_SKY], -48.f, 0.f, 816.f, 480.f);
 
     draw_layer(TEXTURE_MOUNTAINS_BG, 816.f, 480.f, 4.f);
     draw_layer(TEXTURE_MOUNTAINS_FG, 1632.f, 480.f, 3.f);
