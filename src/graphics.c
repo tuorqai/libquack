@@ -40,6 +40,7 @@ enum renderop
 {
     RENDEROP_CLEAR,
     RENDEROP_DRAW,
+    RENDEROP_SET_PROJECTION,
     RENDEROP_SET_BLEND_MODE,
 };
 
@@ -58,6 +59,13 @@ struct rendercmd
             size_t count;
             struct libqu_texture *texture;
         } draw;
+
+        struct {
+            float l;
+            float r;
+            float b;
+            float t;
+        } set_projection;
 
         struct {
             qu_blend_mode mode;
@@ -98,6 +106,14 @@ static void exec_cmd(struct rendercmd const *cmd)
     case RENDEROP_DRAW:
         priv.impl->apply_texture(cmd->args.draw.texture);
         priv.impl->draw(cmd->args.draw.mode, cmd->args.draw.vertex, cmd->args.draw.count);
+        break;
+    case RENDEROP_SET_PROJECTION:
+        priv.impl->apply_ortho_proj(
+            cmd->args.set_projection.l,
+            cmd->args.set_projection.r,
+            cmd->args.set_projection.b,
+            cmd->args.set_projection.t
+        );
         break;
     case RENDEROP_SET_BLEND_MODE:
         priv.impl->apply_blend_mode(&cmd->args.set_blend_mode.mode);
@@ -305,6 +321,37 @@ void libqu_graphics_draw_rectangle(qu_vec2f pos, qu_vec2f size, qu_color outline
 
         arrput(priv.rendercmds, cmd);
     }
+}
+
+qu_view libqu_graphics_get_default_view(void)
+{
+    return (qu_view) {
+        .center = {
+            .x = (float) priv.window_size.x / 2.f,
+            .y = (float) priv.window_size.y / 2.f,
+        },
+        .size = {
+            .x = (float) priv.window_size.x,
+            .y = (float) priv.window_size.y,
+        },
+    };
+}
+
+void libqu_graphics_set_view(qu_view view)
+{
+    struct rendercmd cmd = {
+        .op = RENDEROP_SET_PROJECTION,
+        .args = {
+            .set_projection = {
+                .l = view.center.x - view.size.x / 2.f,
+                .r = view.center.x + view.size.x / 2.f,
+                .b = view.center.y + view.size.y / 2.f,
+                .t = view.center.y - view.size.y / 2.f,
+            },
+        },
+    };
+
+    arrput(priv.rendercmds, cmd);
 }
 
 //------------------------------------------------------------------------------

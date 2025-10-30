@@ -338,6 +338,12 @@ typedef struct qu_texture
     qu_handle id;
 } qu_texture;
 
+typedef struct qu_view
+{
+    qu_vec2f center;
+    qu_vec2f size;
+} qu_view;
+
 typedef struct qu_blend_mode
 {
     qu_blend_factor color_src_factor;
@@ -395,6 +401,9 @@ QU_API void QU_CALL qu_draw_point(float x, float y, qu_color color);
 QU_API void QU_CALL qu_draw_line(float ax, float ay, float bx, float by, qu_color color);
 QU_API void QU_CALL qu_draw_triangle(float ax, float ay, float bx, float by, float cx, float cy, qu_color outline, qu_color fill);
 QU_API void QU_CALL qu_draw_rectangle(float x, float y, float w, float h, qu_color outline, qu_color fill);
+
+QU_API void QU_CALL qu_set_view(qu_view view);
+QU_API void QU_CALL qu_reset_view(void);
 
 QU_API qu_image QU_CALL qu_create_image(int width, int height, qu_pixel_format format);
 QU_API qu_image QU_CALL qu_load_image_from_file(char const *path);

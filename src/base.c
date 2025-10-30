@@ -317,6 +317,16 @@ void qu_draw_rectangle(float x, float y, float w, float h, qu_color outline, qu_
     libqu_graphics_draw_rectangle(xy, wh, outline, fill);
 }
 
+void qu_set_view(qu_view view)
+{
+    libqu_graphics_set_view(view);
+}
+
+void qu_reset_view(void)
+{
+    libqu_graphics_set_view(libqu_graphics_get_default_view());
+}
+
 qu_image qu_create_image(int width, int height, qu_pixel_format format)
 {
     qu_image handle = { 0 };
