@@ -165,7 +165,17 @@ if(QU_USE_VORBIS)
     endif()
 
     if(NOT VORBIS_FOUND)
+        set(OGG_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third-party/ogg")
         set(VORBIS_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third-party/vorbis")
+
+        if(EXISTS "${OGG_SOURCE_DIR}/CMakeLists.txt")
+            add_subdirectory(${OGG_SOURCE_DIR} EXCLUDE_FROM_ALL)
+        else()
+            FetchContent_Declare(ogg
+                GIT_REPOSITORY https://github.com/xiph/ogg.git
+                GIT_TAG v1.3.6)
+            FetchContent_MakeAvailable(ogg)
+        endif()
 
         if(EXISTS "${VORBIS_SOURCE_DIR}/CMakeLists.txt")
             add_subdirectory(${VORBIS_SOURCE_DIR} EXCLUDE_FROM_ALL)
