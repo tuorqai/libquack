@@ -327,6 +327,36 @@ void qu_reset_view(void)
     libqu_graphics_set_view(libqu_graphics_get_default_view());
 }
 
+void qu_push(void)
+{
+    libqu_graphics_push();
+}
+
+void qu_pop(void)
+{
+    libqu_graphics_pop();
+}
+
+void qu_origin(void)
+{
+    libqu_graphics_origin();
+}
+
+void qu_translate(float x, float y)
+{
+    libqu_graphics_translate((qu_vec2f) { x, y });
+}
+
+void qu_scale(float sx, float sy)
+{
+    libqu_graphics_scale((qu_vec2f) { sx, sy });
+}
+
+void qu_rotate(float degrees)
+{
+    libqu_graphics_rotate(degrees);
+}
+
 qu_image qu_create_image(int width, int height, qu_pixel_format format)
 {
     qu_image handle = { 0 };

@@ -93,6 +93,24 @@ int main(int argc, char *argv[])
         qu_set_view(view);
         qu_draw_rectangle(128.f, 128.f, 256.f, 256.f, 0, QU_COLOR(r, g, b, 255));
         qu_draw_rectangle(144.f, 144.f, 224.f, 224.f, 0, QU_COLOR(0, 0, 0, 255));
+
+        qu_push();
+        qu_translate(256.f, 256.f);
+        qu_rotate(now * 30.f);
+        qu_draw_rectangle(-16.f, -16.f, 32.f, 32.f, QU_COLOR(255, 0, 0, 255), 0);
+
+        qu_push();
+        qu_translate(-16.f, 0.f);
+        qu_rotate(now * 45.f);
+        qu_draw_rectangle(-4.f, -4.f, 8.f, 8.f, QU_COLOR(255, 0, 0, 255), 0);
+        qu_pop();
+
+        qu_push();
+        qu_translate(16.f, 0.f);
+        qu_rotate(now * 45.f);
+        qu_draw_rectangle(-4.f, -4.f, 8.f, 8.f, QU_COLOR(255, 0, 0, 255), 0);
+        qu_pop();
+
         qu_present();
     }
 

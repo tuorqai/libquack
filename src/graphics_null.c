@@ -82,6 +82,10 @@ static int graphics_null_capture_screen(struct libqu_image *image)
     return 0;
 }
 
+static void graphics_null_set_transform(mat4_t const *transform)
+{
+}
+
 //------------------------------------------------------------------------------
 
 struct libqu_graphics_impl const libqu_graphics_null_impl = {
@@ -98,5 +102,6 @@ struct libqu_graphics_impl const libqu_graphics_null_impl = {
     graphics_null_apply_ortho_proj,
     graphics_null_apply_blend_mode,
     graphics_null_capture_screen,
+    graphics_null_set_transform,
 };
 

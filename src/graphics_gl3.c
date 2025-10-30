@@ -683,6 +683,19 @@ static int graphics_gl3_capture_screen(struct libqu_image *image)
     return 0;
 }
 
+static void graphics_gl3_set_transform(mat4_t const *transform)
+{
+    mat4_copy(&priv.modelview, transform);
+
+    for (int i = 0; i < TOTAL_PROGRAMS; i++) {
+        if (i == priv.current_program) {
+            update_uniform(UNIFORM_MODELVIEW);
+        } else {
+            priv.programs[i].dirty |= UNIFORM_MODELVIEW;
+        }
+    }
+}
+
 //------------------------------------------------------------------------------
 
 struct libqu_graphics_impl const libqu_graphics_gl3_impl = {
@@ -699,6 +712,7 @@ struct libqu_graphics_impl const libqu_graphics_gl3_impl = {
     graphics_gl3_apply_ortho_proj,
     graphics_gl3_apply_blend_mode,
     graphics_gl3_capture_screen,
+    graphics_gl3_set_transform,
 };
 
 //------------------------------------------------------------------------------

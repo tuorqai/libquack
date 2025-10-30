@@ -86,6 +86,10 @@ extern "C" {
 #define QU_EXTRACT_BLUE(color)      (((color) >> 8) & 255)
 #define QU_EXTRACT_ALPHA(color)     ((color) & 255)
 
+#define QU_PI                       3.14159265358979323846
+#define QU_DEG2RAD(deg)             ((deg) * (QU_PI / 180.0))
+#define QU_RAD2DEG(rad)             ((rad) * (180.0 / QU_PI))
+
 #define QU_BLEND_MODE_NONE \
     QU_COMPOUND(qu_blend_mode) { \
         QU_BLEND_ONE, QU_BLEND_ZERO, QU_BLEND_ADD, \
@@ -404,6 +408,13 @@ QU_API void QU_CALL qu_draw_rectangle(float x, float y, float w, float h, qu_col
 
 QU_API void QU_CALL qu_set_view(qu_view view);
 QU_API void QU_CALL qu_reset_view(void);
+
+QU_API void QU_CALL qu_push(void);
+QU_API void QU_CALL qu_pop(void);
+QU_API void QU_CALL qu_origin(void);
+QU_API void QU_CALL qu_translate(float x, float y);
+QU_API void QU_CALL qu_scale(float sx, float sy);
+QU_API void QU_CALL qu_rotate(float degrees);
 
 QU_API qu_image QU_CALL qu_create_image(int width, int height, qu_pixel_format format);
 QU_API qu_image QU_CALL qu_load_image_from_file(char const *path);

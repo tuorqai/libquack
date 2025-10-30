@@ -23,6 +23,7 @@
 
 //------------------------------------------------------------------------------
 
+#include "algebra.h"
 #include "fs.h"
 
 //------------------------------------------------------------------------------
@@ -80,6 +81,7 @@ struct libqu_graphics_impl
     void (*apply_ortho_proj)(float l, float r, float b, float t);
     void (*apply_blend_mode)(qu_blend_mode const *mode);
     int (*capture_screen)(struct libqu_image *image);
+    void (*set_transform)(mat4_t const *transform);
 };
 
 //------------------------------------------------------------------------------
@@ -103,6 +105,13 @@ void libqu_graphics_draw_rectangle(qu_vec2f pos, qu_vec2f size, qu_color outline
 
 qu_view libqu_graphics_get_default_view(void);
 void libqu_graphics_set_view(qu_view view);
+
+void libqu_graphics_push(void);
+void libqu_graphics_pop(void);
+void libqu_graphics_origin(void);
+void libqu_graphics_translate(qu_vec2f v);
+void libqu_graphics_scale(qu_vec2f s);
+void libqu_graphics_rotate(float degrees);
 
 struct libqu_image *libqu_image_create(qu_pixel_format format, qu_vec2i size);
 struct libqu_image *libqu_image_copy_flipped(struct libqu_image *image);
