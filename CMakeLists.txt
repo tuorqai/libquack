@@ -166,16 +166,21 @@ if(QU_USE_VORBIS)
 
     if(NOT VORBIS_FOUND)
         set(OGG_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third-party/ogg")
+        set(OGG_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/third-party/ogg")
         set(VORBIS_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third-party/vorbis")
 
         if(EXISTS "${OGG_SOURCE_DIR}/CMakeLists.txt")
-            add_subdirectory(${OGG_SOURCE_DIR} EXCLUDE_FROM_ALL)
+            add_subdirectory(${OGG_SOURCE_DIR} ${OGG_BINARY_DIR} EXCLUDE_FROM_ALL)
+            set(OGG_INCLUDE_DIR ${OGG_SOURCE_DIR}/include ${OGG_BINARY_DIR}/include)
         else()
             FetchContent_Declare(ogg
                 GIT_REPOSITORY https://github.com/xiph/ogg.git
                 GIT_TAG v1.3.6)
             FetchContent_MakeAvailable(ogg)
+            set(OGG_INCLUDE_DIR ${ogg_SOURCE_DIR}/include ${ogg_BINARY_DIR}/include)
         endif()
+
+        set(OGG_LIBRARY $<TARGET_FILE:ogg>)
 
         if(EXISTS "${VORBIS_SOURCE_DIR}/CMakeLists.txt")
             add_subdirectory(${VORBIS_SOURCE_DIR} EXCLUDE_FROM_ALL)
