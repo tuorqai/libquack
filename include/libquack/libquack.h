@@ -435,7 +435,7 @@ QU_API void QU_CALL qu_set_default_texture_flags(unsigned int flags);
 /**
  * Open an image from file and load it into a texture.
  */
-QU_API qu_texture QU_CALL qu_load_texture_from_file(char const *path);
+QU_API qu_texture QU_CALL qu_load_texture(char const *path);
 
 /**
  * Open an image from memory buffer and load it into a texture.

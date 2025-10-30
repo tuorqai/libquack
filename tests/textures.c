@@ -61,7 +61,7 @@ static void load_textures(void)
     qu_set_default_texture_flags(0);
 
     for (int i = 0; i < TOTAL_TEXTURES; i++) {
-        textures[i] = qu_load_texture_from_file(paths[i]);
+        textures[i] = qu_load_texture(paths[i]);
         printf("%s -> %d\n", paths[i], textures[i].id);
     }
 }

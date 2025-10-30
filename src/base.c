@@ -451,7 +451,7 @@ void qu_set_default_texture_flags(unsigned int flags)
     libqu_graphics_set_default_texture_flags(flags);
 }
 
-qu_texture qu_load_texture_from_file(char const *path)
+qu_texture qu_load_texture(char const *path)
 {
     qu_texture texture_h = { 0 };
 
