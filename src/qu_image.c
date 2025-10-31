@@ -113,9 +113,9 @@ libqu_image *libqu_image_create(qu_pixel_format format, qu_vec2i size)
     return NULL;
 }
 
-struct libqu_image *libqu_image_copy_flipped(struct libqu_image *image)
+libqu_image *libqu_image_copy_flipped(libqu_image *image)
 {
-    struct libqu_image *copy = libqu_image_create(image->format, image->size);
+    libqu_image *copy = libqu_image_create(image->format, image->size);
 
     if (!copy) {
         return NULL;
@@ -162,13 +162,13 @@ libqu_image *libqu_image_load(struct libqu_file *file)
     return image;
 }
 
-void libqu_image_destroy(struct libqu_image *image)
+void libqu_image_destroy(libqu_image *image)
 {
     pl_free(image->pixels);
     pl_free(image);
 }
 
-void libqu_image_flip(struct libqu_image *image)
+void libqu_image_flip(libqu_image *image)
 {
     int w = image->size.x;
     int h = image->size.y;
