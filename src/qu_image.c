@@ -26,6 +26,7 @@
 #include "qu_image.h"
 
 //------------------------------------------------------------------------------
+// custom file-reading callbacks for stb_image
 
 static int _stbi_io_read(struct libqu_file *file, char *data, int size)
 {
@@ -53,6 +54,7 @@ static stbi_io_callbacks const _stbi_io = {
 };
 
 //------------------------------------------------------------------------------
+// these functions don't make much sense rn
 
 static int pixfmt_to_channels(qu_pixel_format format)
 {
