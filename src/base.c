@@ -25,6 +25,7 @@
 #include "handle.h"
 #include "log.h"
 #include "platform.h"
+#include "qu_image.h"
 
 //------------------------------------------------------------------------------
 

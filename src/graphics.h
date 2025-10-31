@@ -25,6 +25,7 @@
 
 #include "algebra.h"
 #include "fs.h"
+#include "qu_image.h"
 
 //------------------------------------------------------------------------------
 
@@ -45,13 +46,6 @@ struct libqu_vertex
     qu_vec2f pos;
     qu_color color;
     qu_vec2f texcoord;
-};
-
-struct libqu_image
-{
-    qu_pixel_format format;
-    qu_vec2i size;
-    unsigned char *pixels;
 };
 
 struct libqu_texture
@@ -112,12 +106,6 @@ void libqu_graphics_origin(void);
 void libqu_graphics_translate(qu_vec2f v);
 void libqu_graphics_scale(qu_vec2f s);
 void libqu_graphics_rotate(float degrees);
-
-struct libqu_image *libqu_image_create(qu_pixel_format format, qu_vec2i size);
-struct libqu_image *libqu_image_copy_flipped(struct libqu_image *image);
-struct libqu_image *libqu_image_load(struct libqu_file *file);
-void libqu_image_destroy(struct libqu_image *image);
-void libqu_image_flip(struct libqu_image *image);
 
 void libqu_graphics_set_default_texture_flags(unsigned int flags);
 struct libqu_texture *libqu_graphics_load_texture(struct libqu_image *image);
