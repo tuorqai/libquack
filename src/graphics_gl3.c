@@ -369,6 +369,26 @@ static bool load_programs(void)
     return true;
 }
 
+static void update_uniform(int uniform)
+{
+    switch (uniform) {
+    case UNIFORM_PROJECTION:
+        _GL(glUniformMatrix4fv(
+            priv.programs[priv.current_program].uniloc[UNIFORM_PROJECTION],
+            1, GL_FALSE, priv.projection.m
+        ));
+        break;
+    case UNIFORM_MODELVIEW:
+        _GL(glUniformMatrix4fv(
+            priv.programs[priv.current_program].uniloc[UNIFORM_MODELVIEW],
+            1, GL_FALSE, priv.modelview.m
+        ));
+        break;
+    default:
+        break;
+    }
+}
+
 static void apply_program(int program)
 {
     if (priv.current_program == program) {
@@ -379,18 +399,10 @@ static void apply_program(int program)
 
     _GL(glUseProgram(priv.programs[program].id));
 
-    if (priv.programs[program].dirty & (1 << UNIFORM_PROJECTION)) {
-        _GL(glUniformMatrix4fv(
-            priv.programs[program].uniloc[UNIFORM_PROJECTION],
-            1, GL_FALSE, priv.projection.m
-        ));
-    }
-
-    if (priv.programs[program].dirty & (1 << UNIFORM_MODELVIEW)) {
-        _GL(glUniformMatrix4fv(
-            priv.programs[program].uniloc[UNIFORM_MODELVIEW],
-            1, GL_FALSE, priv.modelview.m
-        ));
+    for (int i = 0; i < TOTAL_UNIFORMS; i++) {
+        if (priv.programs[program].dirty & (1 << i)) {
+            update_uniform(i);
+        }
     }
 
     priv.programs[program].dirty = 0;
@@ -611,6 +623,10 @@ static int graphics_gl3_load_texture(struct libqu_texture *texture)
 
     texture->priv[0] = (uintptr_t) id;
 
+	if (priv.current_program != PROGRAM_TEXTURED) {
+		apply_program(PROGRAM_TEXTURED);
+	}
+
     return 0;
 }
 
@@ -635,6 +651,19 @@ static void graphics_gl3_apply_texture(struct libqu_texture *texture)
     apply_texture(texture);
 }
 
+static void graphics_gl3_apply_ortho_proj(float l, float r, float b, float t)
+{
+    mat4_ortho(&priv.projection, l, r, b, t);
+
+    for (int i = 0; i < TOTAL_PROGRAMS; i++) {
+        if (i == priv.current_program) {
+            update_uniform(UNIFORM_PROJECTION);
+        } else {
+            priv.programs[i].dirty |= UNIFORM_PROJECTION;
+        }
+    }
+}
+
 static void graphics_gl3_apply_blend_mode(qu_blend_mode const *mode)
 {
     GLenum csf, cdf, asf, adf, ceq, aeq;
@@ -654,6 +683,19 @@ static int graphics_gl3_capture_screen(struct libqu_image *image)
     return 0;
 }
 
+static void graphics_gl3_set_transform(mat4_t const *transform)
+{
+    mat4_copy(&priv.modelview, transform);
+
+    for (int i = 0; i < TOTAL_PROGRAMS; i++) {
+        if (i == priv.current_program) {
+            update_uniform(UNIFORM_MODELVIEW);
+        } else {
+            priv.programs[i].dirty |= UNIFORM_MODELVIEW;
+        }
+    }
+}
+
 //------------------------------------------------------------------------------
 
 struct libqu_graphics_impl const libqu_graphics_gl3_impl = {
@@ -667,8 +709,10 @@ struct libqu_graphics_impl const libqu_graphics_gl3_impl = {
     graphics_gl3_destroy_texture,
     graphics_gl3_update_texture_flags,
     graphics_gl3_apply_texture,
+    graphics_gl3_apply_ortho_proj,
     graphics_gl3_apply_blend_mode,
     graphics_gl3_capture_screen,
+    graphics_gl3_set_transform,
 };
 
 //------------------------------------------------------------------------------

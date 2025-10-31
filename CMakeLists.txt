@@ -1,30 +1,43 @@
 
-cmake_minimum_required(VERSION 3.5)
-
 #-------------------------------------------------------------------------------
+# libquack
 
-set(QU_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/include/libquack/libquack.h")
-
-set(QU_VERSION_MAJOR_REGEX "#define[ \t]+QU_VERSION_MAJOR[ \t]+([0-9]+)")
-set(QU_VERSION_MINOR_REGEX "#define[ \t]+QU_VERSION_MINOR[ \t]+([0-9]+)")
-set(QU_VERSION_PATCH_REGEX "#define[ \t]+QU_VERSION_PATCH[ \t]+([0-9]+)")
-
-file(STRINGS ${QU_HEADER} QU_VERSION_MAJOR REGEX ${QU_VERSION_MAJOR_REGEX})
-file(STRINGS ${QU_HEADER} QU_VERSION_MINOR REGEX ${QU_VERSION_MINOR_REGEX})
-file(STRINGS ${QU_HEADER} QU_VERSION_PATCH REGEX ${QU_VERSION_PATCH_REGEX})
-
-string(REGEX REPLACE ${QU_VERSION_MAJOR_REGEX} "\\1" QU_VERSION_MAJOR ${QU_VERSION_MAJOR})
-string(REGEX REPLACE ${QU_VERSION_MINOR_REGEX} "\\1" QU_VERSION_MINOR ${QU_VERSION_MINOR})
-string(REGEX REPLACE ${QU_VERSION_PATCH_REGEX} "\\1" QU_VERSION_PATCH ${QU_VERSION_PATCH})
-
-#-------------------------------------------------------------------------------
+cmake_minimum_required(VERSION 3.14)
 
 project(libquack
-    VERSION "${QU_VERSION_MAJOR}.${QU_VERSION_MINOR}.${QU_VERSION_PATCH}")
+    VERSION 0.1.0)
 
 #-------------------------------------------------------------------------------
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
+find_package(Git QUIET)
+
+if(GIT_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
+    execute_process(
+        COMMAND ${GIT_EXECUTABLE} describe --tags --dirty --always --match "v*"
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        OUTPUT_VARIABLE GIT_DESCRIBE
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+endif()
+
+if(GIT_DESCRIBE)
+    if(GIT_DESCRIBE MATCHES "^v?${PROJECT_VERSION}$")
+        set(VERBOSE_VERSION "${PROJECT_VERSION}")
+    else()
+        string(REGEX REPLACE "^v${PROJECT_VERSION}-" "" GIT_SUFFIX "${GIT_DESCRIBE}")
+        set(VERBOSE_VERSION "${PROJECT_VERSION}-git-${GIT_SUFFIX}")
+    endif()
+else()
+    set(VERBOSE_VERSION "${PROJECT_VERSION}")
+endif()
+
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/libquack/libquack-version.h.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/include/libquack/libquack-version.h"
+    @ONLY)
+
+#-------------------------------------------------------------------------------
+
+# list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 
 include(CMakeDependentOption)
 include(CMakePackageConfigHelpers)
@@ -41,6 +54,8 @@ option(QU_USE_VORBIS "Use Vorbis" ON)
 option(QU_USE_ASAN "Use AddressSanitizer" OFF)
 option(QU_USE_UBSAN "Use UndefinedBehaviorSanitizer" OFF)
 option(QU_USE_TSAN "Use ThreadSanitizer" OFF)
+
+option(QU_USE_SYSTEM_VORBIS "Use system Vorbis instead of vendored" OFF)
 
 #-------------------------------------------------------------------------------
 
@@ -62,16 +77,18 @@ add_library(libquack
     src/log.c
     src/platform_posix.c
     src/platform_win32.c
+    src/qu_image.c
     src/util.c)
 
 add_library(libquack::libquack ALIAS libquack)
 
 target_include_directories(libquack
     PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include/libquack>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/libquack>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/libquack>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/libquack>
     PRIVATE
-        ${CMAKE_SOURCE_DIR}/third-party)
+        ${CMAKE_CURRENT_SOURCE_DIR}/third-party)
 
 set_target_properties(libquack
     PROPERTIES
@@ -119,6 +136,8 @@ endif()
 #-------------------------------------------------------------------------------
 # Dependencies
 
+include(FetchContent)
+
 set(_QU_PC_LIBS "-lquack")
 set(_QU_PC_LIBS_PRIVATE "")
 set(_QU_PC_REQUIRES_PRIVATE "")
@@ -163,11 +182,45 @@ if(QU_USE_OPENAL)
     target_include_directories(libquack PRIVATE "third-party/al")
 endif()
 
+#
+# xiph/vorbis
+#
 if(QU_USE_VORBIS)
-    find_package(Vorbis REQUIRED)
+    if(QU_USE_SYSTEM_VORBIS)
+        find_package(Vorbis REQUIRED)
+        list(APPEND _QU_PC_REQUIRES_PRIVATE "vorbisfile")
+    endif()
+
+    if(NOT VORBIS_FOUND)
+        set(OGG_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third-party/ogg")
+        set(OGG_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/third-party/ogg")
+        set(VORBIS_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third-party/vorbis")
+
+        if(EXISTS "${OGG_SOURCE_DIR}/CMakeLists.txt")
+            add_subdirectory(${OGG_SOURCE_DIR} ${OGG_BINARY_DIR} EXCLUDE_FROM_ALL)
+            set(OGG_INCLUDE_DIR ${OGG_SOURCE_DIR}/include ${OGG_BINARY_DIR}/include)
+        else()
+            FetchContent_Declare(ogg
+                GIT_REPOSITORY https://github.com/xiph/ogg.git
+                GIT_TAG v1.3.6)
+            FetchContent_MakeAvailable(ogg)
+            set(OGG_INCLUDE_DIR ${ogg_SOURCE_DIR}/include ${ogg_BINARY_DIR}/include)
+        endif()
+
+        set(OGG_LIBRARY $<TARGET_FILE:ogg>)
+
+        if(EXISTS "${VORBIS_SOURCE_DIR}/CMakeLists.txt")
+            add_subdirectory(${VORBIS_SOURCE_DIR} EXCLUDE_FROM_ALL)
+        else()
+            FetchContent_Declare(vorbis
+                GIT_REPOSITORY https://github.com/xiph/vorbis.git
+                GIT_TAG v1.3.7)
+            FetchContent_MakeAvailable(vorbis)
+        endif()
+    endif()
+
     target_compile_definitions(libquack PRIVATE QU_USE_VORBIS)
-    target_link_libraries(libquack PRIVATE Vorbis::vorbisfile)
-    list(APPEND _QU_PC_REQUIRES_PRIVATE "vorbisfile")
+    target_link_libraries(libquack PRIVATE vorbisfile)
 endif()
 
 if(WIN32)
@@ -178,7 +231,7 @@ endif()
 #-------------------------------------------------------------------------------
 # Set installation paths
 
-set(QU_INCLUDE_PATH "${CMAKE_INSTALL_INCLUDEDIR}"
+set(QU_INCLUDE_PATH "${CMAKE_INSTALL_INCLUDEDIR}/libquack"
     CACHE PATH "Location of libquack header files")
 
 set(QU_LIBRARY_PATH "${CMAKE_INSTALL_LIBDIR}"
@@ -228,7 +281,9 @@ endif()
 #-------------------------------------------------------------------------------
 # Installation
 
-install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/libquack"
+install(FILES
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/libquack/libquack.h"
+    "${CMAKE_CURRENT_BINARY_DIR}/include/libquack/libquack-version.h"
     DESTINATION ${QU_INCLUDE_PATH})
 
 install(TARGETS libquack

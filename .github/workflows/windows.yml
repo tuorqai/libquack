@@ -25,7 +25,7 @@ jobs:
       uses: actions/checkout@v3
 
     - name: Configure
-      run: cmake -B build ${{ matrix.type.flags }} ${{ matrix.arch.flags }} -DQU_USE_VORBIS=0
+      run: cmake -B build ${{ matrix.type.flags }} ${{ matrix.arch.flags }}
 
     - name: Build (Debug)
       run: cmake --build build --config Debug
@@ -39,12 +39,12 @@ jobs:
     - name: Install (Release)
       run: cmake --install build --config Release --prefix install/release/libquack
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: libquack-windows-${{ matrix.type.name }}-${{ matrix.arch.name }}-${{ github.sha }}-debug
         path: install/debug/*
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: libquack-windows-${{ matrix.type.name }}-${{ matrix.arch.name }}-${{ github.sha }}-release
         path: install/release/*

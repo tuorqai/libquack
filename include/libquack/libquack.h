@@ -27,11 +27,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-//------------------------------------------------------------------------------
-
-#define QU_VERSION_MAJOR        0
-#define QU_VERSION_MINOR        1
-#define QU_VERSION_PATCH        0
+#include <libquack-version.h>
 
 //------------------------------------------------------------------------------
 
@@ -89,6 +85,10 @@ extern "C" {
 #define QU_EXTRACT_GREEN(color)     (((color) >> 16) & 255)
 #define QU_EXTRACT_BLUE(color)      (((color) >> 8) & 255)
 #define QU_EXTRACT_ALPHA(color)     ((color) & 255)
+
+#define QU_PI                       3.14159265358979323846
+#define QU_DEG2RAD(deg)             ((deg) * (QU_PI / 180.0))
+#define QU_RAD2DEG(rad)             ((rad) * (180.0 / QU_PI))
 
 #define QU_BLEND_MODE_NONE \
     QU_COMPOUND(qu_blend_mode) { \
@@ -342,6 +342,12 @@ typedef struct qu_texture
     qu_handle id;
 } qu_texture;
 
+typedef struct qu_view
+{
+    qu_vec2f center;
+    qu_vec2f size;
+} qu_view;
+
 typedef struct qu_blend_mode
 {
     qu_blend_factor color_src_factor;
@@ -405,27 +411,80 @@ QU_API void QU_CALL qu_draw_line(float ax, float ay, float bx, float by, qu_colo
 QU_API void QU_CALL qu_draw_triangle(float ax, float ay, float bx, float by, float cx, float cy, qu_color outline, qu_color fill);
 QU_API void QU_CALL qu_draw_rectangle(float x, float y, float w, float h, qu_color outline, qu_color fill);
 
-QU_API qu_image QU_CALL qu_create_image(int width, int height, qu_pixel_format format);
-QU_API qu_image QU_CALL qu_load_image_from_file(char const *path);
-QU_API qu_image QU_CALL qu_load_image_from_buffer(void *buffer, size_t size);
-QU_API void QU_CALL qu_destroy_image(qu_image image);
-QU_API qu_vec2i QU_CALL qu_get_image_size(qu_image image);
-QU_API qu_pixel_format QU_CALL qu_get_image_format(qu_image image);
-QU_API unsigned char * QU_CALL qu_get_image_pixels(qu_image image);
+QU_API void QU_CALL qu_set_view(qu_view view);
+QU_API void QU_CALL qu_reset_view(void);
 
+QU_API void QU_CALL qu_push(void);
+QU_API void QU_CALL qu_pop(void);
+QU_API void QU_CALL qu_origin(void);
+QU_API void QU_CALL qu_translate(float x, float y);
+QU_API void QU_CALL qu_scale(float sx, float sy);
+QU_API void QU_CALL qu_rotate(float degrees);
+
+//------------------------------------------------------------------------------
+// Graphics: Textures
+
+/**
+ * Set options for textures that are going to be loaded next.
+ */
 QU_API void QU_CALL qu_set_default_texture_flags(unsigned int flags);
-QU_API qu_texture QU_CALL qu_load_texture_from_file(char const *path);
+
+/**
+ * Open an image from file and load it into a texture.
+ */
+QU_API qu_texture QU_CALL qu_load_texture(char const *path);
+
+/**
+ * Open an image from memory buffer and load it into a texture.
+ */
 QU_API qu_texture QU_CALL qu_load_texture_from_buffer(void *buffer, size_t size);
+
+/**
+ * Load texture from an existing image object.
+ */
 QU_API qu_texture QU_CALL qu_load_texture_from_image(qu_image image);
+
+/**
+ * Destroy texture object freeing its resources.
+ */
 QU_API void QU_CALL qu_destroy_texture(qu_texture texture);
+
+/**
+ * Get size of a texture in pixels.
+ */
 QU_API qu_vec2i QU_CALL qu_get_texture_size(qu_texture texture);
+
+/**
+ * Get pixel format (effectively the number of channels) of a texture.
+ */
 QU_API qu_pixel_format QU_CALL qu_get_texture_format(qu_texture texture);
+
+/**
+ * Get which options a texture currently has.
+ */
 QU_API unsigned int QU_CALL qu_get_texture_flags(qu_texture texture);
+
+/**
+ * Set texture options.
+ */
 QU_API void QU_CALL qu_set_texture_flags(qu_texture texture, unsigned int flags);
-QU_API void QU_CALL qu_draw_texture(qu_texture texture, float x, float y, float w, float h);
-QU_API void QU_CALL qu_draw_texture_r(qu_texture texture, qu_rectf rect);
-QU_API void QU_CALL qu_draw_subtexture(qu_texture texture, float x, float y, float w, float h, float s, float t, float u, float v);
-QU_API void QU_CALL qu_draw_subtexture_r(qu_texture texture, qu_rectf rect, qu_rectf sub);
+
+/**
+ * Draw texture in given position.
+ */
+QU_API void QU_CALL qu_draw_texture(qu_texture texture, float x, float y);
+
+/**
+ * Draw texture in given position, stretching to a given size.
+ */
+QU_API void QU_CALL qu_draw_texture_ex(qu_texture texture, float x, float y, float w, float h);
+
+/**
+ * Draw portion of a texture inside a given rectangle.
+ */
+QU_API void QU_CALL qu_draw_texture_pro(qu_texture texture, qu_rectf src, qu_rectf dst);
+
+//------------------------------------------------------------------------------
 
 QU_API qu_image QU_CALL qu_capture_screen(void);
 
@@ -465,6 +524,44 @@ QU_API void QU_CALL qu_stop_music(qu_music music);
 QU_API double QU_CALL qu_get_music_duration(qu_music music);
 QU_API double QU_CALL qu_get_music_position(qu_music music);
 QU_API void QU_CALL qu_seek_music(qu_music music, double sec);
+
+//------------------------------------------------------------------------------
+// Images
+
+/**
+ * Create blank image object.
+ */
+QU_API qu_image QU_CALL qu_create_image(int width, int height, qu_pixel_format format);
+
+/**
+ * Open an image file and load image from it.
+ */
+QU_API qu_image QU_CALL qu_load_image(char const *path);
+
+/**
+ * Load image from memory buffer.
+ */
+QU_API qu_image QU_CALL qu_load_image_from_buffer(void *buffer, size_t size);
+
+/**
+ * Destroy image object freeing its resources.
+ */
+QU_API void QU_CALL qu_destroy_image(qu_image image);
+
+/**
+ * Get image size in pixels.
+ */
+QU_API qu_vec2i QU_CALL qu_get_image_size(qu_image image);
+
+/**
+ * Get pixel format (effectively number of channels) of an image.
+ */
+QU_API qu_pixel_format QU_CALL qu_get_image_format(qu_image image);
+
+/**
+ * Get pointer to underlying pixel array of image object.
+ */
+QU_API unsigned char * QU_CALL qu_get_image_pixels(qu_image image);
 
 //------------------------------------------------------------------------------
 

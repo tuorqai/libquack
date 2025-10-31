@@ -25,14 +25,9 @@
 #include "handle.h"
 #include "log.h"
 #include "platform.h"
+#include "qu_image.h"
 
 //------------------------------------------------------------------------------
-
-#define EXPAND_VERSION_STRING(major, minor, patch) \
-    #major "." #minor "." #patch
-
-#define VERSION_STRING(major, minor, patch) \
-    EXPAND_VERSION_STRING(major, minor, patch)
 
 #define QU_SOUND_NONE \
     (qu_sound) { .id = 0 }
@@ -117,7 +112,7 @@ static void initialize_extra(unsigned int extra)
 
 char const *qu_get_version(void)
 {
-    return VERSION_STRING(QU_VERSION_MAJOR, QU_VERSION_MINOR, QU_VERSION_PATCH);
+    return QU_VERBOSE_VERSION;
 }
 
 void qu_initialize(void)
@@ -323,6 +318,46 @@ void qu_draw_rectangle(float x, float y, float w, float h, qu_color outline, qu_
     libqu_graphics_draw_rectangle(xy, wh, outline, fill);
 }
 
+void qu_set_view(qu_view view)
+{
+    libqu_graphics_set_view(view);
+}
+
+void qu_reset_view(void)
+{
+    libqu_graphics_set_view(libqu_graphics_get_default_view());
+}
+
+void qu_push(void)
+{
+    libqu_graphics_push();
+}
+
+void qu_pop(void)
+{
+    libqu_graphics_pop();
+}
+
+void qu_origin(void)
+{
+    libqu_graphics_origin();
+}
+
+void qu_translate(float x, float y)
+{
+    libqu_graphics_translate((qu_vec2f) { x, y });
+}
+
+void qu_scale(float sx, float sy)
+{
+    libqu_graphics_scale((qu_vec2f) { sx, sy });
+}
+
+void qu_rotate(float degrees)
+{
+    libqu_graphics_rotate(degrees);
+}
+
 qu_image qu_create_image(int width, int height, qu_pixel_format format)
 {
     qu_image handle = { 0 };
@@ -336,7 +371,10 @@ qu_image qu_create_image(int width, int height, qu_pixel_format format)
     return handle;
 }
 
-qu_image qu_load_image_from_file(char const *path)
+//------------------------------------------------------------------------------
+// [image]
+
+qu_image qu_load_image(char const *path)
 {
     qu_image handle = { 0 };
     struct libqu_file *file = libqu_fopen(path);
@@ -412,12 +450,14 @@ unsigned char *qu_get_image_pixels(qu_image handle)
     return NULL;
 }
 
+//------------------------------------------------------------------------------
+
 void qu_set_default_texture_flags(unsigned int flags)
 {
     libqu_graphics_set_default_texture_flags(flags);
 }
 
-qu_texture qu_load_texture_from_file(char const *path)
+qu_texture qu_load_texture(char const *path)
 {
     qu_texture texture_h = { 0 };
 
@@ -536,48 +576,47 @@ void qu_set_texture_flags(qu_texture texture_h, unsigned int flags)
     }
 }
 
-void qu_draw_texture(qu_texture texture_h, float x, float y, float w, float h)
+void qu_draw_texture(qu_texture texture_h, float x, float y)
 {
     struct libqu_texture *texture =
         libqu_handle_get(LIBQU_HANDLE_TEXTURE, texture_h.id);
     
     if (texture) {
-        qu_rectf rect = { x, y, w, h };
-        libqu_graphics_draw_texture(texture, rect);
+        qu_rectf dst = {
+            .x = x,
+            .y = y,
+            .w = texture->image->size.x,
+            .h = texture->image->size.y,
+        };
+
+        libqu_graphics_draw_texture(texture, dst);
     }
 }
 
-void qu_draw_texture_r(qu_texture texture_h, qu_rectf rect)
+void qu_draw_texture_ex(qu_texture texture_h, float x, float y, float w, float h)
 {
     struct libqu_texture *texture =
         libqu_handle_get(LIBQU_HANDLE_TEXTURE, texture_h.id);
     
     if (texture) {
-        libqu_graphics_draw_texture(texture, rect);
+        qu_rectf dst = {
+            .x = x,
+            .y = y,
+            .w = w,
+            .h = h,
+        };
+
+        libqu_graphics_draw_texture(texture, dst);
     }
 }
 
-void qu_draw_subtexture(qu_texture texture_h,
-    float x, float y, float w, float h,
-    float s, float t, float u, float v)
+void qu_draw_texture_pro(qu_texture texture_h, qu_rectf src, qu_rectf dst)
 {
     struct libqu_texture *texture =
         libqu_handle_get(LIBQU_HANDLE_TEXTURE, texture_h.id);
     
     if (texture) {
-        qu_rectf rect = { x, y, w, h };
-        qu_rectf sub = { s, t, u, v };
-        libqu_graphics_draw_subtexture(texture, rect, sub);
-    }
-}
-
-void qu_draw_subtexture_r(qu_texture texture_h, qu_rectf rect, qu_rectf sub)
-{
-    struct libqu_texture *texture =
-        libqu_handle_get(LIBQU_HANDLE_TEXTURE, texture_h.id);
-    
-    if (texture) {
-        libqu_graphics_draw_subtexture(texture, rect, sub);
+        libqu_graphics_draw_subtexture(texture, dst, src);
     }
 }
 

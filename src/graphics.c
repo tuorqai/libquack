@@ -26,6 +26,10 @@
 
 //------------------------------------------------------------------------------
 
+#define MAX_MATRICES            256
+
+//------------------------------------------------------------------------------
+
 static struct libqu_graphics_impl const *impl_list[] = {
 #ifdef QU_USE_OPENGL
     &libqu_graphics_gl3_impl,
@@ -40,7 +44,19 @@ enum renderop
 {
     RENDEROP_CLEAR,
     RENDEROP_DRAW,
+    RENDEROP_SET_PROJECTION,
+    RENDEROP_MATRIX,
     RENDEROP_SET_BLEND_MODE,
+};
+
+enum matrixop
+{
+    MATRIXOP_PUSH,
+    MATRIXOP_POP,
+    MATRIXOP_ORIGIN,
+    MATRIXOP_TRANSLATE,
+    MATRIXOP_SCALE,
+    MATRIXOP_ROTATE,
 };
 
 struct rendercmd
@@ -60,6 +76,19 @@ struct rendercmd
         } draw;
 
         struct {
+            int matrixop;
+            float x;
+            float y;
+        } matrix;
+
+        struct {
+            float l;
+            float r;
+            float b;
+            float t;
+        } set_projection;
+
+        struct {
             qu_blend_mode mode;
         } set_blend_mode;
     } args;
@@ -70,6 +99,8 @@ static struct
     struct libqu_graphics_impl const *impl;
     struct libqu_vertex *vertbuf;
     struct rendercmd *rendercmds;
+    mat4_t matrices[MAX_MATRICES];
+    size_t current_matrix;
     unsigned int default_texture_flags;
     qu_vec2i window_size;
 } priv;
@@ -89,6 +120,47 @@ static struct libqu_graphics_impl const *choose_impl(void)
     abort();
 }
 
+static void exec_renderop_matrix(int matrixop, float x, float y)
+{
+    switch (matrixop) {
+    case MATRIXOP_PUSH:
+        if (priv.current_matrix < MAX_MATRICES - 1) {
+            priv.current_matrix++;
+            mat4_copy(
+                &priv.matrices[priv.current_matrix],
+                &priv.matrices[priv.current_matrix - 1]
+            );
+        } else {
+            LIBQU_LOGW("matrix stack overflow!\n");
+        }
+        break;
+    case MATRIXOP_POP:
+        if (priv.current_matrix > 0) {
+            priv.current_matrix--;
+            priv.impl->set_transform(&priv.matrices[priv.current_matrix]);
+        } else {
+            LIBQU_LOGW("matrix stack underflow!\n");
+        }
+        break;
+    case MATRIXOP_ORIGIN:
+        mat4_identity(&priv.matrices[priv.current_matrix]);
+        priv.impl->set_transform(&priv.matrices[priv.current_matrix]);
+        break;
+    case MATRIXOP_TRANSLATE:
+        mat4_translate(&priv.matrices[priv.current_matrix], x, y, 0.f);
+        priv.impl->set_transform(&priv.matrices[priv.current_matrix]);
+        break;
+    case MATRIXOP_SCALE:
+        mat4_scale(&priv.matrices[priv.current_matrix], x, y, 1.f);
+        priv.impl->set_transform(&priv.matrices[priv.current_matrix]);
+        break;
+    case MATRIXOP_ROTATE:
+        mat4_rotate(&priv.matrices[priv.current_matrix], x, 0.f, 0.f, 1.f);
+        priv.impl->set_transform(&priv.matrices[priv.current_matrix]);
+        break;
+    }
+}
+
 static void exec_cmd(struct rendercmd const *cmd)
 {
     switch (cmd->op) {
@@ -98,6 +170,18 @@ static void exec_cmd(struct rendercmd const *cmd)
     case RENDEROP_DRAW:
         priv.impl->apply_texture(cmd->args.draw.texture);
         priv.impl->draw(cmd->args.draw.mode, cmd->args.draw.vertex, cmd->args.draw.count);
+        break;
+    case RENDEROP_SET_PROJECTION:
+        priv.impl->apply_ortho_proj(
+            cmd->args.set_projection.l,
+            cmd->args.set_projection.r,
+            cmd->args.set_projection.b,
+            cmd->args.set_projection.t
+        );
+        break;
+    case RENDEROP_MATRIX:
+        exec_renderop_matrix(cmd->args.matrix.matrixop,
+            cmd->args.matrix.x, cmd->args.matrix.y);
         break;
     case RENDEROP_SET_BLEND_MODE:
         priv.impl->apply_blend_mode(&cmd->args.set_blend_mode.mode);
@@ -153,6 +237,10 @@ void libqu_graphics_flush(void)
 
     arrsetlen(priv.vertbuf, 0);
     arrsetlen(priv.rendercmds, 0);
+
+    priv.current_matrix = 0;
+    mat4_identity(&priv.matrices[0]);
+    priv.impl->set_transform(&priv.matrices[0]);
 }
 
 void libqu_graphics_clear(qu_color color)
@@ -307,169 +395,124 @@ void libqu_graphics_draw_rectangle(qu_vec2f pos, qu_vec2f size, qu_color outline
     }
 }
 
-//------------------------------------------------------------------------------
-
-static int _stbi_io_read(struct libqu_file *file, char *data, int size)
+qu_view libqu_graphics_get_default_view(void)
 {
-    return (int) libqu_fread(data, size, file);
+    return (qu_view) {
+        .center = {
+            .x = (float) priv.window_size.x / 2.f,
+            .y = (float) priv.window_size.y / 2.f,
+        },
+        .size = {
+            .x = (float) priv.window_size.x,
+            .y = (float) priv.window_size.y,
+        },
+    };
 }
 
-static void _stbi_io_skip(struct libqu_file *file, int n)
+void libqu_graphics_set_view(qu_view view)
 {
-    libqu_fseek(file, n, SEEK_CUR);
+    struct rendercmd cmd = {
+        .op = RENDEROP_SET_PROJECTION,
+        .args = {
+            .set_projection = {
+                .l = view.center.x - view.size.x / 2.f,
+                .r = view.center.x + view.size.x / 2.f,
+                .b = view.center.y + view.size.y / 2.f,
+                .t = view.center.y - view.size.y / 2.f,
+            },
+        },
+    };
+
+    arrput(priv.rendercmds, cmd);
 }
 
-static int _stbi_io_eof(struct libqu_file *file)
+void libqu_graphics_push(void)
 {
-    return libqu_ftell(file) == (int64_t) file->size;
+    struct rendercmd cmd = {
+        .op = RENDEROP_MATRIX,
+        .args = {
+            .matrix = {
+                .matrixop = MATRIXOP_PUSH,
+            },
+        },
+    };
+
+    arrput(priv.rendercmds, cmd);
 }
 
-typedef int (*_stbi_io_read_func)(void *, char *, int);
-typedef void (*_stbi_io_skip_func)(void *, int);
-typedef int (*_stbi_io_eof_func)(void *);
-
-static stbi_io_callbacks const _stbi_io = {
-    .read = (_stbi_io_read_func) _stbi_io_read,
-    .skip = (_stbi_io_skip_func) _stbi_io_skip,
-    .eof = (_stbi_io_eof_func) _stbi_io_eof,
-};
-
-//------------------------------------------------------------------------------
-
-static int pixfmt_to_channels(qu_pixel_format format)
+void libqu_graphics_pop(void)
 {
-    switch (format) {
-    default:
-        return 0;
-    case QU_PIXFMT_Y8:
-        return 1;
-    case QU_PIXFMT_Y8A8:
-        return 2;
-    case QU_PIXFMT_R8G8B8:
-        return 3;
-    case QU_PIXFMT_R8G8B8A8:
-        return 4;
-    }
+    struct rendercmd cmd = {
+        .op = RENDEROP_MATRIX,
+        .args = {
+            .matrix = {
+                .matrixop = MATRIXOP_POP,
+            },
+        },
+    };
+
+    arrput(priv.rendercmds, cmd);
 }
 
-static qu_pixel_format channels_to_pixfmt(int channels)
+void libqu_graphics_origin(void)
 {
-    switch (channels) {
-    default:
-        return QU_PIXFMT_INVALID;
-    case 1:
-        return QU_PIXFMT_Y8;
-    case 2:
-        return QU_PIXFMT_Y8A8;
-    case 3:
-        return QU_PIXFMT_R8G8B8;
-    case 4:
-        return QU_PIXFMT_R8G8B8A8;
-    }
+    struct rendercmd cmd = {
+        .op = RENDEROP_MATRIX,
+        .args = {
+            .matrix = {
+                .matrixop = MATRIXOP_ORIGIN,
+            },
+        },
+    };
+
+    arrput(priv.rendercmds, cmd);
 }
 
-struct libqu_image *libqu_image_create(qu_pixel_format format, qu_vec2i size)
+void libqu_graphics_translate(qu_vec2f v)
 {
-    struct libqu_image *image = pl_calloc(1, sizeof(*image));
+    struct rendercmd cmd = {
+        .op = RENDEROP_MATRIX,
+        .args = {
+            .matrix = {
+                .matrixop = MATRIXOP_TRANSLATE,
+                .x = v.x,
+                .y = v.y,
+            },
+        },
+    };
 
-    if (image) {
-        int channels = pixfmt_to_channels(format);
-
-        if (channels > 0) {
-            image->pixels = pl_malloc(channels * size.x * size.y);
-
-            if (image->pixels) {
-                image->format = format;
-                image->size.x = size.x;
-                image->size.y = size.y;
-
-                return image;
-            }
-        }
-
-        pl_free(image);
-    }
-
-    return NULL;
+    arrput(priv.rendercmds, cmd);
 }
 
-struct libqu_image *libqu_image_load(struct libqu_file *file)
+void libqu_graphics_scale(qu_vec2f s)
 {
-    int w, h, c;
+    struct rendercmd cmd = {
+        .op = RENDEROP_MATRIX,
+        .args = {
+            .matrix = {
+                .matrixop = MATRIXOP_SCALE,
+                .x = s.x,
+                .y = s.y,
+            },
+        },
+    };
 
-    unsigned char *data =
-        stbi_load_from_callbacks(&_stbi_io, file, &w, &h, &c, 0);
-    
-    struct libqu_image *image = NULL;
-
-    if (data) {
-        qu_pixel_format format = channels_to_pixfmt(c);
-
-        if (format != QU_PIXFMT_INVALID) {
-            qu_vec2i size = { w, h };
-            image = libqu_image_create(format, size);
-
-            if (image) {
-                memcpy(image->pixels, data, w * h * c);
-            }
-        }
-
-        stbi_image_free(data);
-    }
-
-    return image;
+    arrput(priv.rendercmds, cmd);
 }
 
-struct libqu_image *libqu_image_copy_flipped(struct libqu_image *image)
+void libqu_graphics_rotate(float degrees)
 {
-    struct libqu_image *copy = libqu_image_create(image->format, image->size);
+    struct rendercmd cmd = {
+        .op = RENDEROP_MATRIX,
+        .args = {
+            .matrix = {
+                .matrixop = MATRIXOP_ROTATE,
+                .x = QU_DEG2RAD(degrees),
+            },
+        },
+    };
 
-    if (!copy) {
-        return NULL;
-    }
-
-    int w = image->size.x;
-    int h = image->size.y;
-    int c = pixfmt_to_channels(image->format);
-
-    for (int y = 0; y < image->size.y; y++) {
-        void *src = &image->pixels[w * c * y];
-        void *dst = &copy->pixels[w * c * (h - y - 1)];
-
-        memcpy(dst, src, w * c);
-    }
-
-    return copy;
-}
-
-void libqu_image_destroy(struct libqu_image *image)
-{
-    pl_free(image->pixels);
-    pl_free(image);
-}
-
-void libqu_image_flip(struct libqu_image *image)
-{
-    int w = image->size.x;
-    int h = image->size.y;
-    int c = pixfmt_to_channels(image->format);
-
-    unsigned char *tmp = pl_malloc(w * c);
-
-    if (!tmp) {
-        return;
-    }
-
-    for (int y = 0; y < h / 2; y++) {
-        void *top = &image->pixels[w * c * y];
-        void *bottom = &image->pixels[w * c * (h - y - 1)];
-
-        memcpy(tmp, top, w * c);
-        memcpy(top, bottom, w * c);
-        memcpy(bottom, tmp, w * c);
-    }
-
-    pl_free(tmp);
+    arrput(priv.rendercmds, cmd);
 }
 
 //------------------------------------------------------------------------------
