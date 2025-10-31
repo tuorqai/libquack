@@ -416,14 +416,6 @@ QU_API void QU_CALL qu_translate(float x, float y);
 QU_API void QU_CALL qu_scale(float sx, float sy);
 QU_API void QU_CALL qu_rotate(float degrees);
 
-QU_API qu_image QU_CALL qu_create_image(int width, int height, qu_pixel_format format);
-QU_API qu_image QU_CALL qu_load_image_from_file(char const *path);
-QU_API qu_image QU_CALL qu_load_image_from_buffer(void *buffer, size_t size);
-QU_API void QU_CALL qu_destroy_image(qu_image image);
-QU_API qu_vec2i QU_CALL qu_get_image_size(qu_image image);
-QU_API qu_pixel_format QU_CALL qu_get_image_format(qu_image image);
-QU_API unsigned char * QU_CALL qu_get_image_pixels(qu_image image);
-
 //------------------------------------------------------------------------------
 // Graphics: Textures
 
@@ -510,6 +502,44 @@ QU_API void QU_CALL qu_set_sound_loop(qu_sound sound, int loop);
 QU_API void QU_CALL qu_play_sound(qu_sound sound);
 QU_API void QU_CALL qu_pause_sound(qu_sound sound);
 QU_API void QU_CALL qu_stop_sound(qu_sound sound);
+
+//------------------------------------------------------------------------------
+// Images
+
+/**
+ * Create blank image object.
+ */
+QU_API qu_image QU_CALL qu_create_image(int width, int height, qu_pixel_format format);
+
+/**
+ * Open an image file and load image from it.
+ */
+QU_API qu_image QU_CALL qu_load_image(char const *path);
+
+/**
+ * Load image from memory buffer.
+ */
+QU_API qu_image QU_CALL qu_load_image_from_buffer(void *buffer, size_t size);
+
+/**
+ * Destroy image object freeing its resources.
+ */
+QU_API void QU_CALL qu_destroy_image(qu_image image);
+
+/**
+ * Get image size in pixels.
+ */
+QU_API qu_vec2i QU_CALL qu_get_image_size(qu_image image);
+
+/**
+ * Get pixel format (effectively number of channels) of an image.
+ */
+QU_API qu_pixel_format QU_CALL qu_get_image_format(qu_image image);
+
+/**
+ * Get pointer to underlying pixel array of image object.
+ */
+QU_API unsigned char * QU_CALL qu_get_image_pixels(qu_image image);
 
 //------------------------------------------------------------------------------
 

@@ -74,6 +74,7 @@ add_library(libquack
     src/log.c
     src/platform_posix.c
     src/platform_win32.c
+    src/qu_image.c
     src/util.c)
 
 add_library(libquack::libquack ALIAS libquack)
