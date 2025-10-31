@@ -371,7 +371,10 @@ qu_image qu_create_image(int width, int height, qu_pixel_format format)
     return handle;
 }
 
-qu_image qu_load_image_from_file(char const *path)
+//------------------------------------------------------------------------------
+// [image]
+
+qu_image qu_load_image(char const *path)
 {
     qu_image handle = { 0 };
     struct libqu_file *file = libqu_fopen(path);
@@ -446,6 +449,8 @@ unsigned char *qu_get_image_pixels(qu_image handle)
 
     return NULL;
 }
+
+//------------------------------------------------------------------------------
 
 void qu_set_default_texture_flags(unsigned int flags)
 {

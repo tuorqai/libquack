@@ -514,7 +514,7 @@ QU_API qu_image QU_CALL qu_create_image(int width, int height, qu_pixel_format f
 /**
  * Open an image file and load image from it.
  */
-QU_API qu_image QU_CALL qu_load_image_from_file(char const *path);
+QU_API qu_image QU_CALL qu_load_image(char const *path);
 
 /**
  * Load image from memory buffer.
