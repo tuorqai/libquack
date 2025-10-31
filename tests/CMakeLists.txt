@@ -7,7 +7,8 @@ set(EXECUTABLES
     utf8-title
     sounds
     blend-modes
-    views)
+    views
+    music)
 
 foreach(EXE ${EXECUTABLES})
     add_executable(${EXE} ${EXE}.c)
