@@ -60,32 +60,6 @@ struct libqu_graphics_params
     qu_vec2i window_size;
 };
 
-struct libqu_graphics_impl
-{
-    bool (*check_if_available)(void);
-    bool (*initialize)(struct libqu_graphics_params const *params);
-    void (*terminate)(void);
-    void (*upload_vertices)(struct libqu_vertex *vertices, size_t count);
-    void (*clear)(qu_color color);
-    void (*draw)(enum libqu_draw_mode mode, size_t vertex, size_t count);
-    int (*load_texture)(struct libqu_texture *texture);
-    void (*destroy_texture)(struct libqu_texture *texture);
-    void (*update_texture_flags)(struct libqu_texture *texture);
-    void (*apply_texture)(struct libqu_texture *texture);
-    void (*apply_ortho_proj)(float l, float r, float b, float t);
-    void (*apply_blend_mode)(qu_blend_mode const *mode);
-    int (*capture_screen)(struct libqu_image *image);
-    void (*set_transform)(mat4_t const *transform);
-};
-
-//------------------------------------------------------------------------------
-
-extern struct libqu_graphics_impl const libqu_graphics_null_impl;
-
-#ifdef QU_USE_OPENGL
-extern struct libqu_graphics_impl const libqu_graphics_gl3_impl;
-#endif
-
 //------------------------------------------------------------------------------
 
 void libqu_graphics_initialize(struct libqu_graphics_params const *params);

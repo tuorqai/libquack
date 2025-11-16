@@ -27,6 +27,7 @@
 #include "algebra.h"
 #include "dyn_gl3.h"
 #include "graphics.h"
+#include "qu_renderer.h"
 
 //------------------------------------------------------------------------------
 
@@ -698,7 +699,7 @@ static void graphics_gl3_set_transform(mat4_t const *transform)
 
 //------------------------------------------------------------------------------
 
-struct libqu_graphics_impl const libqu_graphics_gl3_impl = {
+struct r_impl const r_impl_gl3 = {
     graphics_gl3_check_if_available,
     graphics_gl3_initialize,
     graphics_gl3_terminate,

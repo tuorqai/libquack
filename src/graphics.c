@@ -23,20 +23,11 @@
 #include "graphics.h"
 #include "log.h"
 #include "platform.h"
+#include "qu_renderer.h"
 
 //------------------------------------------------------------------------------
 
 #define MAX_MATRICES            256
-
-//------------------------------------------------------------------------------
-
-static struct libqu_graphics_impl const *impl_list[] = {
-#ifdef QU_USE_OPENGL
-    &libqu_graphics_gl3_impl,
-#endif
-
-    &libqu_graphics_null_impl,
-};
 
 //------------------------------------------------------------------------------
 
@@ -96,7 +87,6 @@ struct rendercmd
 
 static struct
 {
-    struct libqu_graphics_impl const *impl;
     struct libqu_vertex *vertbuf;
     struct rendercmd *rendercmds;
     mat4_t matrices[MAX_MATRICES];
@@ -106,19 +96,6 @@ static struct
 } priv;
 
 //------------------------------------------------------------------------------
-
-static struct libqu_graphics_impl const *choose_impl(void)
-{
-    int count = sizeof(impl_list) / sizeof(impl_list[0]);
-
-    for (int i = 0; i < count; i++) {
-        if (impl_list[i]->check_if_available()) {
-            return impl_list[i];
-        }
-    }
-
-    abort();
-}
 
 static void exec_renderop_matrix(int matrixop, float x, float y)
 {
@@ -137,26 +114,26 @@ static void exec_renderop_matrix(int matrixop, float x, float y)
     case MATRIXOP_POP:
         if (priv.current_matrix > 0) {
             priv.current_matrix--;
-            priv.impl->set_transform(&priv.matrices[priv.current_matrix]);
+            r_set_transform(&priv.matrices[priv.current_matrix]);
         } else {
             LIBQU_LOGW("matrix stack underflow!\n");
         }
         break;
     case MATRIXOP_ORIGIN:
         mat4_identity(&priv.matrices[priv.current_matrix]);
-        priv.impl->set_transform(&priv.matrices[priv.current_matrix]);
+        r_set_transform(&priv.matrices[priv.current_matrix]);
         break;
     case MATRIXOP_TRANSLATE:
         mat4_translate(&priv.matrices[priv.current_matrix], x, y, 0.f);
-        priv.impl->set_transform(&priv.matrices[priv.current_matrix]);
+        r_set_transform(&priv.matrices[priv.current_matrix]);
         break;
     case MATRIXOP_SCALE:
         mat4_scale(&priv.matrices[priv.current_matrix], x, y, 1.f);
-        priv.impl->set_transform(&priv.matrices[priv.current_matrix]);
+        r_set_transform(&priv.matrices[priv.current_matrix]);
         break;
     case MATRIXOP_ROTATE:
         mat4_rotate(&priv.matrices[priv.current_matrix], x, 0.f, 0.f, 1.f);
-        priv.impl->set_transform(&priv.matrices[priv.current_matrix]);
+        r_set_transform(&priv.matrices[priv.current_matrix]);
         break;
     }
 }
@@ -165,14 +142,14 @@ static void exec_cmd(struct rendercmd const *cmd)
 {
     switch (cmd->op) {
     case RENDEROP_CLEAR:
-        priv.impl->clear(cmd->args.clear.color);
+        r_clear(cmd->args.clear.color);
         break;
     case RENDEROP_DRAW:
-        priv.impl->apply_texture(cmd->args.draw.texture);
-        priv.impl->draw(cmd->args.draw.mode, cmd->args.draw.vertex, cmd->args.draw.count);
+        r_apply_texture(cmd->args.draw.texture);
+        r_draw(cmd->args.draw.mode, cmd->args.draw.vertex, cmd->args.draw.count);
         break;
     case RENDEROP_SET_PROJECTION:
-        priv.impl->apply_ortho_proj(
+        r_apply_ortho_proj(
             cmd->args.set_projection.l,
             cmd->args.set_projection.r,
             cmd->args.set_projection.b,
@@ -184,7 +161,7 @@ static void exec_cmd(struct rendercmd const *cmd)
             cmd->args.matrix.x, cmd->args.matrix.y);
         break;
     case RENDEROP_SET_BLEND_MODE:
-        priv.impl->apply_blend_mode(&cmd->args.set_blend_mode.mode);
+        r_apply_blend_mode(&cmd->args.set_blend_mode.mode);
         break;
     default:
         break;
@@ -205,11 +182,9 @@ static size_t append_vertices(struct libqu_vertex const *vertices, size_t count)
 
 void libqu_graphics_initialize(struct libqu_graphics_params const *params)
 {
-    priv.impl = choose_impl();
-
-    if (!priv.impl->initialize(params)) {
-        LIBQU_LOGE("Failed to initialize libqu::graphics implementation.\n");
-        abort();
+    if (!r_initialize(params)) {
+        LIBQU_LOGE("Failed to initialize libqu::renderer implementation.\n");
+        LIBQU_LOGE("Expect no graphics at all.\n");
     }
 
     priv.window_size = params->window_size;
@@ -220,7 +195,7 @@ void libqu_graphics_initialize(struct libqu_graphics_params const *params)
 void libqu_graphics_terminate(void)
 {
     arrfree(priv.rendercmds);
-    priv.impl->terminate();
+    r_terminate();
 
     memset(&priv, 0, sizeof(priv));
 
@@ -229,7 +204,7 @@ void libqu_graphics_terminate(void)
 
 void libqu_graphics_flush(void)
 {
-    priv.impl->upload_vertices(priv.vertbuf, arrlenu(priv.vertbuf));
+    r_upload_vertices(priv.vertbuf, arrlenu(priv.vertbuf));
 
     for (size_t i = 0; i < arrlenu(priv.rendercmds); i++) {
         exec_cmd(&priv.rendercmds[i]);
@@ -240,7 +215,7 @@ void libqu_graphics_flush(void)
 
     priv.current_matrix = 0;
     mat4_identity(&priv.matrices[0]);
-    priv.impl->set_transform(&priv.matrices[0]);
+    r_set_transform(&priv.matrices[0]);
 }
 
 void libqu_graphics_clear(qu_color color)
@@ -530,7 +505,7 @@ struct libqu_texture *libqu_graphics_load_texture(struct libqu_image *image)
         texture->image = image;
         texture->flags = priv.default_texture_flags;
 
-        if (priv.impl->load_texture(texture) == 0) {
+        if (r_load_texture(texture) == 0) {
             return texture;
         }
 
@@ -544,7 +519,7 @@ struct libqu_texture *libqu_graphics_load_texture(struct libqu_image *image)
 
 void libqu_graphics_destroy_texture(struct libqu_texture *texture)
 {
-    priv.impl->destroy_texture(texture);
+    r_destroy_texture(texture);
     libqu_image_destroy(texture->image);
     pl_free(texture);
 }
@@ -553,7 +528,7 @@ void libqu_graphics_set_texture_flags(struct libqu_texture *texture,
     unsigned int flags)
 {
     texture->flags = flags;
-    priv.impl->update_texture_flags(texture);
+    r_update_texture_flags(texture);
 }
 
 void libqu_graphics_draw_texture(struct libqu_texture *texture, qu_rectf rect)
@@ -629,7 +604,7 @@ struct libqu_image *libqu_graphics_capture_screen(void)
         return NULL;
     }
 
-    if (priv.impl->capture_screen(image) == -1) {
+    if (r_capture_screen(image) == -1) {
         libqu_image_destroy(image);
         return NULL;
     }

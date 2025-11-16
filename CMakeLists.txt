@@ -68,12 +68,12 @@ add_library(libquack
     src/fs.c
     src/graphics.c
     src/graphics_gl3.c
-    src/graphics_null.c
     src/handle.c
     src/log.c
     src/platform_posix.c
     src/platform_win32.c
     src/qu_image.c
+    src/qu_renderer.c
     src/util.c)
 
 add_library(libquack::libquack ALIAS libquack)
