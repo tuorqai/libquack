@@ -32,8 +32,6 @@ static struct libqu_core_impl const *impl_list[] = {
 #ifdef QU_USE_X11
     &libqu_core_x11_impl,
 #endif
-
-    &libqu_core_null_impl,
 };
 
 //------------------------------------------------------------------------------
@@ -63,7 +61,7 @@ static struct libqu_core_impl const *choose_impl(void)
         }
     }
 
-    abort();
+    return NULL;
 }
 
 static void handle_activate_event(void)
@@ -101,6 +99,11 @@ static void handle_key_release_event(qu_key key)
 void libqu_core_initialize(struct libqu_core_params const *params)
 {
     priv.impl = choose_impl();
+
+    if (!priv.impl) {
+        LIBQU_LOGE("No suitable libqu::core implementation found.\n");
+        abort();
+    }
 
     if (!priv.impl->initialize(params)) {
         LIBQU_LOGE("Failed to initialize libqu::core implementation.\n");

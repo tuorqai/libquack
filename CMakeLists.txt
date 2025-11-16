@@ -63,7 +63,6 @@ add_library(libquack
     src/audio_openal.c
     src/base.c
     src/core.c
-    src/core_null.c
     src/core_win32.c
     src/core_x11.c
     src/fs.c
