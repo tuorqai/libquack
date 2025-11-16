@@ -495,7 +495,7 @@ static void convert_blend_mode(qu_blend_mode const *mode,
 
 //------------------------------------------------------------------------------
 
-static bool graphics_gl3_check_if_available(void)
+bool r_gl3_check_if_available(void)
 {
     if (dyn_load_gl3() == -1) {
         return false;
@@ -504,7 +504,7 @@ static bool graphics_gl3_check_if_available(void)
     return libqu_gl_get_version() >= 330;
 }
 
-static bool graphics_gl3_initialize(struct libqu_graphics_params const *params)
+bool r_gl3_initialize(struct libqu_graphics_params const *params)
 {
     if (!load_shaders()) {
         LIBQU_LOGE("Failed to compile GLSL shaders.\n");
@@ -545,14 +545,14 @@ static bool graphics_gl3_initialize(struct libqu_graphics_params const *params)
     return true;
 }
 
-static void graphics_gl3_terminate(void)
+void r_gl3_terminate(void)
 {
     arrfree(priv.vertbuf);
 
     LIBQU_LOGI("Terminated.\n");
 }
 
-static void graphics_gl3_upload_vertices(struct libqu_vertex *vertices, size_t count)
+void r_gl3_upload_vertices(struct libqu_vertex *vertices, size_t count)
 {
     arrsetlen(priv.vertbuf, 8 * count);
 
@@ -569,7 +569,7 @@ static void graphics_gl3_upload_vertices(struct libqu_vertex *vertices, size_t c
     _GL(glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 8, (void *) (sizeof(GLfloat) * 6)));
 }
 
-static void graphics_gl3_clear(qu_color color)
+void r_gl3_clear(qu_color color)
 {
     GLfloat c[4];
     unpack_color(color, c);
@@ -578,12 +578,12 @@ static void graphics_gl3_clear(qu_color color)
     _GL(glClear(GL_COLOR_BUFFER_BIT));
 }
 
-static void graphics_gl3_draw(enum libqu_draw_mode mode, size_t vertex, size_t count)
+void r_gl3_draw(enum libqu_draw_mode mode, size_t vertex, size_t count)
 {
     _GL(glDrawArrays(mode_map[mode], (GLint) vertex, (GLsizei) count));
 }
 
-static int graphics_gl3_load_texture(struct libqu_texture *texture)
+int r_gl3_load_texture(struct libqu_texture *texture)
 {
     GLenum iformat, format;
 
@@ -631,7 +631,7 @@ static int graphics_gl3_load_texture(struct libqu_texture *texture)
     return 0;
 }
 
-static void graphics_gl3_destroy_texture(struct libqu_texture *texture)
+void r_gl3_destroy_texture(struct libqu_texture *texture)
 {
     if (priv.current_texture == texture) {
         apply_texture(NULL);
@@ -641,18 +641,18 @@ static void graphics_gl3_destroy_texture(struct libqu_texture *texture)
     _GL(glDeleteTextures(1, &id));
 }
 
-static void graphics_gl3_update_texture_flags(struct libqu_texture *texture)
+void r_gl3_update_texture_flags(struct libqu_texture *texture)
 {
     apply_texture(texture);
     set_texture_parameters(texture->flags);
 }
 
-static void graphics_gl3_apply_texture(struct libqu_texture *texture)
+void r_gl3_apply_texture(struct libqu_texture *texture)
 {
     apply_texture(texture);
 }
 
-static void graphics_gl3_apply_ortho_proj(float l, float r, float b, float t)
+void r_gl3_apply_ortho_proj(float l, float r, float b, float t)
 {
     mat4_ortho(&priv.projection, l, r, b, t);
 
@@ -665,7 +665,7 @@ static void graphics_gl3_apply_ortho_proj(float l, float r, float b, float t)
     }
 }
 
-static void graphics_gl3_apply_blend_mode(qu_blend_mode const *mode)
+void r_gl3_apply_blend_mode(qu_blend_mode const *mode)
 {
     GLenum csf, cdf, asf, adf, ceq, aeq;
     convert_blend_mode(mode, &csf, &cdf, &asf, &adf, &ceq, &aeq);
@@ -674,7 +674,7 @@ static void graphics_gl3_apply_blend_mode(qu_blend_mode const *mode)
     _GL(glBlendEquationSeparate(ceq, aeq));
 }
 
-static int graphics_gl3_capture_screen(struct libqu_image *image)
+int r_gl3_capture_screen(struct libqu_image *image)
 {
     _GL(glReadPixels(0, 0, image->size.x, image->size.y,
         GL_RGB, GL_UNSIGNED_BYTE, image->pixels));
@@ -684,7 +684,7 @@ static int graphics_gl3_capture_screen(struct libqu_image *image)
     return 0;
 }
 
-static void graphics_gl3_set_transform(mat4_t const *transform)
+void r_gl3_set_transform(mat4_t const *transform)
 {
     mat4_copy(&priv.modelview, transform);
 
@@ -700,23 +700,22 @@ static void graphics_gl3_set_transform(mat4_t const *transform)
 //------------------------------------------------------------------------------
 
 struct r_impl const r_impl_gl3 = {
-    graphics_gl3_check_if_available,
-    graphics_gl3_initialize,
-    graphics_gl3_terminate,
-    graphics_gl3_upload_vertices,
-    graphics_gl3_clear,
-    graphics_gl3_draw,
-    graphics_gl3_load_texture,
-    graphics_gl3_destroy_texture,
-    graphics_gl3_update_texture_flags,
-    graphics_gl3_apply_texture,
-    graphics_gl3_apply_ortho_proj,
-    graphics_gl3_apply_blend_mode,
-    graphics_gl3_capture_screen,
-    graphics_gl3_set_transform,
+    .check_if_available     = r_gl3_check_if_available,
+    .initialize             = r_gl3_initialize,
+    .terminate              = r_gl3_terminate,
+    .upload_vertices        = r_gl3_upload_vertices,
+    .clear                  = r_gl3_clear,
+    .draw                   = r_gl3_draw,
+    .load_texture           = r_gl3_load_texture,
+    .destroy_texture        = r_gl3_destroy_texture,
+    .update_texture_flags   = r_gl3_update_texture_flags,
+    .apply_texture          = r_gl3_apply_texture,
+    .apply_ortho_proj       = r_gl3_apply_ortho_proj,
+    .apply_blend_mode       = r_gl3_apply_blend_mode,
+    .capture_screen         = r_gl3_capture_screen,
+    .set_transform          = r_gl3_set_transform,
 };
 
 //------------------------------------------------------------------------------
 
 #endif // QU_USE_OPENGL
-
