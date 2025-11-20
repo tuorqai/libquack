@@ -23,6 +23,7 @@
 #include "graphics.h"
 #include "log.h"
 #include "platform.h"
+#include "qu_config.h"
 #include "qu_renderer.h"
 
 //------------------------------------------------------------------------------
@@ -92,7 +93,6 @@ static struct
     mat4_t matrices[MAX_MATRICES];
     size_t current_matrix;
     unsigned int default_texture_flags;
-    qu_vec2i window_size;
 } priv;
 
 //------------------------------------------------------------------------------
@@ -186,8 +186,6 @@ void libqu_graphics_initialize(struct libqu_graphics_params const *params)
         LIBQU_LOGE("Failed to initialize libqu::renderer implementation.\n");
         LIBQU_LOGE("Expect no graphics at all.\n");
     }
-
-    priv.window_size = params->window_size;
 
     LIBQU_LOGI("Initialized.\n");
 }
@@ -372,14 +370,16 @@ void libqu_graphics_draw_rectangle(qu_vec2f pos, qu_vec2f size, qu_color outline
 
 qu_view libqu_graphics_get_default_view(void)
 {
+    qu_vec2i window_size = cf_get_window_size();
+
     return (qu_view) {
         .center = {
-            .x = (float) priv.window_size.x / 2.f,
-            .y = (float) priv.window_size.y / 2.f,
+            .x = (float) window_size.x / 2.f,
+            .y = (float) window_size.y / 2.f,
         },
         .size = {
-            .x = (float) priv.window_size.x,
-            .y = (float) priv.window_size.y,
+            .x = (float) window_size.x,
+            .y = (float) window_size.y,
         },
     };
 }
@@ -598,7 +598,7 @@ void libqu_graphics_draw_subtexture(struct libqu_texture *texture,
 struct libqu_image *libqu_graphics_capture_screen(void)
 {
     struct libqu_image *image =
-        libqu_image_create(QU_PIXFMT_R8G8B8, priv.window_size);
+        libqu_image_create(QU_PIXFMT_R8G8B8, cf_get_window_size());
     
     if (!image) {
         return NULL;

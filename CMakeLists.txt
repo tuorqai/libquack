@@ -71,6 +71,7 @@ add_library(libquack
     src/log.c
     src/platform_posix.c
     src/platform_win32.c
+    src/qu_config.c
     src/qu_image.c
     src/qu_renderer.c
     src/qu_renderer_gl3.c

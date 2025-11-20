@@ -27,6 +27,7 @@
 #include "algebra.h"
 #include "dyn_gl3.h"
 #include "graphics.h"
+#include "qu_config.h"
 #include "qu_renderer.h"
 
 //------------------------------------------------------------------------------
@@ -527,12 +528,11 @@ bool r_gl3_initialize(struct libqu_graphics_params const *params)
     _GL(glEnableVertexAttribArray(1));
     _GL(glEnableVertexAttribArray(2));
 
-    int width = params->window_size.x;
-    int height = params->window_size.y;
+    qu_vec2i size = cf_get_window_size();
 
-    _GL(glViewport(0, 0, width, height));
+    _GL(glViewport(0, 0, size.x, size.y));
 
-    mat4_ortho(&priv.projection, 0.f, width, height, 0.f);
+    mat4_ortho(&priv.projection, 0.f, size.x, size.y, 0.f);
     mat4_identity(&priv.modelview);
 
     apply_program(PROGRAM_PRIMITIVE);

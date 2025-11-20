@@ -26,6 +26,7 @@
 #include "core_x11.h"
 #include "log.h"
 #include "platform.h"
+#include "qu_config.h"
 
 //------------------------------------------------------------------------------
 
@@ -481,7 +482,7 @@ static void store_title(char const *str)
     }
 }
 
-static bool create_window(struct libqu_core_params const *params, XVisualInfo *vi)
+static bool create_window(XVisualInfo *vi)
 {
     priv.event_mask = ExposureMask | KeyPressMask | KeyReleaseMask
         | EnterWindowMask | LeaveWindowMask
@@ -496,8 +497,8 @@ static bool create_window(struct libqu_core_params const *params, XVisualInfo *v
         .colormap = priv.colormap,
     };
 
-    qu_vec2i pos = calc_center_of_window(params->window_size);
-    qu_vec2i size = params->window_size;
+    qu_vec2i pos = calc_center_of_window(cf_get_window_size());
+    qu_vec2i size = cf_get_window_size();
 
     priv.window = XCreateWindow(
         priv.dpy,       // display
@@ -534,7 +535,7 @@ static bool create_window(struct libqu_core_params const *params, XVisualInfo *v
     XMapWindow(priv.dpy, priv.window);
 
     store_class("libquack"); // Latin-1
-    store_title(params->window_title);
+    store_title(cf_get_window_title());
 
     return true;
 }
@@ -726,7 +727,7 @@ static bool core_x11_initialize(struct libqu_core_params const *params)
 
     XVisualInfo *vi = glXGetVisualFromFBConfig(priv.dpy, fbc);
 
-    if (!create_window(params, vi)) {
+    if (!create_window(vi)) {
         LIBQU_LOGE("Failed to create X11 window.\n");
         return false;
     }

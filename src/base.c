@@ -25,6 +25,7 @@
 #include "handle.h"
 #include "log.h"
 #include "platform.h"
+#include "qu_config.h"
 #include "qu_image.h"
 
 //------------------------------------------------------------------------------
@@ -59,37 +60,12 @@ static struct
     uint64_t start_ticks_highp;
 
     struct {
-        struct libqu_core_params core;
         struct libqu_graphics_params graphics;
         struct libqu_audio_params audio;
     } params;
 } priv;
 
 //------------------------------------------------------------------------------
-
-static void sanitize_core_params(void)
-{
-    struct libqu_core_params *p = &priv.params.core;
-
-    if (p->window_title[0] == '\0') {
-        strncpy(p->window_title, "libquack application", LIBQU_WINDOW_TITLE_LENGTH - 1);
-    }
-
-    if (p->window_size.x == 0 || p->window_size.y == 0) {
-        p->window_size.x = 1280;
-        p->window_size.y = 720;
-    }
-}
-
-static void sanitize_graphics_params(void)
-{
-    struct libqu_graphics_params *p = &priv.params.graphics;
-
-    if (p->window_size.x == 0 || p->window_size.y == 0) {
-        p->window_size.x = priv.params.core.window_size.x;
-        p->window_size.y = priv.params.core.window_size.y;
-    }
-}
 
 static void initialize_extra(unsigned int extra)
 {
@@ -127,11 +103,10 @@ void qu_initialize(void)
     priv.start_ticks_mediump = pl_get_ticks_mediump();
     priv.start_ticks_highp = pl_get_ticks_highp();
 
-    sanitize_core_params();
-    sanitize_graphics_params();
+    cf_initialize();
 
-    libqu_core_initialize(&priv.params.core);
-    libqu_graphics_initialize(&priv.params.graphics);
+    libqu_core_initialize(NULL);
+    libqu_graphics_initialize(NULL);
 
     LIBQU_LOGI("Initialized.\n");
 }
@@ -212,40 +187,35 @@ char const *qu_get_window_title(void)
 {
     if (priv.refcount > 0) {
         return libqu_core_get_window_title();
-    } else {
-        if (priv.params.core.window_title[0] == '\0') {
-            return priv.params.core.window_title;
-        } else {
-            return NULL;
-        }
     }
+
+    return cf_get_window_title();
 }
 
 qu_vec2i qu_get_window_size(void)
 {
     if (priv.refcount > 0) {
         return libqu_core_get_window_size();
-    } else {
-        return priv.params.core.window_size;
     }
+
+    return cf_get_window_size();
 }
 
 void qu_set_window_title(char const *title)
 {
-    strncpy(priv.params.core.window_title, title, LIBQU_WINDOW_TITLE_LENGTH - 1);
+    cf_set_window_title(title);
 
     if (priv.refcount > 0) {
-        libqu_core_set_window_title(priv.params.core.window_title);
+        libqu_core_set_window_title(NULL);
     }
 }
 
 void qu_set_window_size(int w, int h)
 {
-    priv.params.core.window_size.x = w;
-    priv.params.core.window_size.y = h;
+    cf_set_window_size((qu_vec2i) { w, h });
 
     if (priv.refcount > 0) {
-        libqu_core_set_window_size(priv.params.core.window_size);
+        libqu_core_set_window_size((qu_vec2i) { -1, -1 });
     }
 }
 

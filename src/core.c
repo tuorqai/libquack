@@ -21,6 +21,7 @@
 #include <stb_ds.h>
 #include "core.h"
 #include "log.h"
+#include "qu_config.h"
 
 //------------------------------------------------------------------------------
 
@@ -39,9 +40,6 @@ static struct libqu_core_impl const *impl_list[] = {
 static struct
 {
     struct libqu_core_impl const *impl;
-
-    char const *window_title;
-    qu_vec2i window_size;
 
     bool active;
     qu_key_state keyboard[QU_TOTAL_KEYS];
@@ -170,26 +168,24 @@ bool libqu_core_is_window_active(void)
 
 char const *libqu_core_get_window_title(void)
 {
-    return priv.window_title;
+    // temporary: query impl instead
+    return cf_get_window_title();
 }
 
 qu_vec2i libqu_core_get_window_size(void)
 {
-    return priv.window_size;
+    // temporary: query impl instead
+    return cf_get_window_size();
 }
 
 void libqu_core_set_window_title(char const *title)
 {
-    if (priv.impl->set_window_title(title)) {
-        priv.window_title = title;
-    }
+    priv.impl->set_window_title(cf_get_window_title());
 }
 
 void libqu_core_set_window_size(qu_vec2i size)
 {
-    if (priv.impl->set_window_size(size)) {
-        priv.window_size = size;
-    }
+    priv.impl->set_window_size(cf_get_window_size());
 }
 
 qu_key_state const *libqu_core_get_keyboard_state(void)

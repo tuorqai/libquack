@@ -42,6 +42,7 @@
 
 #include "core.h"
 #include "dyn_wgl.h"
+#include "qu_config.h"
 
 //------------------------------------------------------------------------------
 
@@ -731,7 +732,7 @@ static bool core_win32_initialize(struct libqu_core_params const *params)
 {
     InitDpiAwareness();
 
-    if (InitTitle(params->window_title) == -1) {
+    if (InitTitle(cf_get_window_title()) == -1) {
         LIBQU_LOGI("InitTitle() failed.\n");
         return false;
     }
@@ -741,7 +742,9 @@ static bool core_win32_initialize(struct libqu_core_params const *params)
         return false;
     }
 
-    if (InitWindow(params->window_size.x, params->window_size.y) == -1) {
+    qu_vec2i size = cf_get_window_size();
+
+    if (InitWindow(size.x, size.y) == -1) {
         LIBQU_LOGI("InitWindow() failed.\n");
         return false;
     }
